@@ -19,6 +19,7 @@ interface TraderaApiItem {
   buyNowPrice?: number;
   price?: number;
   url?: string;
+  shippingIncluded?: boolean;
 }
 
 interface TraderaApiResponse {
@@ -90,6 +91,7 @@ class TraderaAdapterService implements MarketplaceAdapter {
           const title = item.title?.trim() || item.description?.trim() || 'Tradera item';
           const soldAt = item.soldAt ?? item.endDate ?? new Date().toISOString();
           const priceSek = normalizePrice(item);
+          const similarityScore = similarity(criteria.title, title);
           return {
             id: item.itemId ?? item.id ?? `tradera-${index}`,
             source: 'tradera' as const,
@@ -99,7 +101,9 @@ class TraderaAdapterService implements MarketplaceAdapter {
             soldAt,
             conditionHint: 'Unknown',
             url: item.url ?? 'https://www.tradera.com/',
-            similarityScore: similarity(criteria.title, title),
+            similarityScore,
+            sourceQuality: Math.max(0.6, similarityScore * 0.9),
+            shippingIncluded: item.shippingIncluded,
           };
         })
         .filter((item) => item.priceSek > 0)
@@ -114,7 +118,7 @@ class TraderaAdapterService implements MarketplaceAdapter {
     return {
       site: 'tradera',
       title: input.fingerprint.title.slice(0, 80),
-      description: `${input.fingerprint.title}\n\nSkick: ${input.fingerprint.conditionGrade}\nKategori: ${input.fingerprint.category}`,
+      description: `${input.fingerprint.title}\n\nSkick: ${input.fingerprint.conditionGrade}\nKategori: ${input.fingerprint.category}\nPrisstrategi: ${input.valuation.pricingStrategy}`,
       priceSuggestionSek: input.valuation.priceRecommendedSek,
       shippingSuggestion: 'Skickas spårbart inom Sverige.',
       tags: [input.fingerprint.category, input.fingerprint.brand].filter(

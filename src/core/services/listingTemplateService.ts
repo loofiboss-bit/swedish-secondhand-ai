@@ -11,6 +11,12 @@ const siteLabel: Record<MarketplaceSite, string> = {
   vinted: 'Vinted',
 };
 
+const titleLimits: Record<MarketplaceSite, number> = {
+  tradera: 80,
+  blocket: 70,
+  vinted: 60,
+};
+
 class ListingTemplateService {
   private static instance: ListingTemplateService;
 
@@ -27,39 +33,56 @@ class ListingTemplateService {
     );
   }
 
+  exportCopyBundle(template: ListingTemplate): string {
+    return [
+      `Site: ${siteLabel[template.site]}`,
+      `Title: ${template.title}`,
+      `Price: ${template.priceSuggestionSek} SEK`,
+      `Tags: ${template.tags.join(', ')}`,
+      '',
+      template.description,
+      '',
+      `Shipping: ${template.shippingSuggestion}`,
+      `Note: ${template.disclaimer}`,
+    ].join('\n');
+  }
+
   private renderTemplate(
     site: MarketplaceSite,
     fingerprint: ItemFingerprint,
     valuation: ValuationResult,
   ): ListingTemplate {
-    const titleLimit = site === 'vinted' ? 60 : 80;
-    const title = `${fingerprint.brand} ${fingerprint.title}`.trim().slice(0, titleLimit);
+    const title = `${fingerprint.brand} ${fingerprint.title}`.trim().slice(0, titleLimits[site]);
 
     const bullets = [
       `Kategori: ${fingerprint.category}`,
       `Skick: ${fingerprint.conditionGrade}`,
-      `Varumarke: ${fingerprint.brand}`,
+      `Varumärke: ${fingerprint.brand}`,
       `Modell: ${fingerprint.model}`,
+      `Prisstrategi: ${valuation.pricingStrategy}`,
     ];
 
     const siteSpecific =
       site === 'tradera'
-        ? 'Betalning och leverans enligt Tradera-standard.'
+        ? 'Betalning och leverans enligt Tradera-standard. Ange tydliga fraktvillkor.'
         : site === 'blocket'
-          ? 'Kan hamtas lokalt eller skickas inom Sverige efter overenskommelse.'
-          : 'Frakt via Vinted-systemet rekommenderas for trygg handel.';
+          ? 'Kan hämtas lokalt eller skickas inom Sverige efter överenskommelse.'
+          : 'Frakt via Vinted-systemet rekommenderas för trygg handel.';
 
     return {
       site,
       title,
       description: `${title}\n\n${bullets.join('\n')}\n\n${siteSpecific}`,
       priceSuggestionSek: valuation.priceRecommendedSek,
-      shippingSuggestion: 'Spårbar frakt inom Sverige.',
+      shippingSuggestion:
+        site === 'blocket'
+          ? 'Hämtning eller spårbar frakt inom Sverige.'
+          : 'Spårbar frakt inom Sverige.',
       tags: [fingerprint.category, fingerprint.brand, siteLabel[site]].filter(
         (entry) => entry && entry !== 'Unknown',
       ),
       disclaimer:
-        'Prisforslag ar en uppskattning. Kontrollera aktuella jamforbara annonser innan publicering.',
+        'Prisförslag är en uppskattning. Kontrollera aktuella jämförbara annonser innan publicering.',
     };
   }
 }

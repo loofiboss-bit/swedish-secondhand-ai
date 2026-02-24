@@ -3,6 +3,9 @@ import type { ComparableRecord } from '@core/types';
 
 const KEY = 'swedish-secondhand-ai:manual-comps';
 
+type ManualComparableInput = Omit<ComparableRecord, 'id' | 'source' | 'sourceQuality'> &
+  Partial<Pick<ComparableRecord, 'sourceQuality' | 'location' | 'shippingIncluded'>>;
+
 class ManualCompsService {
   private static instance: ManualCompsService;
 
@@ -17,12 +20,13 @@ class ManualCompsService {
     return (await get<ComparableRecord[]>(KEY)) ?? [];
   }
 
-  async add(comp: Omit<ComparableRecord, 'id' | 'source'>): Promise<ComparableRecord> {
+  async add(comp: ManualComparableInput): Promise<ComparableRecord> {
     const list = await this.list();
     const next: ComparableRecord = {
       ...comp,
       id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       source: 'manual',
+      sourceQuality: comp.sourceQuality ?? 0.55,
     };
     await set(KEY, [next, ...list]);
     return next;

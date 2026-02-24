@@ -4,6 +4,17 @@ import path from 'node:path';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-i18next', 'i18next'],
+          state: ['zustand', 'idb-keyval'],
+          ai: ['@google/genai'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

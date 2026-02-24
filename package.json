@@ -1,7 +1,7 @@
 {
   "name": "swedish-secondhand-ai",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "Desktop app for Swedish secondhand item valuation and listing templates",
   "author": "Loofi",
   "license": "MIT",

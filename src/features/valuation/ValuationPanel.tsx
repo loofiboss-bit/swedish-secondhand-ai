@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { MarketplaceSite, PricingStrategy } from '@core/types';
 import { useValuationStore } from '@core/store/useValuationStore';
+import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { SectionCard } from '@shared/components/SectionCard';
-import type { MarketplaceSite } from '@core/types';
 
 const DEFAULT_SITE: MarketplaceSite = 'blocket';
 
@@ -10,15 +11,19 @@ export function ValuationPanel() {
   const { t } = useTranslation('common');
   const {
     loading,
+    error,
     valuation,
+    pricingStrategy,
     traderaComps,
     manualComps,
+    setPricingStrategy,
     fetchTraderaComparables,
     addManualComparable,
     removeManualComparable,
     estimateValue,
     saveToHistory,
   } = useValuationStore();
+  const { stepErrors } = useWorkflowStore();
 
   const [manualTitle, setManualTitle] = useState('');
   const [manualPrice, setManualPrice] = useState('');
@@ -44,6 +49,7 @@ export function ValuationPanel() {
       conditionHint: 'User provided',
       url: '',
       similarityScore: 0.6,
+      sourceQuality: 0.55,
     });
 
     setManualTitle('');
@@ -52,6 +58,24 @@ export function ValuationPanel() {
 
   return (
     <SectionCard title={t('estimate')}>
+      {(error || stepErrors.comparables || stepErrors.price) && (
+        <p className="inline-warning" role="alert">
+          {stepErrors.comparables || stepErrors.price || error}
+        </p>
+      )}
+
+      <label className="field">
+        <span>{t('pricingStrategy')}</span>
+        <select
+          value={pricingStrategy}
+          onChange={(event) => setPricingStrategy(event.target.value as PricingStrategy)}
+        >
+          <option value="fast_sale">{t('strategyFastSale')}</option>
+          <option value="balanced">{t('strategyBalanced')}</option>
+          <option value="max_value">{t('strategyMaxValue')}</option>
+        </select>
+      </label>
+
       <div className="inline-actions">
         <button type="button" onClick={() => void fetchTraderaComparables()} disabled={loading}>
           {t('fetchTradera')}
@@ -93,11 +117,12 @@ export function ValuationPanel() {
         {allComparables.map((comp) => (
           <li key={comp.id}>
             <span>
-              [{comp.site}] {comp.title} - {Math.round(comp.priceSek)} SEK
+              [{comp.site}] {comp.title} - {Math.round(comp.priceSek)} SEK (
+              {Math.round(comp.sourceQuality * 100)}%)
             </span>
             {comp.source === 'manual' && (
               <button type="button" onClick={() => void removeManualComparable(comp.id)}>
-                Remove
+                {t('remove')}
               </button>
             )}
           </li>
@@ -119,6 +144,20 @@ export function ValuationPanel() {
           <p>
             {t('rationale')}: {valuation.rationale}
           </p>
+          <ul className="confidence-breakdown">
+            <li>
+              {t('factorSimilarity')}: {valuation.confidenceBreakdown.similarity}
+            </li>
+            <li>
+              {t('factorSampleSize')}: {valuation.confidenceBreakdown.sampleSize}
+            </li>
+            <li>
+              {t('factorSourceQuality')}: {valuation.confidenceBreakdown.sourceQuality}
+            </li>
+            <li>
+              {t('factorCalibration')}: {valuation.confidenceBreakdown.calibration}
+            </li>
+          </ul>
         </div>
       )}
     </SectionCard>

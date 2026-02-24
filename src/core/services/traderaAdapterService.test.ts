@@ -47,6 +47,7 @@ describe('traderaAdapterService', () => {
     expect(result).toHaveLength(1);
     expect(result[0].priceSek).toBe(450);
     expect(result[0].source).toBe('tradera');
+    expect(result[0].sourceQuality).toBeGreaterThan(0);
   });
 
   it('returns empty when tradera api key is missing', async () => {

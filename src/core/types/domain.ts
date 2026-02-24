@@ -4,6 +4,12 @@ export type MarketplaceSite = 'tradera' | 'blocket' | 'vinted';
 
 export type ConditionGrade = 'new' | 'like_new' | 'good' | 'fair' | 'poor' | 'unknown';
 
+export type PricingStrategy = 'fast_sale' | 'balanced' | 'max_value';
+
+export type WorkflowStep = 'analyze' | 'comparables' | 'price' | 'templates' | 'review';
+
+export type SaleStatus = 'pending' | 'sold' | 'not_sold';
+
 export interface ItemFingerprint {
   title: string;
   category: string;
@@ -25,6 +31,16 @@ export interface ComparableRecord {
   conditionHint: string;
   url: string;
   similarityScore: number;
+  sourceQuality: number;
+  location?: string;
+  shippingIncluded?: boolean;
+}
+
+export interface ConfidenceBreakdown {
+  similarity: number;
+  sampleSize: number;
+  sourceQuality: number;
+  calibration: number;
 }
 
 export interface ValuationResult {
@@ -33,6 +49,8 @@ export interface ValuationResult {
   priceMaxSek: number;
   confidence: number;
   rationale: string;
+  pricingStrategy: PricingStrategy;
+  confidenceBreakdown: ConfidenceBreakdown;
   compsUsed: ComparableRecord[];
 }
 
@@ -67,7 +85,11 @@ export interface MarketplaceAdapter {
 
 export interface ValuationService {
   analyzeInput(text: string, images: string[]): Promise<ItemFingerprint>;
-  estimateValue(fingerprint: ItemFingerprint, comps: ComparableRecord[]): Promise<ValuationResult>;
+  estimateValue(
+    fingerprint: ItemFingerprint,
+    comps: ComparableRecord[],
+    strategy?: PricingStrategy,
+  ): Promise<ValuationResult>;
 }
 
 export interface AppSettings {
@@ -84,4 +106,53 @@ export interface HistoryEntry {
   fingerprint: ItemFingerprint;
   valuation: ValuationResult;
   templates: ListingTemplate[];
+  saleStatus: SaleStatus;
+  soldPriceSek?: number;
+  soldAt?: string;
+}
+
+export interface ListingDraft {
+  version: 1;
+  savedAt: string;
+  currentStep: WorkflowStep;
+  completedSteps: WorkflowStep[];
+  pricingStrategy: PricingStrategy;
+  inputText: string;
+  images: string[];
+  fingerprint: ItemFingerprint | null;
+  traderaComps: ComparableRecord[];
+  manualComps: ComparableRecord[];
+  valuation: ValuationResult | null;
+  templates: ListingTemplate[];
+}
+
+export interface SiteConstraint {
+  id: string;
+  site: MarketplaceSite;
+  field: 'title' | 'description' | 'tags' | 'price';
+  severity: 'error' | 'warning';
+  message: string;
+  validate: (template: ListingTemplate) => boolean;
+}
+
+export interface PolicyIssue {
+  constraintId: string;
+  field: SiteConstraint['field'];
+  severity: SiteConstraint['severity'];
+  message: string;
+}
+
+export interface PolicyCheckResult {
+  site: MarketplaceSite;
+  pass: boolean;
+  blockingIssues: number;
+  issues: PolicyIssue[];
+}
+
+export interface QualityScoreReport {
+  site: MarketplaceSite;
+  score: number;
+  publishReady: boolean;
+  reasons: string[];
+  suggestions: string[];
 }

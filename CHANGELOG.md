@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0 - 2026-02-24
+
+- Introduced guided workflow state machine with typed steps and persisted progress.
+- Added draft persistence service with autosave/resume/discard flow.
+- Added one-click pipeline orchestration (`runPipeline`) in valuation store.
+- Added pricing strategies (`fast_sale`, `balanced`, `max_value`) and outlier-aware valuation.
+- Extended comparables with source quality metadata and improved confidence modeling.
+- Added valuation calibration service using sold-outcome history feedback.
+- Added site policy service for Tradera/Blocket/Vinted listing validation.
+- Added quality score service with publish-readiness scoring and fix suggestions.
+- Added listing store assessment state (`qualityReport`, `siteValidation`) and copy bundle export.
+- Reworked UI into guided workspace with stepper, persistent summary sidebar, and review gate.
+- Added command palette and keyboard shortcuts for key workflows.
+- Upgraded history panel with search/filter/detail view and sale outcome updates.
+- Added responsive design token styling refresh for readability and hierarchy.
+- Expanded i18n keys for workflow, quality, history outcomes, and command actions.
+- Added new tests for policy service, quality scoring, workflow store, and updated integration/service tests.
+- Fixed pre-existing formatter gate issue in `.github/dependabot.yml`.
+
 ## 0.1.0 - 2026-02-24
 
 - Bootstrap new standalone desktop app repository.

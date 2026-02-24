@@ -1,15 +1,25 @@
 import { create } from 'zustand';
-import type { ComparableRecord, ItemFingerprint, ValuationResult } from '@core/types';
+import type {
+  ComparableRecord,
+  ItemFingerprint,
+  ListingDraft,
+  PricingStrategy,
+  ValuationResult,
+  WorkflowStep,
+} from '@core/types';
 import { valuationService } from '@core/services/valuationService';
 import { traderaAdapterService } from '@core/services/traderaAdapterService';
 import { manualCompsService } from '@core/services/manualCompsService';
 import { listingTemplateService } from '@core/services/listingTemplateService';
 import { historyService } from '@core/services/historyService';
+import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
 import { useListingStore } from './useListingStore';
+import { useWorkflowStore } from './useWorkflowStore';
 
 interface ValuationState {
   inputText: string;
   images: string[];
+  pricingStrategy: PricingStrategy;
   fingerprint: ItemFingerprint | null;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
@@ -17,21 +27,29 @@ interface ValuationState {
   loading: boolean;
   error: string | null;
   setInputText: (text: string) => void;
+  setPricingStrategy: (strategy: PricingStrategy) => void;
   addImage: (dataUrl: string) => void;
   removeImage: (index: number) => void;
   analyzeItem: () => Promise<void>;
   fetchTraderaComparables: () => Promise<void>;
   loadManualComparables: () => Promise<void>;
-  addManualComparable: (comp: Omit<ComparableRecord, 'id' | 'source'>) => Promise<void>;
+  addManualComparable: (
+    comp: Omit<ComparableRecord, 'id' | 'source' | 'sourceQuality'> &
+      Partial<Pick<ComparableRecord, 'sourceQuality' | 'location' | 'shippingIncluded'>>,
+  ) => Promise<void>;
   removeManualComparable: (id: string) => Promise<void>;
   estimateValue: () => Promise<void>;
+  runPipeline: () => Promise<void>;
   generateTemplates: () => void;
   saveToHistory: () => Promise<void>;
+  hydrateFromDraft: (draft: ListingDraft) => void;
+  buildDraft: (currentStep: WorkflowStep, completedSteps: WorkflowStep[]) => ListingDraft;
 }
 
 export const useValuationStore = create<ValuationState>((set, get) => ({
   inputText: '',
   images: [],
+  pricingStrategy: 'balanced',
   fingerprint: null,
   traderaComps: [],
   manualComps: [],
@@ -39,25 +57,38 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   loading: false,
   error: null,
   setInputText: (inputText) => set({ inputText }),
-  addImage: (dataUrl) => set((state) => ({ images: [...state.images, dataUrl] })),
+  setPricingStrategy: (pricingStrategy) => set({ pricingStrategy }),
+  addImage: (dataUrl) => set((state) => ({ images: [...state.images, dataUrl].slice(0, 6) })),
   removeImage: (index) =>
     set((state) => ({ images: state.images.filter((_, currentIndex) => currentIndex !== index) })),
   analyzeItem: async () => {
     set({ loading: true, error: null });
     try {
       const state = get();
+      if (!state.inputText.trim() && state.images.length === 0) {
+        set({ loading: false, error: 'Add item text or at least one image before analysis.' });
+        return;
+      }
+
       const fingerprint = await valuationService.analyzeInput(state.inputText, state.images);
       set({ fingerprint, loading: false });
+      useWorkflowStore.getState().markStepComplete('analyze');
+      useWorkflowStore.getState().setCurrentStep('comparables');
     } catch (error) {
       set({
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to analyze item',
       });
+      useWorkflowStore.getState().setStepError('analyze', 'Analysis failed. Try again.');
     }
   },
   fetchTraderaComparables: async () => {
     const fingerprint = get().fingerprint;
-    if (!fingerprint) return;
+    if (!fingerprint) {
+      set({ error: 'Analyze item before fetching comparables.' });
+      return;
+    }
+
     set({ loading: true, error: null });
     try {
       const traderaComps = await traderaAdapterService.getComparables({
@@ -68,11 +99,16 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         limit: 20,
       });
       set({ traderaComps, loading: false });
+      useWorkflowStore.getState().markStepComplete('comparables');
+      useWorkflowStore.getState().setCurrentStep('price');
     } catch (error) {
       set({
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch Tradera comparables',
       });
+      useWorkflowStore
+        .getState()
+        .setStepError('comparables', 'Unable to fetch Tradera comparables.');
     }
   },
   loadManualComparables: async () => {
@@ -96,29 +132,74 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      const valuation = await valuationService.estimateValue(state.fingerprint, [
-        ...state.traderaComps,
-        ...state.manualComps,
-      ]);
+      const baseValuation = await valuationService.estimateValue(
+        state.fingerprint,
+        [...state.traderaComps, ...state.manualComps],
+        state.pricingStrategy,
+      );
+      const calibration = await valuationCalibrationService.recalculateConfidence(
+        baseValuation.confidence,
+        {
+          category: state.fingerprint.category,
+          brand: state.fingerprint.brand,
+        },
+      );
+
+      const valuation: ValuationResult = {
+        ...baseValuation,
+        confidence: calibration.adjustedConfidence,
+        confidenceBreakdown: {
+          ...baseValuation.confidenceBreakdown,
+          calibration: Number(calibration.calibrationFactor.toFixed(2)),
+        },
+        rationale: `${baseValuation.rationale} ${calibration.summary}`,
+      };
+
       set({ valuation, loading: false });
+      useWorkflowStore.getState().markStepComplete('price');
+      useWorkflowStore.getState().setCurrentStep('templates');
     } catch (error) {
       set({
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to estimate value',
       });
+      useWorkflowStore.getState().setStepError('price', 'Estimation failed.');
     }
+  },
+  runPipeline: async () => {
+    await get().analyzeItem();
+    if (get().error) return;
+
+    await get().fetchTraderaComparables();
+    if (get().error) return;
+
+    await get().estimateValue();
+    if (get().error) return;
+
+    get().generateTemplates();
   },
   generateTemplates: () => {
     const state = get();
-    if (!state.fingerprint || !state.valuation) return;
+    if (!state.fingerprint || !state.valuation) {
+      set({ error: 'Estimate value before generating templates.' });
+      return;
+    }
     const templates = listingTemplateService.generateTemplates(state.fingerprint, state.valuation);
     useListingStore.getState().setTemplates(templates);
+    useWorkflowStore.getState().markStepComplete('templates');
+    useWorkflowStore.getState().setCurrentStep('review');
   },
   saveToHistory: async () => {
     const state = get();
-    const templates = useListingStore.getState().templates;
+    const listingStore = useListingStore.getState();
+    const templates = listingStore.templates;
     if (!state.fingerprint || !state.valuation || templates.length === 0) {
       set({ error: 'Generate templates before saving history' });
+      return;
+    }
+    if (listingStore.hasBlockingIssues()) {
+      set({ error: 'Resolve template blocking issues before saving history.' });
+      useWorkflowStore.getState().setStepError('review', 'Resolve blocking issues before saving.');
       return;
     }
 
@@ -127,5 +208,35 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       valuation: state.valuation,
       templates,
     });
+    useWorkflowStore.getState().markStepComplete('review');
+  },
+  hydrateFromDraft: (draft) => {
+    set({
+      inputText: draft.inputText,
+      images: draft.images,
+      pricingStrategy: draft.pricingStrategy,
+      fingerprint: draft.fingerprint,
+      traderaComps: draft.traderaComps,
+      manualComps: draft.manualComps,
+      valuation: draft.valuation,
+      error: null,
+    });
+  },
+  buildDraft: (currentStep, completedSteps) => {
+    const state = get();
+    return {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      currentStep,
+      completedSteps,
+      pricingStrategy: state.pricingStrategy,
+      inputText: state.inputText,
+      images: state.images,
+      fingerprint: state.fingerprint,
+      traderaComps: state.traderaComps,
+      manualComps: state.manualComps,
+      valuation: state.valuation,
+      templates: useListingStore.getState().templates,
+    };
   },
 }));

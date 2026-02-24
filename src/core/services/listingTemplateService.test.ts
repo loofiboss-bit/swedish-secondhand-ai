@@ -18,6 +18,13 @@ const valuation = {
   priceMaxSek: 550,
   confidence: 0.7,
   rationale: 'test rationale',
+  pricingStrategy: 'balanced' as const,
+  confidenceBreakdown: {
+    similarity: 0.8,
+    sampleSize: 0.6,
+    sourceQuality: 0.7,
+    calibration: 1,
+  },
   compsUsed: [],
 };
 
@@ -30,5 +37,14 @@ describe('listingTemplateService', () => {
     templates.forEach((template) => {
       expect(template.priceSuggestionSek).toBe(450);
     });
+  });
+
+  it('exports copy bundles', () => {
+    const [template] = listingTemplateService.generateTemplates(fingerprint, valuation);
+    const bundle = listingTemplateService.exportCopyBundle(template);
+
+    expect(bundle).toContain('Site:');
+    expect(bundle).toContain(template.title);
+    expect(bundle).toContain('Price:');
   });
 });

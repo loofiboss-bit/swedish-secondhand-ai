@@ -1,6 +1,7 @@
 import type {
   ComparableRecord,
   ItemFingerprint,
+  PricingStrategy,
   ValuationResult,
   ValuationService,
 } from '@core/types';
@@ -26,6 +27,30 @@ function fallbackFromCondition(condition: ItemFingerprint['conditionGrade']): nu
   return table[condition];
 }
 
+function strategyMultiplier(strategy: PricingStrategy): number {
+  if (strategy === 'fast_sale') return 0.9;
+  if (strategy === 'max_value') return 1.08;
+  return 1;
+}
+
+function filterOutliers(values: number[]): number[] {
+  if (values.length < 6) return values;
+  const q1 = percentile(values, 0.25);
+  const q3 = percentile(values, 0.75);
+  const iqr = q3 - q1;
+  const lower = q1 - iqr * 1.5;
+  const upper = q3 + iqr * 1.5;
+  const filtered = values.filter((price) => price >= lower && price <= upper);
+  return filtered.length >= 3 ? filtered : values;
+}
+
+function normalizeComparable(comp: ComparableRecord): number {
+  const sourceQuality = clamp(comp.sourceQuality, 0, 1);
+  const similarity = clamp(comp.similarityScore, 0, 1);
+  const combined = (sourceQuality + similarity) / 2;
+  return Math.max(1, comp.priceSek * (0.9 + combined * 0.2));
+}
+
 class ValuationServiceImpl implements ValuationService {
   private static instance: ValuationServiceImpl;
 
@@ -43,41 +68,74 @@ class ValuationServiceImpl implements ValuationService {
   async estimateValue(
     fingerprint: ItemFingerprint,
     comps: ComparableRecord[],
+    strategy: PricingStrategy = 'balanced',
   ): Promise<ValuationResult> {
-    const prices = comps.map((item) => item.priceSek).filter((price) => price > 0);
+    const normalized = comps
+      .map((item) => ({ item, normalizedPrice: normalizeComparable(item) }))
+      .filter((entry) => entry.normalizedPrice > 0);
+
+    const prices = normalized.map((entry) => entry.normalizedPrice);
 
     if (prices.length === 0) {
       const anchor = fallbackFromCondition(fingerprint.conditionGrade);
+      const multiplier = strategyMultiplier(strategy);
+      const recommended = Math.round(anchor * multiplier);
       return {
-        priceMinSek: Math.round(anchor * 0.8),
-        priceRecommendedSek: anchor,
-        priceMaxSek: Math.round(anchor * 1.2),
+        priceMinSek: Math.round(recommended * 0.82),
+        priceRecommendedSek: recommended,
+        priceMaxSek: Math.round(recommended * 1.18),
         confidence: 0.25,
         rationale:
           'No API comparables were available. Recommendation is based on condition fallback only.',
+        pricingStrategy: strategy,
+        confidenceBreakdown: {
+          similarity: 0,
+          sampleSize: 0,
+          sourceQuality: 0,
+          calibration: 1,
+        },
         compsUsed: [],
       };
     }
 
+    const filteredPrices = filterOutliers(prices);
+    const outliersRemoved = prices.length - filteredPrices.length;
+    const q20 = percentile(filteredPrices, 0.2);
+    const q50 = percentile(filteredPrices, 0.5);
+    const q80 = percentile(filteredPrices, 0.8);
+
+    const multiplier = strategyMultiplier(strategy);
+    const priceMinSek = Math.round(q20 * multiplier);
+    const priceRecommendedSek = Math.round(q50 * multiplier);
+    const priceMaxSek = Math.round(Math.max(q80 * multiplier, priceRecommendedSek));
+
     const similarityAverage =
-      comps.reduce((sum, item) => sum + clamp(item.similarityScore, 0, 1), 0) /
-      Math.max(comps.length, 1);
-    const q20 = percentile(prices, 0.2);
-    const q50 = percentile(prices, 0.5);
-    const q80 = percentile(prices, 0.8);
+      normalized.reduce((sum, entry) => sum + clamp(entry.item.similarityScore, 0, 1), 0) /
+      normalized.length;
+    const sourceQualityAverage =
+      normalized.reduce((sum, entry) => sum + clamp(entry.item.sourceQuality, 0, 1), 0) /
+      normalized.length;
+    const sampleSizeFactor = Math.min(normalized.length / 10, 1);
 
     const confidence = clamp(
-      0.35 + similarityAverage * 0.4 + Math.min(comps.length, 10) * 0.04,
+      0.28 + similarityAverage * 0.33 + sourceQualityAverage * 0.22 + sampleSizeFactor * 0.2,
       0.2,
       0.95,
     );
 
     return {
-      priceMinSek: Math.round(q20),
-      priceRecommendedSek: Math.round(q50),
-      priceMaxSek: Math.round(q80),
+      priceMinSek,
+      priceRecommendedSek,
+      priceMaxSek,
       confidence,
-      rationale: `Computed from ${comps.length} comparables. Similarity average: ${similarityAverage.toFixed(2)}.`,
+      rationale: `Computed from ${normalized.length} comparables (${outliersRemoved} outliers removed).`,
+      pricingStrategy: strategy,
+      confidenceBreakdown: {
+        similarity: Number(similarityAverage.toFixed(2)),
+        sampleSize: Number(sampleSizeFactor.toFixed(2)),
+        sourceQuality: Number(sourceQualityAverage.toFixed(2)),
+        calibration: 1,
+      },
       compsUsed: comps.slice(0, 20),
     };
   }
