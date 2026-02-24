@@ -70,3 +70,7 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
 - Windows (NSIS + portable)
 - Linux (AppImage)
+
+## Documentation
+
+- [User Guide](./USER_GUIDE.md)

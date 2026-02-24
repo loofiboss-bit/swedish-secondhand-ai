@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added full `USER_GUIDE.md` with screenshot-based step-by-step manual.
+- Added screenshot capture scenario (`e2e/user-guide.screenshots.spec.ts`) for doc maintenance.
+
 ## 0.5.0 - 2026-02-24
 
 - Introduced guided workflow state machine with typed steps and persisted progress.
