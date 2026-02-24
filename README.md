@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="./docs/branding/readme-banner.svg" alt="Swedish Secondhand AI banner" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./docs/branding/logo.svg" alt="Swedish Secondhand AI logo" width="128" />
+</p>
+
 # Swedish Secondhand AI
 
 Desktop-first valuation and listing assistant for Swedish secondhand markets.
