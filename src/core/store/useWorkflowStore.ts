@@ -4,6 +4,20 @@ import type { WorkflowStep } from '@core/types';
 
 const STEP_ORDER: WorkflowStep[] = ['analyze', 'comparables', 'price', 'templates', 'review'];
 
+function isWorkflowStep(value: unknown): value is WorkflowStep {
+  return typeof value === 'string' && STEP_ORDER.includes(value as WorkflowStep);
+}
+
+function sanitizeCompletedSteps(
+  completedSteps: unknown[],
+  currentStep: WorkflowStep,
+): WorkflowStep[] {
+  const maxAllowedIndex = STEP_ORDER.indexOf(currentStep);
+  const input = new Set(completedSteps.filter(isWorkflowStep));
+
+  return STEP_ORDER.filter((step, index) => index <= maxAllowedIndex && input.has(step));
+}
+
 interface WorkflowState {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
@@ -23,7 +37,12 @@ export const useWorkflowStore = create<WorkflowState>()(
       currentStep: 'analyze',
       completedSteps: [],
       stepErrors: {},
-      setCurrentStep: (currentStep) => set({ currentStep }),
+      setCurrentStep: (currentStep) => {
+        if (!isWorkflowStep(currentStep)) {
+          return;
+        }
+        set({ currentStep });
+      },
       markStepComplete: (step) =>
         set((state) => ({
           completedSteps: state.completedSteps.includes(step)
@@ -55,11 +74,15 @@ export const useWorkflowStore = create<WorkflowState>()(
           completedSteps: [],
           stepErrors: {},
         }),
-      hydrateFromDraft: (currentStep, completedSteps) =>
+      hydrateFromDraft: (currentStep, completedSteps) => {
+        const safeCurrentStep = isWorkflowStep(currentStep) ? currentStep : 'analyze';
+        const safeCompletedSteps = sanitizeCompletedSteps(completedSteps, safeCurrentStep);
+
         set({
-          currentStep,
-          completedSteps,
-        }),
+          currentStep: safeCurrentStep,
+          completedSteps: safeCompletedSteps,
+        });
+      },
     }),
     {
       name: 'swedish-secondhand-ai:workflow',

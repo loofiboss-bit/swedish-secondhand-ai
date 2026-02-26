@@ -86,22 +86,18 @@ export function App() {
     void listingDraftService.loadDraft().then((draft) => {
       if (draft) {
         setPendingDraft(draft);
+        const valuationState = useValuationStore.getState();
+        const listingState = useListingStore.getState();
         const hasCurrentWork =
-          valuationStore.inputText.trim().length > 0 ||
-          valuationStore.images.length > 0 ||
-          valuationStore.fingerprint !== null ||
-          listingStore.templates.length > 0;
+          valuationState.inputText.trim().length > 0 ||
+          valuationState.images.length > 0 ||
+          valuationState.fingerprint !== null ||
+          listingState.templates.length > 0;
         setRestoreMode(hasCurrentWork ? 'conflict' : 'normal');
       }
       setHasLoadedDraft(true);
     });
-  }, [
-    hasLoadedDraft,
-    listingStore.templates.length,
-    valuationStore.fingerprint,
-    valuationStore.images.length,
-    valuationStore.inputText,
-  ]);
+  }, [hasLoadedDraft]);
 
   const saveDraftNow = async () => {
     setIsSaveDraftBusy(true);

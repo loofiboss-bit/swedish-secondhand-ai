@@ -176,7 +176,12 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     await get().estimateValue();
     if (get().error) return;
 
-    get().generateTemplates();
+    try {
+      get().generateTemplates();
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to generate templates' });
+      useWorkflowStore.getState().setStepError('templates', 'Template generation failed.');
+    }
   },
   generateTemplates: () => {
     const state = get();
