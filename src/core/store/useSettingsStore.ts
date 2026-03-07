@@ -9,6 +9,9 @@ interface SettingsState {
   load: () => Promise<void>;
   setLanguage: (language: SupportedLanguage) => Promise<void>;
   setGeminiApiKey: (apiKey: string) => Promise<void>;
+  setAiProvider: (aiProvider: NonNullable<AppSettings['aiProvider']>) => Promise<void>;
+  setOllamaBaseUrl: (ollamaBaseUrl: string) => Promise<void>;
+  setOllamaModel: (ollamaModel: string) => Promise<void>;
   setTraderaApiKey: (apiKey: string) => Promise<void>;
 }
 
@@ -34,6 +37,18 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   },
   setGeminiApiKey: async (apiKey) => {
     const settings = await settingsService.setGeminiApiKey(apiKey);
+    set({ settings });
+  },
+  setAiProvider: async (aiProvider) => {
+    const settings = await settingsService.setAiProvider(aiProvider);
+    set({ settings });
+  },
+  setOllamaBaseUrl: async (ollamaBaseUrl) => {
+    const settings = await settingsService.setOllamaBaseUrl(ollamaBaseUrl);
+    set({ settings });
+  },
+  setOllamaModel: async (ollamaModel) => {
+    const settings = await settingsService.setOllamaModel(ollamaModel);
     set({ settings });
   },
   setTraderaApiKey: async (apiKey) => {
