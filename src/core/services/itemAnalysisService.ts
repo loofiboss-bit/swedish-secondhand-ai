@@ -3,6 +3,7 @@ import type { ConditionGrade, ItemFingerprint, SupportedLanguage } from '@core/t
 import { settingsService } from './settingsService';
 import { extractJson, safeJsonParse, clamp } from '@core/utils/json';
 import { logger } from './loggerService';
+import { analyzeWithOllama } from './ollamaAnalysisProvider';
 
 interface GeminiAnalysisResponse {
   title?: string;
@@ -57,6 +58,17 @@ class ItemAnalysisService {
     }
 
     const settings = await settingsService.getSettings();
+
+    if (settings.aiProvider === 'ollama') {
+      try {
+        const partial = await analyzeWithOllama(contentText, images);
+        return { ...this.fallbackFingerprint(contentText), ...partial };
+      } catch (err) {
+        logger.warn('Ollama analysis failed, using heuristics', { err });
+        return this.fallbackFingerprint(contentText);
+      }
+    }
+
     if (!settings.geminiApiKey) {
       return this.fallbackFingerprint(contentText);
     }

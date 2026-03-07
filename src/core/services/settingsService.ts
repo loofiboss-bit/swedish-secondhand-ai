@@ -10,6 +10,9 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   geminiApiKey: '',
   traderaApiKey: '',
   traderaBaseUrl: 'https://api.tradera.com/v3',
+  aiProvider: 'gemini',
+  ollamaBaseUrl: 'http://localhost:11434/v1',
+  ollamaModel: 'llava',
 };
 
 class SettingsService {

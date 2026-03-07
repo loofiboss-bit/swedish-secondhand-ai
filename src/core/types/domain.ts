@@ -98,6 +98,9 @@ export interface AppSettings {
   geminiApiKey: string;
   traderaApiKey: string;
   traderaBaseUrl: string;
+  aiProvider?: 'gemini' | 'ollama';
+  ollamaBaseUrl?: string;
+  ollamaModel?: string;
 }
 
 export interface HistoryEntry {
