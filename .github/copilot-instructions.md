@@ -26,22 +26,19 @@ Tech stack: TypeScript + React + Vite + Electron
 - Path aliases: `@core/`, `@features/`, `@shared/`, `@infrastructure/`, `@/`
 - Functional React components only, hooks at top, `ErrorBoundary` wraps panels
 
+## Architecture
+
+- Keep business logic in service singletons and app state in Zustand stores
+- Keep React components free from persistence and API logic
+- Treat the desktop app as `Services -> Stores -> Features/Components`
+- Validate the whole desktop workflow with `npm run validate` before considering changes complete
+
 ## Testing
 
 - Framework: Vitest + @testing-library/react + jsdom
 - Test files: co-located as `[name].test.ts(x)`
 - Mock external deps with `vi.mock()`
 
-## Commits
-
-Format: `type(scope): description`
-Types: feat, fix, refactor, docs, test, chore, ci, perf, revert, style
-Scope: kebab-case, max 100 chars subject.
-
-## MCP Servers
-
-Workspace-level MCP config in primary repo `.vscode/mcp.json`.
-
 ## AI Agents
 
-See `AGENTS.md` and `.github/agents/` for agent definitions.
+See `AGENTS.md` and `.github/agents/` for repo-specific guidance.
