@@ -1,10 +1,12 @@
 import { get, set } from 'idb-keyval';
 import type { AppSettings } from '@core/types';
+import {
+  DEFAULT_OLLAMA_BASE_URL,
+  DEFAULT_OLLAMA_MODEL,
+} from '@core/ai/providers/ollama/OllamaConfig';
 import { logger } from './loggerService';
 
 const SETTINGS_KEY = 'swedish-secondhand-ai:settings';
-const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434/v1';
-const DEFAULT_OLLAMA_MODEL = 'llava';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   language: 'sv',

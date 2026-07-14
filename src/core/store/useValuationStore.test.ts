@@ -162,6 +162,23 @@ describe('useValuationStore runPipeline', () => {
     expect(useWorkflowStore.getState().currentStep).toBe('analyze');
   });
 
+  it('preserves the active input and images when provider analysis fails', async () => {
+    useValuationStore.getState().setInputText('Sony camera in good condition');
+    useValuationStore.getState().addImage('data:image/jpeg;base64,AAA');
+    analyzeInputMock.mockRejectedValueOnce(new Error('Configured model was not found'));
+
+    await useValuationStore.getState().analyzeItem();
+
+    expect(useValuationStore.getState()).toMatchObject({
+      inputText: 'Sony camera in good condition',
+      images: ['data:image/jpeg;base64,AAA'],
+      fingerprint: null,
+      loading: false,
+      error: 'Configured model was not found',
+    });
+    expect(useWorkflowStore.getState().currentStep).toBe('analyze');
+  });
+
   it('short-circuits before estimate when comparables fetch fails', async () => {
     useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
     getComparablesMock.mockRejectedValueOnce(new Error('Tradera timeout'));
