@@ -1708,7 +1708,7 @@ Update this section only when a milestone is merged.
 
 ## v0.6.0
 
-- [ ] 0.6.1 Provider Contracts
+- [x] 0.6.1 Provider Contracts
 - [ ] 0.6.2 Gemini Adapter Migration
 - [ ] 0.6.3 Ollama Adapter Migration
 - [ ] 0.6.4 OpenAI Provider
