@@ -1,20 +1,8 @@
-import { GoogleGenAI } from '@google/genai';
+import { AiProviderError, configureRuntimeAiProviders, type AiProviderRegistry } from '@core/ai';
 import type { ConditionGrade, ItemFingerprint, SupportedLanguage } from '@core/types';
 import { settingsService } from './settingsService';
-import { extractJson, safeJsonParse, clamp } from '@core/utils/json';
 import { logger } from './loggerService';
 import { analyzeWithOllama } from './ollamaAnalysisProvider';
-
-interface GeminiAnalysisResponse {
-  title?: string;
-  category?: string;
-  brand?: string;
-  model?: string;
-  conditionGrade?: ConditionGrade;
-  attributes?: Record<string, string>;
-  detectedLanguage?: SupportedLanguage;
-  confidence?: number;
-}
 
 const KNOWN_BRANDS = ['IKEA', 'Apple', 'Samsung', 'Sony', 'Dyson', 'Bosch', 'Electrolux', 'Nike'];
 
@@ -41,6 +29,13 @@ function inferBrand(text: string): string {
 
 class ItemAnalysisService {
   private static instance: ItemAnalysisService;
+  private readonly providerRegistry: AiProviderRegistry;
+
+  private constructor() {
+    this.providerRegistry = configureRuntimeAiProviders({
+      createItemFallback: (request) => this.fallbackFingerprint(request.text),
+    });
+  }
 
   static getInstance(): ItemAnalysisService {
     if (!ItemAnalysisService.instance) {
@@ -74,44 +69,25 @@ class ItemAnalysisService {
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
-      const imageParts = images.slice(0, 2).flatMap((dataUrl) => {
-        const mimeMatch = dataUrl.match(/^data:([^;]+);base64,/);
-        if (!mimeMatch) return [];
-        const mimeType = mimeMatch[1];
-        const data = dataUrl.replace(/^data:[^;]+;base64,/, '');
-        return [{ inlineData: { mimeType, data } }];
-      });
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: {
-          parts: [
-            {
-              text: `Analyze this Swedish secondhand item and return ONLY JSON with fields: title, category, brand, model, conditionGrade, attributes (object), detectedLanguage (sv|en), confidence (0-1). Text description: ${contentText || 'No text provided'}`,
-            },
-            ...imageParts,
-          ],
-        },
-      });
-
-      const parsed = safeJsonParse<GeminiAnalysisResponse>(extractJson(response.text ?? ''));
-      if (!parsed) {
-        return this.fallbackFingerprint(contentText);
+      const provider = this.providerRegistry.get('gemini');
+      if (!provider.analyzeItem) {
+        throw new AiProviderError('Gemini does not support item analysis.', {
+          code: 'unsupported_capability',
+          providerId: 'gemini',
+        });
       }
 
-      return {
-        title: parsed.title?.trim() || this.buildTitle(contentText),
-        category: parsed.category?.trim() || 'General',
-        brand: parsed.brand?.trim() || inferBrand(contentText),
-        model: parsed.model?.trim() || 'Unknown',
-        conditionGrade: parsed.conditionGrade ?? inferCondition(contentText),
-        attributes: parsed.attributes ?? {},
-        detectedLanguage: parsed.detectedLanguage ?? inferLanguage(contentText),
-        confidence: clamp(parsed.confidence ?? 0.65, 0, 1),
-      };
+      const response = await provider.analyzeItem({
+        text: contentText,
+        images: images.map((dataUrl) => ({ dataUrl })),
+        language: inferLanguage(contentText),
+      });
+      return response.fingerprint;
     } catch (error) {
-      logger.warn('Gemini analysis failed. Falling back to heuristic analysis.', error);
+      logger.warn('Gemini analysis failed. Falling back to heuristic analysis.', {
+        providerId: 'gemini',
+        errorCode: error instanceof AiProviderError ? error.code : 'unknown',
+      });
       return this.fallbackFingerprint(contentText);
     }
   }
