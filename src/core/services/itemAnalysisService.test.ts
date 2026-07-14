@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { generateContentMock, getSettingsMock } = vi.hoisted(() => ({
+const { generateContentMock, getSettingsMock, loggerWarnMock } = vi.hoisted(() => ({
   generateContentMock: vi.fn(),
   getSettingsMock: vi.fn(),
+  loggerWarnMock: vi.fn(),
 }));
 
 vi.mock('@core/services/settingsService', () => ({
@@ -17,9 +18,16 @@ vi.mock('@google/genai', () => ({
   },
 }));
 
+vi.mock('@core/services/loggerService', () => ({
+  logger: {
+    warn: loggerWarnMock,
+  },
+}));
+
 import { itemAnalysisService } from './itemAnalysisService';
 import { aiProviderRegistry } from '@core/ai';
 import { GeminiProvider } from '@core/ai/providers/gemini';
+import { OllamaProvider } from '@core/ai/providers/ollama';
 
 describe('itemAnalysisService', () => {
   beforeEach(() => {
@@ -34,16 +42,19 @@ describe('itemAnalysisService', () => {
     });
   });
 
-  it('registers Gemini through the provider registry', () => {
+  it('registers Gemini and Ollama through the provider registry', () => {
     expect(aiProviderRegistry.get('gemini')).toBeInstanceOf(GeminiProvider);
+    expect(aiProviderRegistry.get('ollama')).toBeInstanceOf(OllamaProvider);
   });
 
-  it('falls back to heuristic analysis when no api key is set', async () => {
-    const result = await itemAnalysisService.analyzeInput('IKEA stol i bra skick', []);
-
-    expect(result.brand).toBe('IKEA');
-    expect(result.conditionGrade).toBe('good');
-    expect(result.detectedLanguage).toBe('sv');
+  it('keeps missing Gemini configuration actionable', async () => {
+    await expect(
+      itemAnalysisService.analyzeInput('IKEA stol i bra skick', []),
+    ).rejects.toMatchObject({
+      code: 'invalid_configuration',
+      providerId: 'gemini',
+    });
+    expect(loggerWarnMock).not.toHaveBeenCalled();
   });
 
   it('returns fallback for empty input', async () => {
@@ -78,5 +89,30 @@ describe('itemAnalysisService', () => {
 
     expect(generateContentMock).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ title: 'Gemini chair', model: 'POÄNG', confidence: 0.9 });
+  });
+
+  it('uses deterministic fallback for a transient configured-provider failure', async () => {
+    getSettingsMock.mockResolvedValue({
+      language: 'sv',
+      currency: 'SEK',
+      geminiApiKey: 'test-key',
+      traderaApiKey: '',
+      traderaBaseUrl: 'https://api.tradera.com/v3',
+      aiProvider: 'gemini',
+    });
+    generateContentMock.mockRejectedValue(new TypeError('network unavailable'));
+
+    const result = await itemAnalysisService.analyzeInput('IKEA stol i bra skick', []);
+
+    expect(result).toMatchObject({
+      brand: 'IKEA',
+      conditionGrade: 'good',
+      detectedLanguage: 'sv',
+      confidence: 0.45,
+    });
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      'AI analysis unavailable. Falling back to heuristic analysis.',
+      { providerId: 'gemini', errorCode: 'network' },
+    );
   });
 });
