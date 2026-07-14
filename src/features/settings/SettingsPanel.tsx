@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { setAppLanguage } from '@core/config/i18n';
 import { useSettingsStore } from '@core/store/useSettingsStore';
@@ -20,22 +20,15 @@ export function SettingsPanel() {
   const [ollamaBaseUrlInput, setOllamaBaseUrlInput] = useState(settings.ollamaBaseUrl ?? '');
   const [ollamaModelInput, setOllamaModelInput] = useState(settings.ollamaModel ?? '');
   const [traderaKeyInput, setTraderaKeyInput] = useState(settings.traderaApiKey);
+  const [syncedSettings, setSyncedSettings] = useState(settings);
 
-  useEffect(() => {
+  if (settings !== syncedSettings) {
+    setSyncedSettings(settings);
     setGeminiKeyInput(settings.geminiApiKey);
-  }, [settings.geminiApiKey]);
-
-  useEffect(() => {
     setOllamaBaseUrlInput(settings.ollamaBaseUrl ?? '');
-  }, [settings.ollamaBaseUrl]);
-
-  useEffect(() => {
     setOllamaModelInput(settings.ollamaModel ?? '');
-  }, [settings.ollamaModel]);
-
-  useEffect(() => {
     setTraderaKeyInput(settings.traderaApiKey);
-  }, [settings.traderaApiKey]);
+  }
 
   return (
     <SectionCard title={t('settings')}>

@@ -175,6 +175,30 @@ Do not:
 - replace working systems with broader rewrites;
 - add speculative abstractions without a current use.
 
+### Pre-existing quality-gate failures
+
+Before broad milestone edits, run `npm run validate` on the clean milestone baseline when
+feasible.
+
+If the required quality gate already fails before the milestone change:
+
+1. reproduce the failure against the baseline;
+2. record the exact failing files, rules, and commands;
+3. create a separate prerequisite branch, worktree, or logical commit for the repair;
+4. make the smallest behavior-preserving fix and add regression coverage when behavior is
+   involved;
+5. rerun the complete quality gate;
+6. start or rebase the roadmap milestone from the verified green baseline.
+
+Do not:
+
+- mix pre-existing cleanup into the roadmap milestone diff;
+- hide confirmed failures with new ignore rules, disabled checks, or weakened assertions;
+- reformat files that are not required to restore the quality gate;
+- mark the roadmap milestone complete while baseline or milestone validation is failing.
+
+Preserve unrelated user changes while isolating the prerequisite repair.
+
 ### Preserve current behavior
 
 Unless explicitly required by the milestone:
@@ -312,9 +336,9 @@ only when enabled by the user and allowed by the milestone.
 The current secure defaults must remain enabled:
 
 ```js
-contextIsolation: true
-sandbox: true
-nodeIntegration: false
+contextIsolation: true;
+sandbox: true;
+nodeIntegration: false;
 ```
 
 Do not weaken these settings.
@@ -345,9 +369,9 @@ window.desktop.secrets.update(...)
 Bad:
 
 ```ts
-window.electron.invoke(channel, payload)
-window.desktop.exec(command)
-window.desktop.readFile(path)
+window.electron.invoke(channel, payload);
+window.desktop.exec(command);
+window.desktop.readFile(path);
 ```
 
 ### IPC rules
@@ -390,7 +414,7 @@ The renderer may receive only secret status such as:
 
 ```ts
 {
-  configured: true
+  configured: true;
 }
 ```
 
@@ -486,10 +510,7 @@ When evidence is insufficient, return an explicit state rather than fabricated p
 Example:
 
 ```ts
-type ValuationStatus =
-  | 'ready'
-  | 'low-confidence'
-  | 'insufficient-evidence';
+type ValuationStatus = 'ready' | 'low-confidence' | 'insufficient-evidence';
 ```
 
 ### Explainability
