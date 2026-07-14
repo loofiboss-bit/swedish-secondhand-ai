@@ -1,9 +1,42 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const { generateContentMock, getSettingsMock } = vi.hoisted(() => ({
+  generateContentMock: vi.fn(),
+  getSettingsMock: vi.fn().mockResolvedValue({
+    language: 'sv',
+    currency: 'SEK',
+    geminiApiKey: 'configured-test-key',
+    traderaApiKey: '',
+    traderaBaseUrl: 'https://api.tradera.com/v3',
+    aiProvider: 'gemini',
+  }),
+}));
+
+vi.mock('@core/services/settingsService', () => ({
+  settingsService: {
+    getSettings: getSettingsMock,
+  },
+}));
+
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: class {
+    models = { generateContent: generateContentMock };
+  },
+}));
+
+vi.mock('@core/services/loggerService', () => ({
+  logger: {
+    warn: vi.fn(),
+  },
+}));
+
 import { valuationService } from './valuationService';
 import { listingTemplateService } from './listingTemplateService';
 
 describe('valuation pipeline integration', () => {
-  it('analyzes, estimates, and generates templates end to end', async () => {
+  it('continues end to end through deterministic fallback after a transient AI failure', async () => {
+    generateContentMock.mockRejectedValueOnce(new TypeError('network unavailable'));
+
     const fingerprint = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
 
     const valuation = await valuationService.estimateValue(
@@ -41,6 +74,7 @@ describe('valuation pipeline integration', () => {
 
     expect(valuation.priceRecommendedSek).toBeGreaterThan(0);
     expect(valuation.pricingStrategy).toBe('balanced');
+    expect(fingerprint).toMatchObject({ brand: 'IKEA', conditionGrade: 'good', confidence: 0.45 });
     expect(templates).toHaveLength(3);
   });
 });
