@@ -11,5 +11,8 @@
         "statusBar.debuggingForeground": "#FEFBFB",
         "statusBar.noFolderBackground": "#511C1C",
         "statusBar.noFolderForeground": "#FEFBFB"
-    }
+    },
+    "i18n-ally.localesPaths": [
+        "src/locales"
+    ]
 }
