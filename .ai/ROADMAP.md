@@ -1,41 +1,26 @@
-# Roadmap
+# Product Roadmap
 
-## v0.1.0 (MVP) ✅ Released 2026-02-24
+The detailed implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
 
-- Text/image item analysis.
-- Tradera comparables + manual Blocket/Vinted comparables.
-- SEK valuation range + recommendation.
-- Copy-paste templates for Tradera, Blocket, Vinted.
-- Windows + Linux AppImage packaging.
+## Released
 
-## v0.2.0 (Guided Listing Flow) ✅ Released 2026-02-24
+- v0.1.0 — MVP
+- v0.2.0 — Guided listing flow
+- v0.3.0 — Valuation trust and sale outcomes
+- v0.4.0 — Marketplace assist layer
+- v0.5.0 — Design system and productivity
 
-- Step-by-step flow: `Analyze -> Comparables -> Price -> Templates -> Review`.
-- Draft autosave and resume.
-- One-click full pipeline action.
-- Inline step validation and recovery signals.
-- First-pass readability and responsive UI refresh.
+## Path to v1.0.0
 
-## v0.3.0 (Valuation Trust & Accuracy) ✅ Released 2026-02-24
+- v0.6.0 — safe Gemini/Ollama provider architecture and protected desktop secrets;
+- v0.7.0 — user-correctable product facts and evidence-based deterministic valuation;
+- v0.8.0 — verified deterministic listings, versioned data, backup and privacy diagnostics;
+- v0.9.0 — hardened Electron beta with accessible onboarding and Windows/Linux release CI;
+- v1.0.0 — beta blocker fixes, final upgrade validation and stable artifacts.
 
-- Comparable normalization and deterministic outlier filtering.
-- Pricing strategies (`fast_sale`, `balanced`, `max_value`).
-- Confidence breakdown and rationale transparency.
-- History outcome capture (`pending`, `sold`, `not_sold`, sold price).
-- Confidence recalibration service based on sold outcomes.
+## v1 scope decision
 
-## v0.4.0 (Marketplace Assist Layer) ✅ Released 2026-02-24
-
-- Per-site listing policy checks (title, description, tags, price).
-- Per-site optimized template variants and shipping guidance.
-- Publish-ready score with actionable fix suggestions.
-- Copy bundle export for title/description/tags/price notes.
-- Swedish-first quality language cues in scoring.
-
-## v0.5.0 (Design System & Productivity) ✅ Released 2026-02-24
-
-- Tokenized UI design system for color/spacing/states.
-- Guided workspace + persistent right summary sidebar.
-- Command palette and core keyboard shortcuts.
-- History search/filter/detail drill-down.
-- Performance improvements for image processing and rendering responsiveness.
+The first stable release supports Gemini, Ollama and deterministic offline fallback. OpenAI,
+compatible endpoints, AI-generated listing copy, automatic updates, additional marketplaces,
+mobile, accounts and cloud services are post-v1 work. This keeps the critical path focused on
+valuation integrity, secret protection, user-data safety and installable desktop packages.
