@@ -89,6 +89,8 @@ Rollback: remove the adapter/runtime registration and restore the former service
 
 ## 0.6.3 Ollama adapter and AI router
 
+Status: merged.
+
 - Move Ollama HTTP and parsing logic into a provider adapter.
 - Validate base URL, model, output, timeout and cancellation.
 - Add health checking without downloading or managing models.
@@ -384,7 +386,7 @@ readback are verified.
 
 - [x] 0.6.1 Provider-neutral contracts
 - [x] 0.6.2 Gemini adapter migration
-- [ ] 0.6.3 Ollama adapter and AI router
+- [x] 0.6.3 Ollama adapter and AI router
 - [ ] 0.6.4 Secure Electron secret and AI boundary
 - [ ] 0.6.5 Provider settings and stabilization
 
