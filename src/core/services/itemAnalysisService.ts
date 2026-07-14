@@ -1,8 +1,7 @@
-import { AiProviderError, configureRuntimeAiProviders, type AiProviderRegistry } from '@core/ai';
+import { AiRouter, canUseHeuristicFallback, configureRuntimeAiProviders } from '@core/ai';
 import type { ConditionGrade, ItemFingerprint, SupportedLanguage } from '@core/types';
 import { settingsService } from './settingsService';
 import { logger } from './loggerService';
-import { analyzeWithOllama } from './ollamaAnalysisProvider';
 
 const KNOWN_BRANDS = ['IKEA', 'Apple', 'Samsung', 'Sony', 'Dyson', 'Bosch', 'Electrolux', 'Nike'];
 
@@ -29,12 +28,13 @@ function inferBrand(text: string): string {
 
 class ItemAnalysisService {
   private static instance: ItemAnalysisService;
-  private readonly providerRegistry: AiProviderRegistry;
+  private readonly router: AiRouter;
 
   private constructor() {
-    this.providerRegistry = configureRuntimeAiProviders({
+    const registry = configureRuntimeAiProviders({
       createItemFallback: (request) => this.fallbackFingerprint(request.text),
     });
+    this.router = new AiRouter(registry);
   }
 
   static getInstance(): ItemAnalysisService {
@@ -54,41 +54,23 @@ class ItemAnalysisService {
 
     const settings = await settingsService.getSettings();
 
-    if (settings.aiProvider === 'ollama') {
-      try {
-        const partial = await analyzeWithOllama(contentText, images);
-        return { ...this.fallbackFingerprint(contentText), ...partial };
-      } catch (err) {
-        logger.warn('Ollama analysis failed, using heuristics', { err });
-        return this.fallbackFingerprint(contentText);
-      }
-    }
-
-    if (!settings.geminiApiKey) {
-      return this.fallbackFingerprint(contentText);
-    }
-
+    const providerId = settings.aiProvider ?? 'gemini';
     try {
-      const provider = this.providerRegistry.get('gemini');
-      if (!provider.analyzeItem) {
-        throw new AiProviderError('Gemini does not support item analysis.', {
-          code: 'unsupported_capability',
-          providerId: 'gemini',
-        });
-      }
-
-      const response = await provider.analyzeItem({
+      const response = await this.router.analyzeItem(providerId, {
         text: contentText,
         images: images.map((dataUrl) => ({ dataUrl })),
         language: inferLanguage(contentText),
       });
       return response.fingerprint;
     } catch (error) {
-      logger.warn('Gemini analysis failed. Falling back to heuristic analysis.', {
-        providerId: 'gemini',
-        errorCode: error instanceof AiProviderError ? error.code : 'unknown',
-      });
-      return this.fallbackFingerprint(contentText);
+      if (canUseHeuristicFallback(error)) {
+        logger.warn('AI analysis unavailable. Falling back to heuristic analysis.', {
+          providerId,
+          errorCode: error.code,
+        });
+        return this.fallbackFingerprint(contentText);
+      }
+      throw error;
     }
   }
 
