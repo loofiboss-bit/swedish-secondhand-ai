@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@core/config/i18n';
@@ -155,5 +155,30 @@ describe('SettingsPanel', () => {
       expect(setAiProviderMock).toHaveBeenCalledWith('ollama');
       expect(providerSelect).toHaveValue('ollama');
     });
+  });
+
+  it('synchronizes inputs when settings change outside the form', () => {
+    render(<SettingsPanel />);
+
+    act(() => {
+      useSettingsStore.setState({
+        settings: {
+          ...baseSettings,
+          geminiApiKey: 'externally-loaded-key',
+          ollamaBaseUrl: 'http://localhost:22434/v1',
+          ollamaModel: 'external-model',
+          traderaApiKey: 'externally-loaded-tradera-key',
+        },
+      });
+    });
+
+    expect(screen.getByPlaceholderText('AIza...')).toHaveValue('externally-loaded-key');
+    expect(screen.getByPlaceholderText('http://localhost:11434/v1')).toHaveValue(
+      'http://localhost:22434/v1',
+    );
+    expect(screen.getByPlaceholderText('llava')).toHaveValue('external-model');
+    expect(screen.getByPlaceholderText('Tradera API key')).toHaveValue(
+      'externally-loaded-tradera-key',
+    );
   });
 });

@@ -131,13 +131,13 @@ For each milestone:
 
 Recommended model usage:
 
-| Work | Model | Reasoning |
-|---|---|---|
-| Architecture planning | GPT-5.6 Sol | Extra High |
-| Normal milestone implementation | GPT-5.6 Sol | High |
+| Work                            | Model         | Reasoning      |
+| ------------------------------- | ------------- | -------------- |
+| Architecture planning           | GPT-5.6 Sol   | Extra High     |
+| Normal milestone implementation | GPT-5.6 Sol   | High           |
 | Mechanical tests/docs/refactors | GPT-5.6 Terra | Medium or High |
-| Security boundary changes | GPT-5.6 Sol | Extra High |
-| Final milestone review | GPT-5.6 Sol | High |
+| Security boundary changes       | GPT-5.6 Sol   | Extra High     |
+| Final milestone review          | GPT-5.6 Sol   | High           |
 
 ---
 
@@ -219,11 +219,7 @@ src/core/ai/
 Suggested provider IDs:
 
 ```ts
-export type AiProviderId =
-  | 'openai'
-  | 'gemini'
-  | 'ollama'
-  | 'openai-compatible';
+export type AiProviderId = 'openai' | 'gemini' | 'ollama' | 'openai-compatible';
 ```
 
 ### Out of scope
@@ -707,12 +703,7 @@ Create a versioned product fingerprint that supports category-specific evidence.
 Suggested concepts:
 
 ```ts
-type FieldSource =
-  | 'user'
-  | 'ai'
-  | 'image'
-  | 'comparable'
-  | 'unknown';
+type FieldSource = 'user' | 'ai' | 'image' | 'comparable' | 'unknown';
 
 interface SourcedValue<T> {
   value: T;
@@ -876,10 +867,7 @@ When exact comparables are unavailable:
 Add an explicit result such as:
 
 ```ts
-type ValuationStatus =
-  | 'ready'
-  | 'low-confidence'
-  | 'insufficient-evidence';
+type ValuationStatus = 'ready' | 'low-confidence' | 'insufficient-evidence';
 ```
 
 ### Constraints
@@ -1720,7 +1708,7 @@ Update this section only when a milestone is merged.
 
 ## v0.6.0
 
-- [ ] 0.6.1 Provider Contracts
+- [x] 0.6.1 Provider Contracts
 - [ ] 0.6.2 Gemini Adapter Migration
 - [ ] 0.6.3 Ollama Adapter Migration
 - [ ] 0.6.4 OpenAI Provider
