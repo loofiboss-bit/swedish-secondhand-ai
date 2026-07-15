@@ -112,4 +112,26 @@ describe('desktop IPC handlers', () => {
     expect(forbidden).toMatchObject({ ok: false, error: { code: 'ipc_validation' } });
     expect(services.fetchTraderaComparables).not.toHaveBeenCalled();
   });
+
+  it('limits concurrent provider operations before they reach the protected service', async () => {
+    const resolvers: Array<(value: unknown) => void> = [];
+    services.analyzeGemini.mockImplementation(
+      () => new Promise((resolve) => resolvers.push(resolve)),
+    );
+    const payload = {
+      prompt: 'Analyze this item',
+      images: [],
+      language: 'sv',
+      modelId: 'gemini-test',
+    };
+
+    const first = handlers.get(CHANNELS.analyzeGemini)?.(trustedEvent(), payload);
+    const second = handlers.get(CHANNELS.analyzeGemini)?.(trustedEvent(), payload);
+    const third = await handlers.get(CHANNELS.analyzeGemini)?.(trustedEvent(), payload);
+
+    expect(third).toMatchObject({ ok: false, error: { code: 'rate_limit' } });
+    expect(services.analyzeGemini).toHaveBeenCalledTimes(2);
+    resolvers.forEach((resolve) => resolve({ text: '{}' }));
+    await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+  });
 });

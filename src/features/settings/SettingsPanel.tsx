@@ -77,7 +77,9 @@ export function SettingsPanel() {
             onChange={(event) => setGeminiKeyInput(event.target.value)}
             onBlur={() => {
               if (!geminiKeyInput.trim()) return;
-              void setGeminiApiKey(geminiKeyInput).finally(() => setGeminiKeyInput(''));
+              const secret = geminiKeyInput;
+              setGeminiKeyInput('');
+              void setGeminiApiKey(secret);
             }}
             placeholder={settings.secretStatus.geminiConfigured ? t('secretSaved') : 'AIza...'}
             autoComplete="off"
@@ -156,7 +158,9 @@ export function SettingsPanel() {
             onChange={(event) => setTraderaKeyInput(event.target.value)}
             onBlur={() => {
               if (!traderaKeyInput.trim()) return;
-              void setTraderaApiKey(traderaKeyInput).finally(() => setTraderaKeyInput(''));
+              const secret = traderaKeyInput;
+              setTraderaKeyInput('');
+              void setTraderaApiKey(secret);
             }}
             placeholder={
               settings.secretStatus.traderaConfigured ? t('secretSaved') : 'Tradera API key'

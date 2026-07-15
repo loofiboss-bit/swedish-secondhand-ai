@@ -142,4 +142,30 @@ describe('settingsService secret migration', () => {
     expect(secrets.delete).toHaveBeenCalledWith('gemini');
     expect(await get<Record<string, unknown>>(SETTINGS_KEY)).not.toHaveProperty('geminiApiKey');
   });
+
+  it('persists legacy cleanup before deleting the protected value', async () => {
+    await set(SETTINGS_KEY, { geminiApiKey: 'legacy-gemini' });
+    const secrets = installBridge({
+      getStatus: vi.fn().mockResolvedValue(status(false, false)),
+      delete: vi.fn().mockImplementation(async () => {
+        expect(await get<Record<string, unknown>>(SETTINGS_KEY)).not.toHaveProperty('geminiApiKey');
+        return status(false, false);
+      }),
+    });
+
+    await settingsService.setGeminiApiKey('');
+
+    expect(secrets.delete).toHaveBeenCalledWith('gemini');
+  });
+
+  it('normalizes Ollama preferences to the documented loopback endpoint', async () => {
+    installBridge();
+
+    const settings = await settingsService.setOllamaBaseUrl('https://remote.example/v1');
+
+    expect(settings.ollamaBaseUrl).toBe('http://localhost:11434/v1');
+    expect(await get<Record<string, unknown>>(SETTINGS_KEY)).toMatchObject({
+      ollamaBaseUrl: 'http://localhost:11434/v1',
+    });
+  });
 });

@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "electron:dev": "concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "electron:dev": "concurrently --kill-others-on-fail \"vite --strictPort\" \"wait-on tcp:5173 && electron .\"",
     "electron": "npm run build && electron .",
     "dist": "npm run build && electron-builder",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern release",

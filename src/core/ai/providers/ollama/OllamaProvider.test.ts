@@ -109,6 +109,9 @@ describe('OllamaProvider', () => {
   it.each([
     [{ baseUrl: 'not a url' }, 'invalid_configuration'],
     [{ baseUrl: 'ftp://localhost:11434/v1' }, 'invalid_configuration'],
+    [{ baseUrl: 'https://localhost:11434/v1' }, 'invalid_configuration'],
+    [{ baseUrl: 'http://remote.example:11434/v1' }, 'invalid_configuration'],
+    [{ baseUrl: 'http://localhost:11435/v1' }, 'invalid_configuration'],
     [{ baseUrl: 'http://user:pass@localhost:11434/v1' }, 'invalid_configuration'],
     [{ baseUrl: 'http://localhost:11434/v1?token=value' }, 'invalid_configuration'],
     [{ baseUrl: 'http://localhost:11434/v1#fragment' }, 'invalid_configuration'],

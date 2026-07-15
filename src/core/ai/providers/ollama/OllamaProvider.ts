@@ -75,8 +75,15 @@ function normalizeConfig(config: OllamaProviderConfig): OllamaProviderConfig {
     });
   }
 
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new AiProviderError('Ollama base URL must use HTTP or HTTPS.', {
+  if (url.protocol !== 'http:') {
+    throw new AiProviderError('Ollama base URL must use local HTTP.', {
+      code: 'invalid_configuration',
+      providerId: 'ollama',
+    });
+  }
+  const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+  if (!loopbackHosts.has(url.hostname) || (url.port && url.port !== '11434')) {
+    throw new AiProviderError('Ollama must use a loopback address on port 11434.', {
       code: 'invalid_configuration',
       providerId: 'ollama',
     });

@@ -40,6 +40,28 @@ function normalizeTrimmedValue(value: string | undefined, fallback: string): str
   return normalized ? normalized : fallback;
 }
 
+function normalizeOllamaBaseUrl(value: string | undefined): string {
+  const candidate = normalizeTrimmedValue(value, DEFAULT_OLLAMA_BASE_URL);
+  try {
+    const url = new URL(candidate);
+    const loopbackHosts = new Set(['localhost', '127.0.0.1', '[::1]']);
+    if (
+      url.protocol !== 'http:' ||
+      !loopbackHosts.has(url.hostname) ||
+      (url.port && url.port !== '11434') ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash
+    ) {
+      return DEFAULT_OLLAMA_BASE_URL;
+    }
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return DEFAULT_OLLAMA_BASE_URL;
+  }
+}
+
 function normalizePreferences(settings: PersistedSettings | undefined): AppSettings {
   return {
     language: settings?.language === 'en' ? 'en' : 'sv',
@@ -49,7 +71,7 @@ function normalizePreferences(settings: PersistedSettings | undefined): AppSetti
       DEFAULT_APP_SETTINGS.traderaBaseUrl,
     ),
     aiProvider: settings?.aiProvider === 'ollama' ? 'ollama' : 'gemini',
-    ollamaBaseUrl: normalizeTrimmedValue(settings?.ollamaBaseUrl, DEFAULT_OLLAMA_BASE_URL),
+    ollamaBaseUrl: normalizeOllamaBaseUrl(settings?.ollamaBaseUrl),
     ollamaModel: normalizeTrimmedValue(settings?.ollamaModel, DEFAULT_OLLAMA_MODEL),
     secretStatus: DEFAULT_SECRET_STATUS,
   };
@@ -190,11 +212,11 @@ class SettingsService {
   async deleteSecret(secretId: DesktopSecretId): Promise<AppSettings> {
     const bridge = desktopBridge();
     if (!bridge) throw new Error('Secret configuration requires the desktop application.');
-    await bridge.secrets.delete(secretId);
     const persisted = (await get<PersistedSettings>(SETTINGS_KEY)) ?? {};
     if (secretId === 'gemini') delete persisted.geminiApiKey;
     else delete persisted.traderaApiKey;
     await set(SETTINGS_KEY, { ...persisted, schemaVersion: SETTINGS_SCHEMA_VERSION });
+    await bridge.secrets.delete(secretId);
     return this.getSettings();
   }
 

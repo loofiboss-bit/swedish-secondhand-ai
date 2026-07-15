@@ -17,7 +17,31 @@ const CHANNELS = Object.freeze({
   traderaComparables: 'marketplace:tradera-comparables',
 });
 
+function operationGate({ maxConcurrent, maxPerWindow, windowMs }) {
+  let active = 0;
+  let starts = [];
+  return async (operation) => {
+    const now = Date.now();
+    starts = starts.filter((startedAt) => now - startedAt < windowMs);
+    if (active >= maxConcurrent || starts.length >= maxPerWindow) {
+      throw Object.assign(new Error('Desktop operation rate limit exceeded.'), {
+        code: 'rate_limit',
+      });
+    }
+    starts.push(now);
+    active += 1;
+    try {
+      return await operation();
+    } finally {
+      active -= 1;
+    }
+  };
+}
+
 function registerIpcHandlers({ ipcMain, senderPolicy, vault, services }) {
+  const analyzeGate = operationGate({ maxConcurrent: 2, maxPerWindow: 12, windowMs: 60_000 });
+  const connectionGate = operationGate({ maxConcurrent: 1, maxPerWindow: 6, windowMs: 60_000 });
+  const marketplaceGate = operationGate({ maxConcurrent: 2, maxPerWindow: 20, windowMs: 60_000 });
   const handle = (channel, operation) => {
     ipcMain.handle(channel, async (event, payload) => {
       try {
@@ -39,14 +63,14 @@ function registerIpcHandlers({ ipcMain, senderPolicy, vault, services }) {
     return vault.delete(validated.secretId);
   });
   handle(CHANNELS.analyzeGemini, (payload) =>
-    services.analyzeGemini(validateAnalysisRequest(payload)),
+    analyzeGate(() => services.analyzeGemini(validateAnalysisRequest(payload))),
   );
   handle(CHANNELS.testGeminiConnection, (payload) =>
-    services.testGeminiConnection(validateConnectionRequest(payload)),
+    connectionGate(() => services.testGeminiConnection(validateConnectionRequest(payload))),
   );
   handle(CHANNELS.traderaComparables, (payload) =>
-    services.fetchTraderaComparables(validateComparableRequest(payload)),
+    marketplaceGate(() => services.fetchTraderaComparables(validateComparableRequest(payload))),
   );
 }
 
-module.exports = { CHANNELS, registerIpcHandlers };
+module.exports = { CHANNELS, operationGate, registerIpcHandlers };

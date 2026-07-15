@@ -48,6 +48,109 @@ function normalizeGeminiError(error) {
   return error;
 }
 
+const TRADERA_RESPONSE_MAX_BYTES = 1_000_000;
+const TRADERA_PRICE_MAX_SEK = 10_000_000;
+const TRADERA_TIMEOUT_MS = 15_000;
+
+function invalidResponse(message = 'The marketplace returned an invalid response.') {
+  return Object.assign(new Error(message), { code: 'invalid_response' });
+}
+
+async function readBoundedJson(response, maxBytes = TRADERA_RESPONSE_MAX_BYTES) {
+  const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+  if (!contentType.includes('application/json')) throw invalidResponse();
+
+  const declaredLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw invalidResponse();
+  if (!response.body) throw invalidResponse();
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let total = 0;
+  let text = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw invalidResponse();
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  text += decoder.decode();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw invalidResponse();
+  }
+}
+
+function boundedString(value, maxLength) {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : undefined;
+}
+
+function boundedPrice(value) {
+  return typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value > 0 &&
+    value <= TRADERA_PRICE_MAX_SEK
+    ? value
+    : undefined;
+}
+
+function safeTraderaUrl(value) {
+  const raw = boundedString(value, 2_048);
+  if (!raw) return undefined;
+  try {
+    const url = new URL(raw);
+    if (
+      url.protocol !== 'https:' ||
+      (url.hostname !== 'tradera.com' && !url.hostname.endsWith('.tradera.com')) ||
+      url.username ||
+      url.password
+    ) {
+      return undefined;
+    }
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeTraderaResponse(value, limit) {
+  if (typeof value !== 'object' || value === null) throw invalidResponse();
+  const rawItems = value.items ?? value.results ?? value.endedItems;
+  if (!Array.isArray(rawItems)) throw invalidResponse();
+
+  const items = rawItems.slice(0, Math.min(limit, 50)).flatMap((raw) => {
+    if (typeof raw !== 'object' || raw === null) return [];
+    const finalPrice = boundedPrice(raw.finalPrice);
+    const price = boundedPrice(raw.price);
+    const buyNowPrice = boundedPrice(raw.buyNowPrice);
+    if (finalPrice === undefined && price === undefined && buyNowPrice === undefined) return [];
+    return [
+      {
+        itemId: boundedString(raw.itemId, 160),
+        id: boundedString(raw.id, 160),
+        title: boundedString(raw.title, 240),
+        description: boundedString(raw.description, 2_000),
+        endDate: boundedString(raw.endDate, 64),
+        soldAt: boundedString(raw.soldAt, 64),
+        finalPrice,
+        buyNowPrice,
+        price,
+        url: safeTraderaUrl(raw.url),
+        shippingIncluded:
+          typeof raw.shippingIncluded === 'boolean' ? raw.shippingIncluded : undefined,
+      },
+    ];
+  });
+
+  return { items };
+}
+
 function createDesktopServices({
   vault,
   fetchImpl = globalThis.fetch,
@@ -105,6 +208,8 @@ function createDesktopServices({
       try {
         const response = await fetchImpl(`${payload.baseUrl}/search`, {
           method: 'POST',
+          redirect: 'error',
+          signal: AbortSignal.timeout(TRADERA_TIMEOUT_MS),
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,
@@ -123,13 +228,24 @@ function createDesktopServices({
             response.status === 401 || response.status === 403 ? 'authentication' : 'network';
           throw error;
         }
-        return { configured: true, data: await response.json() };
+        const data = normalizeTraderaResponse(await readBoundedJson(response), payload.limit);
+        return { configured: true, data };
       } catch (error) {
-        if (!error.code) error.code = error instanceof TypeError ? 'network' : 'unknown';
+        if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+          throw Object.assign(new Error('Tradera request timed out.'), { code: 'timeout' });
+        }
+        if (!error.code) {
+          error.code = error instanceof TypeError ? 'network' : 'unknown';
+        }
         throw error;
       }
     },
   };
 }
 
-module.exports = { createDesktopServices, publicError };
+module.exports = {
+  createDesktopServices,
+  normalizeTraderaResponse,
+  publicError,
+  readBoundedJson,
+};
