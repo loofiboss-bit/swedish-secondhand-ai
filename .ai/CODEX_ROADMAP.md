@@ -30,8 +30,8 @@ is clean after validation.
 
 ## M1 — Secure Electron and provider boundary
 
-Status: pending. Source candidate: commit `483c3fe` / superseded PR #5, to be ported into a clean
-security branch without editor or screenshot noise.
+Status: completed and validated in merge `1667407`. Relevant changes from `483c3fe` were ported
+without editor or screenshot noise, and superseded PR #5 was closed.
 
 - Store Gemini and Tradera secrets with Electron `safeStorage`; never expose raw values.
 - Migrate legacy renderer secrets only after verified secure writes; preserve them on failure.
@@ -114,7 +114,7 @@ are verified.
 ## Progress
 
 - [x] G0 Governance and baseline
-- [ ] M1 Secure Electron and provider boundary
+- [x] M1 Secure Electron and provider boundary
 - [ ] M2 Trustworthy deterministic valuation
 - [ ] M3 Versioned user data and verified listings
 - [ ] M4 Public desktop beta
