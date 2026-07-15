@@ -1,5 +1,7 @@
 {
   "workbench.colorCustomizations": {
+    "statusBar.noFolderBackground": "#511C1C",
+    "statusBar.noFolderForeground": "#FEFBFB",
     "activityBar.background": "#511C1C",
     "titleBar.activeBackground": "#712727",
     "titleBar.activeForeground": "#FEFBFB",
@@ -8,9 +10,7 @@
     "statusBar.background": "#511C1C",
     "statusBar.foreground": "#FEFBFB",
     "statusBar.debuggingBackground": "#511C1C",
-    "statusBar.debuggingForeground": "#FEFBFB",
-    "statusBar.noFolderBackground": "#511C1C",
-    "statusBar.noFolderForeground": "#FEFBFB"
+    "statusBar.debuggingForeground": "#FEFBFB"
   },
   "i18n-ally.localesPaths": ["src/locales"]
 }

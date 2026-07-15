@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { generateContentMock, getSettingsMock, loggerWarnMock } = vi.hoisted(() => ({
-  generateContentMock: vi.fn(),
+const { desktopAnalyzeMock, getSettingsMock, loggerWarnMock } = vi.hoisted(() => ({
+  desktopAnalyzeMock: vi.fn(),
   getSettingsMock: vi.fn(),
   loggerWarnMock: vi.fn(),
 }));
@@ -9,12 +9,6 @@ const { generateContentMock, getSettingsMock, loggerWarnMock } = vi.hoisted(() =
 vi.mock('@core/services/settingsService', () => ({
   settingsService: {
     getSettings: getSettingsMock,
-  },
-}));
-
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = { generateContent: generateContentMock };
   },
 }));
 
@@ -32,13 +26,27 @@ import { OllamaProvider } from '@core/ai/providers/ollama';
 describe('itemAnalysisService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.desktop = {
+      platform: 'linux',
+      secrets: {
+        getStatus: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+      },
+      ai: { analyzeGemini: desktopAnalyzeMock, testGeminiConnection: vi.fn() },
+      marketplace: { fetchTraderaComparables: vi.fn() },
+    };
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      geminiApiKey: '',
-      traderaApiKey: '',
       traderaBaseUrl: 'https://api.tradera.com/v3',
       aiProvider: 'gemini',
+      secretStatus: {
+        geminiConfigured: false,
+        traderaConfigured: false,
+        encryptionAvailable: true,
+        migrationStatus: 'not-needed',
+      },
     });
   });
 
@@ -48,6 +56,10 @@ describe('itemAnalysisService', () => {
   });
 
   it('keeps missing Gemini configuration actionable', async () => {
+    const error = Object.assign(new Error('Gemini is not configured.'), {
+      code: 'invalid_configuration',
+    });
+    desktopAnalyzeMock.mockRejectedValue(error);
     await expect(
       itemAnalysisService.analyzeInput('IKEA stol i bra skick', []),
     ).rejects.toMatchObject({
@@ -67,12 +79,16 @@ describe('itemAnalysisService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      geminiApiKey: 'test-key',
-      traderaApiKey: '',
       traderaBaseUrl: 'https://api.tradera.com/v3',
       aiProvider: 'gemini',
+      secretStatus: {
+        geminiConfigured: true,
+        traderaConfigured: false,
+        encryptionAvailable: true,
+        migrationStatus: 'not-needed',
+      },
     });
-    generateContentMock.mockResolvedValue({
+    desktopAnalyzeMock.mockResolvedValue({
       text: JSON.stringify({
         title: 'Gemini chair',
         category: 'Furniture',
@@ -87,7 +103,7 @@ describe('itemAnalysisService', () => {
 
     const result = await itemAnalysisService.analyzeInput('IKEA stol i bra skick', []);
 
-    expect(generateContentMock).toHaveBeenCalledTimes(1);
+    expect(desktopAnalyzeMock).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ title: 'Gemini chair', model: 'POÄNG', confidence: 0.9 });
   });
 
@@ -95,12 +111,18 @@ describe('itemAnalysisService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      geminiApiKey: 'test-key',
-      traderaApiKey: '',
       traderaBaseUrl: 'https://api.tradera.com/v3',
       aiProvider: 'gemini',
+      secretStatus: {
+        geminiConfigured: true,
+        traderaConfigured: false,
+        encryptionAvailable: true,
+        migrationStatus: 'not-needed',
+      },
     });
-    generateContentMock.mockRejectedValue(new TypeError('network unavailable'));
+    desktopAnalyzeMock.mockRejectedValue(
+      Object.assign(new Error('network unavailable'), { code: 'network' }),
+    );
 
     const result = await itemAnalysisService.analyzeInput('IKEA stol i bra skick', []);
 

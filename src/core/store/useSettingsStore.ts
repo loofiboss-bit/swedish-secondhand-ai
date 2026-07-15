@@ -15,44 +15,38 @@ interface SettingsState {
   setTraderaApiKey: (apiKey: string) => Promise<void>;
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
-  settings: DEFAULT_APP_SETTINGS,
-  isLoading: false,
-  error: null,
-  load: async () => {
-    set({ isLoading: true, error: null });
+export const useSettingsStore = create<SettingsState>((set) => {
+  const applyUpdate = async (operation: () => Promise<AppSettings>): Promise<void> => {
+    set({ error: null });
     try {
-      const settings = await settingsService.getSettings();
-      set({ settings, isLoading: false });
+      set({ settings: await operation() });
     } catch (error) {
-      set({
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to load settings',
-      });
+      set({ error: error instanceof Error ? error.message : 'Settings update failed' });
     }
-  },
-  setLanguage: async (language) => {
-    const settings = await settingsService.updateSettings({ language });
-    set({ settings });
-  },
-  setGeminiApiKey: async (apiKey) => {
-    const settings = await settingsService.setGeminiApiKey(apiKey);
-    set({ settings });
-  },
-  setAiProvider: async (aiProvider) => {
-    const settings = await settingsService.setAiProvider(aiProvider);
-    set({ settings });
-  },
-  setOllamaBaseUrl: async (ollamaBaseUrl) => {
-    const settings = await settingsService.setOllamaBaseUrl(ollamaBaseUrl);
-    set({ settings });
-  },
-  setOllamaModel: async (ollamaModel) => {
-    const settings = await settingsService.setOllamaModel(ollamaModel);
-    set({ settings });
-  },
-  setTraderaApiKey: async (apiKey) => {
-    const settings = await settingsService.setTraderaApiKey(apiKey);
-    set({ settings });
-  },
-}));
+  };
+
+  return {
+    settings: DEFAULT_APP_SETTINGS,
+    isLoading: false,
+    error: null,
+    load: async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const settings = await settingsService.getSettings();
+        set({ settings, isLoading: false });
+      } catch (error) {
+        set({
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Failed to load settings',
+        });
+      }
+    },
+    setLanguage: (language) => applyUpdate(() => settingsService.updateSettings({ language })),
+    setGeminiApiKey: (apiKey) => applyUpdate(() => settingsService.setGeminiApiKey(apiKey)),
+    setAiProvider: (aiProvider) => applyUpdate(() => settingsService.setAiProvider(aiProvider)),
+    setOllamaBaseUrl: (ollamaBaseUrl) =>
+      applyUpdate(() => settingsService.setOllamaBaseUrl(ollamaBaseUrl)),
+    setOllamaModel: (ollamaModel) => applyUpdate(() => settingsService.setOllamaModel(ollamaModel)),
+    setTraderaApiKey: (apiKey) => applyUpdate(() => settingsService.setTraderaApiKey(apiKey)),
+  };
+});

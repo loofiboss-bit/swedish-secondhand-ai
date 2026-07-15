@@ -2,6 +2,69 @@ import { expect, test } from '@playwright/test';
 
 test('capture user guide screenshots', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.addInitScript(() => {
+    window.desktop = {
+      platform: 'linux',
+      secrets: {
+        getStatus: async () => ({
+          gemini: { configured: true },
+          tradera: { configured: true },
+          encryptionAvailable: true,
+          backend: 'test',
+        }),
+        update: async () => ({
+          gemini: { configured: true },
+          tradera: { configured: true },
+          encryptionAvailable: true,
+          backend: 'test',
+        }),
+        delete: async () => ({
+          gemini: { configured: false },
+          tradera: { configured: false },
+          encryptionAvailable: true,
+          backend: 'test',
+        }),
+      },
+      ai: {
+        analyzeGemini: async () => ({
+          text: JSON.stringify({
+            title: 'IKEA Poäng fåtölj',
+            category: 'Furniture',
+            brand: 'IKEA',
+            model: 'Poäng',
+            conditionGrade: 'good',
+            attributes: { color: 'Grå' },
+            detectedLanguage: 'sv',
+            confidence: 0.9,
+          }),
+        }),
+        testGeminiConnection: async () => ({ connected: true }),
+      },
+      marketplace: {
+        fetchTraderaComparables: async () => ({
+          configured: true,
+          data: {
+            items: [
+              {
+                itemId: 'fixture-1',
+                title: 'IKEA Poäng fåtölj grå',
+                finalPrice: 650,
+                soldAt: '2026-07-01T00:00:00.000Z',
+                url: 'https://www.tradera.com/item/fixture-1',
+              },
+              {
+                itemId: 'fixture-2',
+                title: 'IKEA Poäng fåtölj',
+                finalPrice: 575,
+                soldAt: '2026-06-20T00:00:00.000Z',
+                url: 'https://www.tradera.com/item/fixture-2',
+              },
+            ],
+          },
+        }),
+      },
+    };
+  });
   await page.goto('/');
   await page.evaluate(async () => {
     localStorage.clear();

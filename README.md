@@ -72,7 +72,8 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
 - Tradera comparables use official API access.
 - Blocket and Vinted remain manual-posting workflows (no scraping/direct publishing).
-- Gemini API key is user-provided and stored locally.
+- Gemini and Tradera API keys are user-provided and encrypted through the operating system's
+  protected credential storage. The renderer receives only configured/not-configured status.
 
 ## Build Targets
 

@@ -10,7 +10,6 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom', 'react-i18next', 'i18next'],
           state: ['zustand', 'idb-keyval'],
-          ai: ['@google/genai'],
         },
       },
     },
