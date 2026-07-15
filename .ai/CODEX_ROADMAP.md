@@ -67,7 +67,7 @@ migrations, validation, and correction-flow E2E pass.
 
 ## M3 — Versioned user data and verified listings
 
-Status: pending.
+Status: completed and validated in merge `5605260`.
 
 - Wrap settings, drafts, history, and manual comparables in versioned persisted envelopes;
   interpret legacy bare payloads as schema 1 and migrate idempotently to schema 2.
@@ -116,6 +116,6 @@ are verified.
 - [x] G0 Governance and baseline
 - [x] M1 Secure Electron and provider boundary
 - [x] M2 Trustworthy deterministic valuation
-- [ ] M3 Versioned user data and verified listings
+- [x] M3 Versioned user data and verified listings
 - [ ] M4 Public desktop beta
 - [ ] M5 Stable v1.0.0
