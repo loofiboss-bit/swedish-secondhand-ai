@@ -95,12 +95,21 @@ export interface ValuationService {
 export interface AppSettings {
   language: SupportedLanguage;
   currency: 'SEK';
-  geminiApiKey: string;
-  traderaApiKey: string;
   traderaBaseUrl: string;
   aiProvider?: 'gemini' | 'ollama';
   ollamaBaseUrl?: string;
   ollamaModel?: string;
+  secretStatus: AppSecretStatus;
+}
+
+export type SecretMigrationStatus = 'not-needed' | 'pending' | 'completed' | 'failed';
+
+export interface AppSecretStatus {
+  geminiConfigured: boolean;
+  traderaConfigured: boolean;
+  encryptionAvailable: boolean;
+  storageBackend?: string;
+  migrationStatus: SecretMigrationStatus;
 }
 
 export interface HistoryEntry {

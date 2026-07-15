@@ -1,44 +1,48 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { generateContentMock, getSettingsMock } = vi.hoisted(() => ({
-  generateContentMock: vi.fn(),
+const { desktopAnalyzeMock, getSettingsMock } = vi.hoisted(() => ({
+  desktopAnalyzeMock: vi.fn(),
   getSettingsMock: vi.fn().mockResolvedValue({
     language: 'sv',
     currency: 'SEK',
-    geminiApiKey: 'configured-test-key',
-    traderaApiKey: '',
     traderaBaseUrl: 'https://api.tradera.com/v3',
     aiProvider: 'gemini',
+    secretStatus: {
+      geminiConfigured: true,
+      traderaConfigured: false,
+      encryptionAvailable: true,
+      migrationStatus: 'not-needed',
+    },
   }),
 }));
 
 vi.mock('@core/services/settingsService', () => ({
-  settingsService: {
-    getSettings: getSettingsMock,
-  },
-}));
-
-vi.mock('@google/genai', () => ({
-  GoogleGenAI: class {
-    models = { generateContent: generateContentMock };
-  },
+  settingsService: { getSettings: getSettingsMock },
 }));
 
 vi.mock('@core/services/loggerService', () => ({
-  logger: {
-    warn: vi.fn(),
-  },
+  logger: { warn: vi.fn() },
 }));
 
 import { valuationService } from './valuationService';
 import { listingTemplateService } from './listingTemplateService';
 
 describe('valuation pipeline integration', () => {
+  beforeEach(() => {
+    window.desktop = {
+      platform: 'linux',
+      secrets: { getStatus: vi.fn(), update: vi.fn(), delete: vi.fn() },
+      ai: { analyzeGemini: desktopAnalyzeMock, testGeminiConnection: vi.fn() },
+      marketplace: { fetchTraderaComparables: vi.fn() },
+    };
+  });
+
   it('continues end to end through deterministic fallback after a transient AI failure', async () => {
-    generateContentMock.mockRejectedValueOnce(new TypeError('network unavailable'));
+    desktopAnalyzeMock.mockRejectedValueOnce(
+      Object.assign(new Error('network unavailable'), { code: 'network' }),
+    );
 
     const fingerprint = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
-
     const valuation = await valuationService.estimateValue(
       fingerprint,
       [
@@ -69,7 +73,6 @@ describe('valuation pipeline integration', () => {
       ],
       'balanced',
     );
-
     const templates = listingTemplateService.generateTemplates(fingerprint, valuation);
 
     expect(valuation.priceRecommendedSek).toBeGreaterThan(0);

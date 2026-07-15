@@ -105,6 +105,10 @@ Configure in **Settings**:
 - Gemini API key
 - Tradera API key
 
+Cloud API keys are encrypted through the operating system's protected credential storage. Saved
+values are never shown again; Settings displays only whether a key is configured. On Linux, unlock
+or configure the desktop keyring before saving a key.
+
 Without API keys, fallback logic still works, but with lower confidence and fewer comparables.
 
 ## 9. Troubleshooting

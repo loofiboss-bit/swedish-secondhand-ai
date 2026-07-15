@@ -7,6 +7,7 @@ import type {
 } from '@core/types';
 import { settingsService } from './settingsService';
 import { logger } from './loggerService';
+import { getDesktopBridge } from '@core/platform/desktopBridge';
 
 interface TraderaApiItem {
   itemId?: string;
@@ -26,6 +27,10 @@ interface TraderaApiResponse {
   items?: TraderaApiItem[];
   results?: TraderaApiItem[];
   endedItems?: TraderaApiItem[];
+}
+
+function isTraderaApiResponse(value: unknown): value is TraderaApiResponse {
+  return typeof value === 'object' && value !== null;
 }
 
 function normalizePrice(item: TraderaApiItem): number {
@@ -53,37 +58,16 @@ class TraderaAdapterService implements MarketplaceAdapter {
 
   async getComparables(criteria: ComparableQuery): Promise<ComparableRecord[]> {
     const settings = await settingsService.getSettings();
-    if (!settings.traderaApiKey) {
-      return [];
-    }
-
-    const payload = {
-      query: criteria.title,
-      category: criteria.category,
-      limit: criteria.limit ?? 20,
-      status: 'ended',
-    };
 
     try {
-      const response = await fetch(`${settings.traderaBaseUrl}/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': settings.traderaApiKey,
-          Authorization: `Bearer ${settings.traderaApiKey}`,
-        },
-        body: JSON.stringify(payload),
+      const response = await getDesktopBridge().marketplace.fetchTraderaComparables({
+        baseUrl: settings.traderaBaseUrl,
+        query: criteria.title,
+        category: criteria.category,
+        limit: criteria.limit ?? 20,
       });
-
-      if (!response.ok) {
-        logger.warn('Tradera comparables request failed', {
-          status: response.status,
-          statusText: response.statusText,
-        });
-        return [];
-      }
-
-      const raw = (await response.json()) as TraderaApiResponse;
+      if (!response.configured || !isTraderaApiResponse(response.data)) return [];
+      const raw = response.data;
       const items = raw.items ?? raw.results ?? raw.endedItems ?? [];
 
       return items
