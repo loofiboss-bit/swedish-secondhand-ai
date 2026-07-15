@@ -48,7 +48,7 @@ Rollback: keep legacy secrets until verified migration and revert the clean M1 m
 
 ## M2 — Trustworthy deterministic valuation
 
-Status: pending.
+Status: completed and validated in merge `ff2e57b`.
 
 - Introduce versioned `VerifiedFact<T>` values with `ai`, `user`, and `heuristic` provenance and
   user locks for all price-relevant facts.
@@ -115,7 +115,7 @@ are verified.
 
 - [x] G0 Governance and baseline
 - [x] M1 Secure Electron and provider boundary
-- [ ] M2 Trustworthy deterministic valuation
+- [x] M2 Trustworthy deterministic valuation
 - [ ] M3 Versioned user data and verified listings
 - [ ] M4 Public desktop beta
 - [ ] M5 Stable v1.0.0
