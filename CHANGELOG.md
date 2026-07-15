@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added provider-neutral AI contracts, registry, capabilities, and normalized errors.
+- Migrated Gemini analysis and structured response parsing behind a tested provider adapter.
+- Added an Ollama provider adapter with bounded configuration, health checks, and response
+  validation.
+- Added explicit provider routing and limited deterministic fallback for transient provider
+  failures while preserving configuration, authentication, and cancellation errors.
 - Added full `USER_GUIDE.md` with screenshot-based step-by-step manual.
 - Added screenshot capture scenario (`e2e/user-guide.screenshots.spec.ts`) for doc maintenance.
 

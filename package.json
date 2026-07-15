@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --environment jsdom",
     "test:watch": "vitest --environment jsdom",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --config playwright.config.ts",
+    "docs:screenshots": "playwright test --config playwright.screenshots.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate": "npm run lint && npm run typecheck && npm run test && npm run build && npm run format:check"

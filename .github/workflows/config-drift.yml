@@ -14,7 +14,6 @@ on:
       - '.github/prompts/**'
       - '.github/skills/**'
       - '.github/hooks/**'
-      - 'AGENTS.md'
   schedule:
     - cron: '0 6 * * 1' # Weekly Monday 6am UTC
 
