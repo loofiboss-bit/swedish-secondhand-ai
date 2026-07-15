@@ -412,6 +412,25 @@ select {
   gap: 0.75rem;
 }
 
+fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.button-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.button-like input[type='file'] {
+  max-width: 14rem;
+}
+
 .loading-panel {
   margin: 0;
   border: 1px dashed var(--border-strong);

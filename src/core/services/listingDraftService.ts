@@ -1,8 +1,48 @@
-import { del, get, set } from 'idb-keyval';
+import { del } from 'idb-keyval';
 import type { ListingDraft } from '@core/types';
 import { logger } from './loggerService';
+import { isVerifiedProductFacts, upgradeProductFacts } from './verifiedFactsService';
 
-const DRAFT_KEY = 'swedish-secondhand-ai:listing-draft';
+import { DATASET_KEYS, readVersionedDataset, writeVersionedDataset } from './persistenceService';
+
+function hasListingDraftShape(value: unknown): value is ListingDraft {
+  if (typeof value !== 'object' || value === null) return false;
+  const draft = value as Partial<ListingDraft>;
+  return (
+    draft.version === 1 &&
+    typeof draft.savedAt === 'string' &&
+    typeof draft.currentStep === 'string' &&
+    Array.isArray(draft.completedSteps) &&
+    typeof draft.inputText === 'string' &&
+    Array.isArray(draft.images) &&
+    Array.isArray(draft.traderaComps) &&
+    Array.isArray(draft.manualComps) &&
+    Array.isArray(draft.templates)
+  );
+}
+
+export function isListingDraft(value: unknown): value is ListingDraft {
+  return (
+    hasListingDraftShape(value) &&
+    (value.productFacts === undefined ||
+      value.productFacts === null ||
+      isVerifiedProductFacts(value.productFacts))
+  );
+}
+
+export function isListingDraftDataset(value: unknown): value is ListingDraft | null {
+  return value === null || isListingDraft(value);
+}
+
+function migrateListingDraft(value: unknown): ListingDraft {
+  if (!hasListingDraftShape(value)) throw new Error('Invalid legacy listing draft.');
+  return {
+    ...value,
+    productFacts: value.fingerprint
+      ? upgradeProductFacts(value.productFacts, value.fingerprint)
+      : null,
+  };
+}
 
 class ListingDraftService {
   private static instance: ListingDraftService;
@@ -16,7 +56,7 @@ class ListingDraftService {
 
   async saveDraft(draft: ListingDraft): Promise<void> {
     try {
-      await set(DRAFT_KEY, draft);
+      await writeVersionedDataset('listing-draft', draft);
     } catch (error) {
       logger.error('Failed to save listing draft', error);
     }
@@ -24,7 +64,10 @@ class ListingDraftService {
 
   async loadDraft(): Promise<ListingDraft | null> {
     try {
-      return (await get<ListingDraft>(DRAFT_KEY)) ?? null;
+      return (
+        (await readVersionedDataset('listing-draft', isListingDraftDataset, migrateListingDraft)) ??
+        null
+      );
     } catch (error) {
       logger.error('Failed to load listing draft', error);
       return null;
@@ -33,7 +76,7 @@ class ListingDraftService {
 
   async clearDraft(): Promise<void> {
     try {
-      await del(DRAFT_KEY);
+      await del(DATASET_KEYS['listing-draft']);
     } catch (error) {
       logger.error('Failed to clear listing draft', error);
     }

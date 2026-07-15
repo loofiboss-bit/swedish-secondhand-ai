@@ -118,7 +118,17 @@ or configure the desktop keyring before saving a key.
 
 Without API keys, fallback logic still works, but with lower confidence and fewer comparables.
 
-## 9. Troubleshooting
+## 9. Backup, migration, and reset
+
+Settings includes **Backup and data recovery**. Select preferences, current draft, history,
+and/or manual comparables, then export or import those datasets. Backups never include API keys.
+Imports validate the complete file before replacing any selected dataset.
+
+Legacy v0.5/current-main IndexedDB payloads migrate automatically to the schema 2 envelope on
+first successful read. Corrupt or unsupported payloads are left untouched. Export a backup before
+using selective or full non-secret reset, and restart the app after import/reset.
+
+## 10. Troubleshooting
 
 ### No Tradera comparables returned
 
@@ -137,7 +147,7 @@ Without API keys, fallback logic still works, but with lower confidence and fewe
 - Add more relevant manual comparables.
 - Record real sold outcomes to improve calibration.
 
-## 10. Recommended Workflow (Quick)
+## 11. Recommended Workflow (Quick)
 
 1. Describe + upload images
 2. Identify item

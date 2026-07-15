@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Wrapped settings, drafts, history, and manual comparables in idempotent schema 2 envelopes;
+  added strict v0.5/current-main migration and corrupt/unsupported-data behavior.
+- Added secret-free format-1 backup, fully validated atomic selective import, selective/full reset,
+  sanitized diagnostics, and privacy/security/support documentation.
+- Changed Tradera, Blocket, and Vinted templates to use reviewed facts and explicitly preserve
+  defects, missing accessories, untested state, and authenticity uncertainty.
 - Added versioned, source-labelled product facts whose locked user corrections survive AI
   reanalysis, including explicit defects, accessories, and testing status.
 - Added deterministic comparable relevance, visible weights, user inclusion/exclusion reasons,

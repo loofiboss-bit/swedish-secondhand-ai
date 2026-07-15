@@ -46,6 +46,7 @@ export function AnalyzePanel() {
     updateFact,
     updateListFact,
     setTestedStatus,
+    setAuthenticityStatus,
     setFactLocked,
     analyzeItem,
     runPipeline,
@@ -172,6 +173,19 @@ export function AnalyzePanel() {
               />{' '}
               {t('lockFact')}
             </span>
+          </label>
+          <label className="field">
+            <span>{t('authenticityStatus')}</span>
+            <select
+              value={productFacts.authenticityStatus.value}
+              onChange={(event) =>
+                setAuthenticityStatus(event.target.value as 'verified' | 'unverified' | 'unknown')
+              }
+            >
+              <option value="verified">{t('authenticityVerified')}</option>
+              <option value="unverified">{t('authenticityUnverified')}</option>
+              <option value="unknown">{t('unknown')}</option>
+            </select>
           </label>
           {(
             [

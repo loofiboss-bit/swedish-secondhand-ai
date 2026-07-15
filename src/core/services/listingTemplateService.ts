@@ -1,8 +1,8 @@
 import type {
-  ItemFingerprint,
   ListingTemplate,
   MarketplaceSite,
   PricedValuationResult,
+  VerifiedProductFacts,
 } from '@core/types';
 
 const siteLabel: Record<MarketplaceSite, string> = {
@@ -17,6 +17,10 @@ const titleLimits: Record<MarketplaceSite, number> = {
   vinted: 60,
 };
 
+function reviewedList(values: string[], unknownText: string): string {
+  return values.length > 0 ? values.join(', ') : unknownText;
+}
+
 class ListingTemplateService {
   private static instance: ListingTemplateService;
 
@@ -28,11 +32,11 @@ class ListingTemplateService {
   }
 
   generateTemplates(
-    fingerprint: ItemFingerprint,
+    facts: VerifiedProductFacts,
     valuation: PricedValuationResult,
   ): ListingTemplate[] {
     return (['tradera', 'blocket', 'vinted'] as const).map((site) =>
-      this.renderTemplate(site, fingerprint, valuation),
+      this.renderTemplate(site, facts, valuation),
     );
   }
 
@@ -52,19 +56,34 @@ class ListingTemplateService {
 
   private renderTemplate(
     site: MarketplaceSite,
-    fingerprint: ItemFingerprint,
+    facts: VerifiedProductFacts,
     valuation: PricedValuationResult,
   ): ListingTemplate {
-    const title = `${fingerprint.brand} ${fingerprint.title}`.trim().slice(0, titleLimits[site]);
-
+    const title = `${facts.brand.value} ${facts.title.value}`.trim().slice(0, titleLimits[site]);
+    const testing =
+      facts.testedStatus.value === 'tested'
+        ? 'Testad av säljaren'
+        : facts.testedStatus.value === 'untested'
+          ? 'Otestad'
+          : 'Teststatus inte verifierad';
+    const authenticity =
+      facts.authenticityStatus.value === 'verified'
+        ? 'Verifierad av säljaren'
+        : facts.authenticityStatus.value === 'unverified'
+          ? 'Inte verifierad'
+          : 'Äkthet inte verifierad';
     const bullets = [
-      `Kategori: ${fingerprint.category}`,
-      `Skick: ${fingerprint.conditionGrade}`,
-      `Varumärke: ${fingerprint.brand}`,
-      `Modell: ${fingerprint.model}`,
+      `Kategori: ${facts.category.value}`,
+      `Skick: ${facts.conditionGrade.value}`,
+      `Varumärke: ${facts.brand.value}`,
+      `Modell: ${facts.model.value}`,
+      `Defekter: ${reviewedList(facts.defects.value, 'Inte fullständigt verifierat — inspektera före publicering')}`,
+      `Tillbehör som ingår: ${reviewedList(facts.includedAccessories.value, 'Inte verifierat')}`,
+      `Tillbehör som saknas: ${reviewedList(facts.missingAccessories.value, 'Inte verifierat')}`,
+      `Teststatus: ${testing}`,
+      `Äkthet: ${authenticity}`,
       `Prisstrategi: ${valuation.pricingStrategy}`,
     ];
-
     const siteSpecific =
       site === 'tradera'
         ? 'Betalning och leverans enligt Tradera-standard. Ange tydliga fraktvillkor.'
@@ -81,11 +100,11 @@ class ListingTemplateService {
         site === 'blocket'
           ? 'Hämtning eller spårbar frakt inom Sverige.'
           : 'Spårbar frakt inom Sverige.',
-      tags: [fingerprint.category, fingerprint.brand, siteLabel[site]].filter(
+      tags: [facts.category.value, facts.brand.value, siteLabel[site]].filter(
         (entry) => entry && entry !== 'Unknown',
       ),
       disclaimer:
-        'Prisförslag är en uppskattning. Kontrollera aktuella jämförbara annonser innan publicering.',
+        'Prisförslag är en uppskattning. Kontrollera fakta och aktuella jämförelser innan publicering.',
     };
   }
 }

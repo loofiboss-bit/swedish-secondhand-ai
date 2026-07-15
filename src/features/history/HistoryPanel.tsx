@@ -15,30 +15,41 @@ export function HistoryPanel() {
   const [statusFilter, setStatusFilter] = useState<SaleStatus | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [soldPriceInput, setSoldPriceInput] = useState('');
+  const [dataError, setDataError] = useState('');
 
   const deferredQuery = useDeferredValue(query);
 
   const loadEntries = async () => {
-    const entries = await historyService.list(200);
-    setHistory(entries);
-    setSelectedId((current) => current ?? entries[0]?.id ?? null);
+    try {
+      const entries = await historyService.list(200);
+      setHistory(entries);
+      setSelectedId((current) => current ?? entries[0]?.id ?? null);
+      setDataError('');
+    } catch {
+      setDataError(t('dataReadFailed'));
+    }
   };
 
   useEffect(() => {
     let active = true;
     const timer = window.setTimeout(() => {
-      void historyService.list(200).then((entries) => {
-        if (!active) return;
-        setHistory(entries);
-        setSelectedId((current) => current ?? entries[0]?.id ?? null);
-      });
+      void historyService
+        .list(200)
+        .then((entries) => {
+          if (!active) return;
+          setHistory(entries);
+          setSelectedId((current) => current ?? entries[0]?.id ?? null);
+        })
+        .catch(() => {
+          if (active) setDataError(t('dataReadFailed'));
+        });
     }, 0);
 
     return () => {
       active = false;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [t]);
 
   const filtered = useMemo(() => {
     const normalizedQuery = deferredQuery.trim().toLowerCase();
@@ -64,6 +75,7 @@ export function HistoryPanel() {
 
   return (
     <SectionCard title={t('history')}>
+      {dataError && <p role="alert">{dataError}</p>}
       <div className="history-toolbar">
         <input
           value={query}

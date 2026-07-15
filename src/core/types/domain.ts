@@ -23,7 +23,7 @@ export type ProductFactKey = 'title' | 'category' | 'brand' | 'model' | 'conditi
 export type ProductListFactKey = 'defects' | 'includedAccessories' | 'missingAccessories';
 
 export interface VerifiedProductFacts {
-  schemaVersion: 1;
+  schemaVersion: 2;
   title: VerifiedFact<string>;
   category: VerifiedFact<string>;
   brand: VerifiedFact<string>;
@@ -33,6 +33,7 @@ export interface VerifiedProductFacts {
   includedAccessories: VerifiedFact<string[]>;
   missingAccessories: VerifiedFact<string[]>;
   testedStatus: VerifiedFact<'tested' | 'untested' | 'unknown'>;
+  authenticityStatus: VerifiedFact<'verified' | 'unverified' | 'unknown'>;
   attributes: Record<string, VerifiedFact<string>>;
 }
 
@@ -150,7 +151,7 @@ export interface ComparableQuery {
 
 export interface ListingTemplateInput {
   site: MarketplaceSite;
-  fingerprint: ItemFingerprint;
+  facts: VerifiedProductFacts;
   valuation: PricedValuationResult;
 }
 
