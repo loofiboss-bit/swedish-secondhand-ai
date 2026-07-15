@@ -5,7 +5,7 @@ import { useValuationStore } from '@core/store/useValuationStore';
 
 export function SummarySidebar() {
   const { t } = useTranslation('common');
-  const { fingerprint, traderaComps, manualComps, valuation, pricingStrategy } =
+  const { fingerprint, productFacts, traderaComps, manualComps, valuation, pricingStrategy } =
     useValuationStore();
   const { qualityReport, siteValidation } = useListingStore();
 
@@ -20,7 +20,7 @@ export function SummarySidebar() {
     <aside className="summary-sidebar" aria-label={t('summary')}>
       <section>
         <h3>{t('summary')}</h3>
-        <p>{fingerprint?.title ?? t('noItemYet')}</p>
+        <p>{productFacts?.title.value ?? fingerprint?.title ?? t('noItemYet')}</p>
       </section>
 
       <section>
@@ -33,7 +33,12 @@ export function SummarySidebar() {
             {t('comparablesCount')}: {totalComps}
           </li>
           <li>
-            {t('recommended')}: {valuation ? `${valuation.priceRecommendedSek} SEK` : '-'}
+            {t('recommended')}:{' '}
+            {valuation?.status === 'insufficient-evidence'
+              ? t('noNumericPrice')
+              : valuation
+                ? `${valuation.priceRecommendedSek} SEK`
+                : '-'}
           </li>
           <li>
             {t('confidence')}: {valuation ? `${Math.round(valuation.confidence * 100)}%` : '-'}

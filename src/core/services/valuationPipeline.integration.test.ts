@@ -26,6 +26,7 @@ vi.mock('@core/services/loggerService', () => ({
 
 import { valuationService } from './valuationService';
 import { listingTemplateService } from './listingTemplateService';
+import { factsFromFingerprint } from './verifiedFactsService';
 
 describe('valuation pipeline integration', () => {
   beforeEach(() => {
@@ -44,7 +45,7 @@ describe('valuation pipeline integration', () => {
 
     const fingerprint = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
     const valuation = await valuationService.estimateValue(
-      fingerprint,
+      factsFromFingerprint(fingerprint),
       [
         {
           id: '1',
@@ -62,7 +63,7 @@ describe('valuation pipeline integration', () => {
           id: '2',
           source: 'manual',
           site: 'blocket',
-          title: 'Poang armchair',
+          title: 'IKEA Poang Furniture chair',
           priceSek: 450,
           soldAt: '2026-02-11T00:00:00.000Z',
           conditionHint: 'good',
@@ -73,6 +74,8 @@ describe('valuation pipeline integration', () => {
       ],
       'balanced',
     );
+    expect(valuation.status).not.toBe('insufficient-evidence');
+    if (valuation.status === 'insufficient-evidence') throw new Error('Expected a price');
     const templates = listingTemplateService.generateTemplates(fingerprint, valuation);
 
     expect(valuation.priceRecommendedSek).toBeGreaterThan(0);

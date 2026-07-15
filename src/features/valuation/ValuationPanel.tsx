@@ -20,6 +20,7 @@ export function ValuationPanel() {
     fetchTraderaComparables,
     addManualComparable,
     removeManualComparable,
+    setComparableIncluded,
     estimateValue,
     saveToHistory,
   } = useValuationStore();
@@ -116,10 +117,28 @@ export function ValuationPanel() {
       <ul className="comparable-list">
         {allComparables.map((comp) => (
           <li key={comp.id}>
-            <span>
+            <label>
+              <input
+                type="checkbox"
+                checked={comp.decision?.included ?? true}
+                onChange={(event) => setComparableIncluded(comp.id, event.target.checked)}
+              />{' '}
               [{comp.site}] {comp.title} - {Math.round(comp.priceSek)} SEK (
-              {Math.round(comp.sourceQuality * 100)}%)
-            </span>
+              {Math.round((comp.relevance?.score ?? comp.sourceQuality) * 100)}%)
+            </label>
+            <small>
+              {comp.decision?.reason ?? t('comparablePendingReview')} — {t('weight')}:{' '}
+              {(comp.relevance?.weight ?? comp.sourceQuality).toFixed(2)}
+            </small>
+            {comp.relevance && <small>{comp.relevance.reason}</small>}
+            <input
+              aria-label={`${t('comparableReason')}: ${comp.title}`}
+              defaultValue={comp.decision?.reason ?? ''}
+              onBlur={(event) =>
+                setComparableIncluded(comp.id, comp.decision?.included ?? true, event.target.value)
+              }
+              placeholder={t('comparableReason')}
+            />
             {comp.source === 'manual' && (
               <button type="button" onClick={() => void removeManualComparable(comp.id)}>
                 {t('remove')}
@@ -133,11 +152,21 @@ export function ValuationPanel() {
         <div className="valuation-box" aria-label={t('valuationResult')}>
           <h3>{t('valuationResult')}</h3>
           <p>
-            {t('range')}: {valuation.priceMinSek} - {valuation.priceMaxSek} SEK
+            {t('valuationStatus')}: {valuation.status}
           </p>
-          <p>
-            {t('recommended')}: <strong>{valuation.priceRecommendedSek} SEK</strong>
-          </p>
+          {valuation.status === 'insufficient-evidence' ? (
+            <p role="status">{valuation.action}</p>
+          ) : (
+            <>
+              <p>
+                {t('range')}: {valuation.priceMinSek} - {valuation.priceMaxSek} SEK
+              </p>
+              <p>
+                {t('recommended')}: <strong>{valuation.priceRecommendedSek} SEK</strong>
+              </p>
+              {valuation.status === 'low-confidence' && <p role="status">{valuation.action}</p>}
+            </>
+          )}
           <p>
             {t('confidence')}: {Math.round(valuation.confidence * 100)}%
           </p>
@@ -158,6 +187,19 @@ export function ValuationPanel() {
               {t('factorCalibration')}: {valuation.confidenceBreakdown.calibration}
             </li>
           </ul>
+          {valuation.adjustments.length > 0 && (
+            <>
+              <h4>{t('visibleAdjustments')}</h4>
+              <ul>
+                {valuation.adjustments.map((adjustment) => (
+                  <li key={adjustment.id}>
+                    {adjustment.label}: {adjustment.amountSek > 0 ? '+' : ''}
+                    {adjustment.amountSek} SEK — {adjustment.reason}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </SectionCard>

@@ -4,15 +4,27 @@ import type {
   ItemFingerprint,
   ListingDraft,
   PricingStrategy,
+  ProductFactKey,
+  ProductListFactKey,
   ValuationResult,
+  VerifiedProductFacts,
   WorkflowStep,
 } from '@core/types';
-import { valuationService } from '@core/services/valuationService';
+import { rankComparables, valuationService } from '@core/services/valuationService';
 import { traderaAdapterService } from '@core/services/traderaAdapterService';
 import { manualCompsService } from '@core/services/manualCompsService';
 import { listingTemplateService } from '@core/services/listingTemplateService';
 import { historyService } from '@core/services/historyService';
 import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
+import {
+  factsFromFingerprint,
+  fingerprintFromFacts,
+  mergeAnalyzedFacts,
+  setProductFactLock,
+  updateProductFact,
+  updateProductListFact,
+  updateTestedStatus,
+} from '@core/services/verifiedFactsService';
 import { useListingStore } from './useListingStore';
 import { useWorkflowStore } from './useWorkflowStore';
 
@@ -21,6 +33,7 @@ interface ValuationState {
   images: string[];
   pricingStrategy: PricingStrategy;
   fingerprint: ItemFingerprint | null;
+  productFacts: VerifiedProductFacts | null;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
@@ -38,6 +51,11 @@ interface ValuationState {
       Partial<Pick<ComparableRecord, 'sourceQuality' | 'location' | 'shippingIncluded'>>,
   ) => Promise<void>;
   removeManualComparable: (id: string) => Promise<void>;
+  setComparableIncluded: (id: string, included: boolean, reason?: string) => void;
+  updateFact: (key: ProductFactKey, value: string) => void;
+  updateListFact: (key: ProductListFactKey, value: string) => void;
+  setTestedStatus: (value: VerifiedProductFacts['testedStatus']['value']) => void;
+  setFactLocked: (key: ProductFactKey, locked: boolean) => void;
   estimateValue: () => Promise<void>;
   runPipeline: () => Promise<void>;
   generateTemplates: () => void;
@@ -51,6 +69,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   images: [],
   pricingStrategy: 'balanced',
   fingerprint: null,
+  productFacts: null,
   traderaComps: [],
   manualComps: [],
   valuation: null,
@@ -71,9 +90,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       }
 
       const fingerprint = await valuationService.analyzeInput(state.inputText, state.images);
-      set({ fingerprint, loading: false });
+      const productFacts = mergeAnalyzedFacts(state.productFacts, fingerprint);
+      set({ fingerprint, productFacts, loading: false });
       useWorkflowStore.getState().markStepComplete('analyze');
-      useWorkflowStore.getState().setCurrentStep('comparables');
     } catch (error) {
       set({
         loading: false,
@@ -83,8 +102,8 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     }
   },
   fetchTraderaComparables: async () => {
-    const fingerprint = get().fingerprint;
-    if (!fingerprint) {
+    const { fingerprint, productFacts } = get();
+    if (!fingerprint || !productFacts) {
       set({ error: 'Analyze item before fetching comparables.' });
       return;
     }
@@ -92,13 +111,13 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const traderaComps = await traderaAdapterService.getComparables({
-        title: fingerprint.title,
-        category: fingerprint.category,
-        brand: fingerprint.brand,
-        model: fingerprint.model,
+        title: productFacts.title.value,
+        category: productFacts.category.value,
+        brand: productFacts.brand.value,
+        model: productFacts.model.value,
         limit: 20,
       });
-      set({ traderaComps, loading: false });
+      set({ traderaComps: rankComparables(productFacts, traderaComps), loading: false });
       useWorkflowStore.getState().markStepComplete('comparables');
       useWorkflowStore.getState().setCurrentStep('price');
     } catch (error) {
@@ -117,15 +136,67 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   },
   addManualComparable: async (comp) => {
     const next = await manualCompsService.add(comp);
-    set((state) => ({ manualComps: [next, ...state.manualComps] }));
+    set((state) => ({
+      manualComps: state.productFacts
+        ? rankComparables(state.productFacts, [next, ...state.manualComps])
+        : [next, ...state.manualComps],
+    }));
   },
   removeManualComparable: async (id) => {
     const manualComps = await manualCompsService.remove(id);
     set({ manualComps });
   },
+  setComparableIncluded: (id, included, reason) => {
+    const update = (items: ComparableRecord[]) =>
+      items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              decision: {
+                included,
+                reason:
+                  reason?.trim() ||
+                  (included ? 'Included by user after review' : 'Excluded by user after review'),
+                decidedBy: 'user' as const,
+              },
+            }
+          : item,
+      );
+    set((state) => ({
+      traderaComps: update(state.traderaComps),
+      manualComps: update(state.manualComps),
+      valuation: null,
+    }));
+  },
+  updateFact: (key, value) => {
+    const state = get();
+    if (!state.productFacts) return;
+    const productFacts = updateProductFact(state.productFacts, key, value);
+    set({
+      productFacts,
+      traderaComps: rankComparables(productFacts, state.traderaComps),
+      manualComps: rankComparables(productFacts, state.manualComps),
+      valuation: null,
+    });
+  },
+  updateListFact: (key, value) => {
+    const state = get();
+    if (!state.productFacts) return;
+    set({ productFacts: updateProductListFact(state.productFacts, key, value), valuation: null });
+  },
+  setTestedStatus: (value) => {
+    const productFacts = get().productFacts;
+    if (!productFacts) return;
+    set({ productFacts: updateTestedStatus(productFacts, value), valuation: null });
+  },
+  setFactLocked: (key, locked) => {
+    const productFacts = get().productFacts;
+    if (!productFacts) return;
+    set({ productFacts: setProductFactLock(productFacts, key, locked) });
+  },
   estimateValue: async () => {
     const state = get();
-    if (!state.fingerprint) {
+    if (!state.fingerprint || !state.productFacts) {
       set({ error: 'Analyze item before valuation' });
       return;
     }
@@ -133,15 +204,15 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const baseValuation = await valuationService.estimateValue(
-        state.fingerprint,
+        state.productFacts,
         [...state.traderaComps, ...state.manualComps],
         state.pricingStrategy,
       );
       const calibration = await valuationCalibrationService.recalculateConfidence(
         baseValuation.confidence,
         {
-          category: state.fingerprint.category,
-          brand: state.fingerprint.brand,
+          category: state.productFacts.category.value,
+          brand: state.productFacts.brand.value,
         },
       );
 
@@ -157,7 +228,6 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
 
       set({ valuation, loading: false });
       useWorkflowStore.getState().markStepComplete('price');
-      useWorkflowStore.getState().setCurrentStep('templates');
     } catch (error) {
       set({
         loading: false,
@@ -185,11 +255,18 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   },
   generateTemplates: () => {
     const state = get();
-    if (!state.fingerprint || !state.valuation) {
+    if (!state.fingerprint || !state.productFacts || !state.valuation) {
       set({ error: 'Estimate value before generating templates.' });
       return;
     }
-    const templates = listingTemplateService.generateTemplates(state.fingerprint, state.valuation);
+    if (state.valuation.status === 'insufficient-evidence') {
+      set({ error: state.valuation.action });
+      return;
+    }
+    const templates = listingTemplateService.generateTemplates(
+      fingerprintFromFacts(state.productFacts, state.fingerprint),
+      state.valuation,
+    );
     useListingStore.getState().setTemplates(templates);
     useWorkflowStore.getState().markStepComplete('templates');
     useWorkflowStore.getState().setCurrentStep('review');
@@ -198,7 +275,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     const state = get();
     const listingStore = useListingStore.getState();
     const templates = listingStore.templates;
-    if (!state.fingerprint || !state.valuation || templates.length === 0) {
+    if (!state.fingerprint || !state.productFacts || !state.valuation || templates.length === 0) {
       set({ error: 'Generate templates before saving history' });
       return;
     }
@@ -209,7 +286,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     }
 
     await historyService.add({
-      fingerprint: state.fingerprint,
+      fingerprint: fingerprintFromFacts(state.productFacts, state.fingerprint),
       valuation: state.valuation,
       templates,
     });
@@ -221,6 +298,8 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       images: draft.images,
       pricingStrategy: draft.pricingStrategy,
       fingerprint: draft.fingerprint,
+      productFacts:
+        draft.productFacts ?? (draft.fingerprint ? factsFromFingerprint(draft.fingerprint) : null),
       traderaComps: draft.traderaComps,
       manualComps: draft.manualComps,
       valuation: draft.valuation,
@@ -238,6 +317,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       inputText: state.inputText,
       images: state.images,
       fingerprint: state.fingerprint,
+      productFacts: state.productFacts,
       traderaComps: state.traderaComps,
       manualComps: state.manualComps,
       valuation: state.valuation,

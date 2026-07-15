@@ -21,6 +21,7 @@ const {
 }));
 
 vi.mock('@core/services/valuationService', () => ({
+  rankComparables: (_facts: unknown, items: unknown[]) => items,
   valuationService: {
     analyzeInput: analyzeInputMock,
     estimateValue: estimateValueMock,
@@ -76,6 +77,7 @@ const comparables: ComparableRecord[] = [
 ];
 
 const valuation: ValuationResult = {
+  status: 'ready',
   priceMinSek: 350,
   priceRecommendedSek: 450,
   priceMaxSek: 550,
@@ -89,6 +91,7 @@ const valuation: ValuationResult = {
     calibration: 1,
   },
   compsUsed: comparables,
+  adjustments: [],
 };
 
 const templates: ListingTemplate[] = [
@@ -116,6 +119,7 @@ describe('useValuationStore runPipeline', () => {
       images: [],
       pricingStrategy: 'balanced',
       fingerprint: null,
+      productFacts: null,
       traderaComps: [],
       manualComps: [],
       valuation: null,

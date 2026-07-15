@@ -30,7 +30,10 @@ class ValuationCalibrationService {
   ): Promise<CalibrationResult> {
     const history = await historyService.list(250);
     const soldAll = history.filter(
-      (entry) => entry.saleStatus === 'sold' && typeof entry.soldPriceSek === 'number',
+      (entry) =>
+        entry.saleStatus === 'sold' &&
+        typeof entry.soldPriceSek === 'number' &&
+        entry.valuation.priceRecommendedSek !== null,
     );
 
     const sameBrandAndCategory = soldAll.filter(
@@ -60,7 +63,7 @@ class ValuationCalibrationService {
 
     const avgError =
       sold.reduce((sum, entry) => {
-        const baseline = Math.max(entry.valuation.priceRecommendedSek, 1);
+        const baseline = Math.max(entry.valuation.priceRecommendedSek ?? 1, 1);
         const errorRatio = Math.abs((entry.soldPriceSek ?? baseline) - baseline) / baseline;
         return sum + errorRatio;
       }, 0) / sold.length;

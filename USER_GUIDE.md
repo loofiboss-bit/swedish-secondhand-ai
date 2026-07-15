@@ -22,6 +22,10 @@ In **Analyze**:
 2. Upload 1-6 images.
 3. Click **Identify item**.
 
+Review the detected facts before pricing. Correct title, category, brand, model, condition,
+defects, accessories, and testing status, then keep important user values locked. A new AI
+analysis preserves locked values.
+
 Tips for better results:
 
 - Include exact model names if known.
@@ -36,11 +40,14 @@ In **Comparables/Price**:
 
 1. Click **Fetch Tradera comparables** (if API key is configured).
 2. Add manual comparables from Blocket/Vinted when needed.
-3. Choose pricing strategy:
+3. Include or exclude every comparable and review its visible reason and weight. Excluded rows
+   never affect the result.
+4. Choose pricing strategy:
    - `fast_sale`
    - `balanced`
    - `max_value`
-4. Click **Estimate value**.
+5. Click **Estimate value**. If fewer than two approved comparables remain, the app returns
+   `insufficient-evidence` without a numeric price.
 
 The sidebar shows current recommendation and confidence.
 

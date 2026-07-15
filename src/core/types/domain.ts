@@ -10,6 +10,32 @@ export type WorkflowStep = 'analyze' | 'comparables' | 'price' | 'templates' | '
 
 export type SaleStatus = 'pending' | 'sold' | 'not_sold';
 
+export type FactSource = 'ai' | 'user' | 'heuristic';
+
+export interface VerifiedFact<T> {
+  value: T;
+  source: FactSource;
+  locked: boolean;
+  evidence?: string;
+}
+
+export type ProductFactKey = 'title' | 'category' | 'brand' | 'model' | 'conditionGrade';
+export type ProductListFactKey = 'defects' | 'includedAccessories' | 'missingAccessories';
+
+export interface VerifiedProductFacts {
+  schemaVersion: 1;
+  title: VerifiedFact<string>;
+  category: VerifiedFact<string>;
+  brand: VerifiedFact<string>;
+  model: VerifiedFact<string>;
+  conditionGrade: VerifiedFact<ConditionGrade>;
+  defects: VerifiedFact<string[]>;
+  includedAccessories: VerifiedFact<string[]>;
+  missingAccessories: VerifiedFact<string[]>;
+  testedStatus: VerifiedFact<'tested' | 'untested' | 'unknown'>;
+  attributes: Record<string, VerifiedFact<string>>;
+}
+
 export interface ItemFingerprint {
   title: string;
   category: string;
@@ -34,6 +60,24 @@ export interface ComparableRecord {
   sourceQuality: number;
   location?: string;
   shippingIncluded?: boolean;
+  relevance?: {
+    score: number;
+    weight: number;
+    factors: {
+      title: number;
+      category: number;
+      brand: number;
+      model: number;
+      recency: number;
+      sourceQuality: number;
+    };
+    reason: string;
+  };
+  decision?: {
+    included: boolean;
+    reason: string;
+    decidedBy: 'system' | 'user';
+  };
 }
 
 export interface ConfidenceBreakdown {
@@ -43,16 +87,48 @@ export interface ConfidenceBreakdown {
   calibration: number;
 }
 
-export interface ValuationResult {
-  priceMinSek: number;
-  priceRecommendedSek: number;
-  priceMaxSek: number;
+export interface ValuationAdjustment {
+  id: string;
+  label: string;
+  factor: number;
+  amountSek: number;
+  reason: string;
+}
+
+interface ValuationResultBase {
   confidence: number;
   rationale: string;
   pricingStrategy: PricingStrategy;
   confidenceBreakdown: ConfidenceBreakdown;
   compsUsed: ComparableRecord[];
+  adjustments: ValuationAdjustment[];
 }
+
+export interface ReadyValuationResult extends ValuationResultBase {
+  status: 'ready';
+  priceMinSek: number;
+  priceRecommendedSek: number;
+  priceMaxSek: number;
+}
+
+export interface LowConfidenceValuationResult extends ValuationResultBase {
+  status: 'low-confidence';
+  priceMinSek: number;
+  priceRecommendedSek: number;
+  priceMaxSek: number;
+  action: string;
+}
+
+export interface InsufficientEvidenceValuationResult extends ValuationResultBase {
+  status: 'insufficient-evidence';
+  priceMinSek: null;
+  priceRecommendedSek: null;
+  priceMaxSek: null;
+  action: string;
+}
+
+export type PricedValuationResult = ReadyValuationResult | LowConfidenceValuationResult;
+export type ValuationResult = PricedValuationResult | InsufficientEvidenceValuationResult;
 
 export interface ListingTemplate {
   site: MarketplaceSite;
@@ -75,7 +151,7 @@ export interface ComparableQuery {
 export interface ListingTemplateInput {
   site: MarketplaceSite;
   fingerprint: ItemFingerprint;
-  valuation: ValuationResult;
+  valuation: PricedValuationResult;
 }
 
 export interface MarketplaceAdapter {
@@ -86,7 +162,7 @@ export interface MarketplaceAdapter {
 export interface ValuationService {
   analyzeInput(text: string, images: string[]): Promise<ItemFingerprint>;
   estimateValue(
-    fingerprint: ItemFingerprint,
+    facts: VerifiedProductFacts,
     comps: ComparableRecord[],
     strategy?: PricingStrategy,
   ): Promise<ValuationResult>;
@@ -132,6 +208,7 @@ export interface ListingDraft {
   inputText: string;
   images: string[];
   fingerprint: ItemFingerprint | null;
+  productFacts?: VerifiedProductFacts | null;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;

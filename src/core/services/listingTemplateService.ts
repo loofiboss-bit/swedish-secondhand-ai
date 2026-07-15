@@ -2,7 +2,7 @@ import type {
   ItemFingerprint,
   ListingTemplate,
   MarketplaceSite,
-  ValuationResult,
+  PricedValuationResult,
 } from '@core/types';
 
 const siteLabel: Record<MarketplaceSite, string> = {
@@ -27,7 +27,10 @@ class ListingTemplateService {
     return ListingTemplateService.instance;
   }
 
-  generateTemplates(fingerprint: ItemFingerprint, valuation: ValuationResult): ListingTemplate[] {
+  generateTemplates(
+    fingerprint: ItemFingerprint,
+    valuation: PricedValuationResult,
+  ): ListingTemplate[] {
     return (['tradera', 'blocket', 'vinted'] as const).map((site) =>
       this.renderTemplate(site, fingerprint, valuation),
     );
@@ -50,7 +53,7 @@ class ListingTemplateService {
   private renderTemplate(
     site: MarketplaceSite,
     fingerprint: ItemFingerprint,
-    valuation: ValuationResult,
+    valuation: PricedValuationResult,
   ): ListingTemplate {
     const title = `${fingerprint.brand} ${fingerprint.title}`.trim().slice(0, titleLimits[site]);
 

@@ -125,6 +125,7 @@ export function App() {
     valuationStore.inputText,
     valuationStore.images,
     valuationStore.fingerprint,
+    valuationStore.productFacts,
     valuationStore.traderaComps,
     valuationStore.manualComps,
     valuationStore.valuation,
