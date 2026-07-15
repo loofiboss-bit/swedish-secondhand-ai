@@ -9,7 +9,9 @@ const {
   getSettingsMock,
   updateSettingsMock,
   setGeminiApiKeyMock,
-  setAiProviderMock,
+  setAiModeMock,
+  setFallbackEnabledMock,
+  completeOnboardingMock,
   setOllamaBaseUrlMock,
   setOllamaModelMock,
   setTraderaApiKeyMock,
@@ -19,7 +21,9 @@ const {
   getSettingsMock: vi.fn(),
   updateSettingsMock: vi.fn(),
   setGeminiApiKeyMock: vi.fn(),
-  setAiProviderMock: vi.fn(),
+  setAiModeMock: vi.fn(),
+  setFallbackEnabledMock: vi.fn(),
+  completeOnboardingMock: vi.fn(),
   setOllamaBaseUrlMock: vi.fn(),
   setOllamaModelMock: vi.fn(),
   setTraderaApiKeyMock: vi.fn(),
@@ -36,7 +40,9 @@ vi.mock('@core/services/settingsService', () => ({
     language: 'sv',
     currency: 'SEK',
     traderaBaseUrl: 'https://api.tradera.com/v3',
-    aiProvider: 'gemini',
+    aiMode: 'offline',
+    fallbackEnabled: false,
+    onboardingCompleted: false,
     ollamaBaseUrl: 'http://localhost:11434/v1',
     ollamaModel: 'llava',
     secretStatus: {
@@ -50,7 +56,9 @@ vi.mock('@core/services/settingsService', () => ({
     getSettings: getSettingsMock,
     updateSettings: updateSettingsMock,
     setGeminiApiKey: setGeminiApiKeyMock,
-    setAiProvider: setAiProviderMock,
+    setAiMode: setAiModeMock,
+    setFallbackEnabled: setFallbackEnabledMock,
+    completeOnboarding: completeOnboardingMock,
     setOllamaBaseUrl: setOllamaBaseUrlMock,
     setOllamaModel: setOllamaModelMock,
     setTraderaApiKey: setTraderaApiKeyMock,
@@ -65,7 +73,9 @@ const baseSettings: AppSettings = {
   language: 'sv',
   currency: 'SEK',
   traderaBaseUrl: 'https://api.tradera.com/v3',
-  aiProvider: 'gemini',
+  aiMode: 'gemini',
+  fallbackEnabled: false,
+  onboardingCompleted: true,
   ollamaBaseUrl: 'http://localhost:11434/v1',
   ollamaModel: 'llava',
   secretStatus: {
@@ -92,10 +102,15 @@ describe('SettingsPanel', () => {
       ...baseSettings,
       secretStatus: { ...baseSettings.secretStatus, geminiConfigured: true },
     });
-    setAiProviderMock.mockImplementation(async (aiProvider: 'gemini' | 'ollama') => ({
+    setAiModeMock.mockImplementation(async (aiMode: 'gemini' | 'ollama' | 'offline') => ({
       ...baseSettings,
-      aiProvider,
+      aiMode,
     }));
+    setFallbackEnabledMock.mockImplementation(async (fallbackEnabled: boolean) => ({
+      ...baseSettings,
+      fallbackEnabled,
+    }));
+    completeOnboardingMock.mockResolvedValue({ ...baseSettings, onboardingCompleted: true });
     setOllamaBaseUrlMock.mockImplementation(async (ollamaBaseUrl: string) => ({
       ...baseSettings,
       ollamaBaseUrl,
@@ -131,7 +146,7 @@ describe('SettingsPanel', () => {
     const user = userEvent.setup();
     render(<SettingsPanel />);
 
-    await user.selectOptions(screen.getByDisplayValue('Gemini'), 'ollama');
+    await user.selectOptions(screen.getByDisplayValue(/Gemini/), 'ollama');
     const baseUrl = screen.getByPlaceholderText('http://localhost:11434/v1');
     await user.clear(baseUrl);
     await user.type(baseUrl, 'http://localhost:11435/v1');
@@ -142,7 +157,7 @@ describe('SettingsPanel', () => {
     await user.tab();
 
     await waitFor(() => {
-      expect(setAiProviderMock).toHaveBeenCalledWith('ollama');
+      expect(setAiModeMock).toHaveBeenCalledWith('ollama');
       expect(setOllamaBaseUrlMock).toHaveBeenCalledWith('http://localhost:11435/v1');
       expect(setOllamaModelMock).toHaveBeenCalledWith('llama3.2-vision');
     });

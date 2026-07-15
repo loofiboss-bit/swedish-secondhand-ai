@@ -6,7 +6,9 @@ const { desktopAnalyzeMock, getSettingsMock } = vi.hoisted(() => ({
     language: 'sv',
     currency: 'SEK',
     traderaBaseUrl: 'https://api.tradera.com/v3',
-    aiProvider: 'gemini',
+    aiMode: 'gemini',
+    fallbackEnabled: true,
+    onboardingCompleted: true,
     secretStatus: {
       geminiConfigured: true,
       traderaConfigured: false,

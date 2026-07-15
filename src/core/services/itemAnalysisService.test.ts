@@ -40,7 +40,9 @@ describe('itemAnalysisService', () => {
       language: 'sv',
       currency: 'SEK',
       traderaBaseUrl: 'https://api.tradera.com/v3',
-      aiProvider: 'gemini',
+      aiMode: 'gemini',
+      fallbackEnabled: false,
+      onboardingCompleted: true,
       secretStatus: {
         geminiConfigured: false,
         traderaConfigured: false,
@@ -80,7 +82,9 @@ describe('itemAnalysisService', () => {
       language: 'sv',
       currency: 'SEK',
       traderaBaseUrl: 'https://api.tradera.com/v3',
-      aiProvider: 'gemini',
+      aiMode: 'gemini',
+      fallbackEnabled: false,
+      onboardingCompleted: true,
       secretStatus: {
         geminiConfigured: true,
         traderaConfigured: false,
@@ -112,7 +116,9 @@ describe('itemAnalysisService', () => {
       language: 'sv',
       currency: 'SEK',
       traderaBaseUrl: 'https://api.tradera.com/v3',
-      aiProvider: 'gemini',
+      aiMode: 'gemini',
+      fallbackEnabled: true,
+      onboardingCompleted: true,
       secretStatus: {
         geminiConfigured: true,
         traderaConfigured: false,
@@ -136,5 +142,38 @@ describe('itemAnalysisService', () => {
       'AI analysis unavailable. Falling back to heuristic analysis.',
       { providerId: 'gemini', errorCode: 'network' },
     );
+  });
+
+  it('uses deterministic offline analysis without calling a provider', async () => {
+    getSettingsMock.mockResolvedValue({
+      language: 'sv',
+      currency: 'SEK',
+      traderaBaseUrl: 'https://api.tradera.com/v3',
+      aiMode: 'offline',
+      fallbackEnabled: false,
+      onboardingCompleted: true,
+      secretStatus: {
+        geminiConfigured: false,
+        traderaConfigured: false,
+        encryptionAvailable: false,
+        migrationStatus: 'not-needed',
+      },
+    });
+
+    const result = await itemAnalysisService.analyzeInput('Sony kamera i bra skick', []);
+
+    expect(result).toMatchObject({ brand: 'Sony', conditionGrade: 'good', confidence: 0.45 });
+    expect(desktopAnalyzeMock).not.toHaveBeenCalled();
+  });
+
+  it('does not silently fall back when transient fallback is disabled', async () => {
+    desktopAnalyzeMock.mockRejectedValue(
+      Object.assign(new Error('network unavailable'), { code: 'network' }),
+    );
+
+    await expect(itemAnalysisService.analyzeInput('IKEA stol', [])).rejects.toMatchObject({
+      code: 'network',
+    });
+    expect(loggerWarnMock).not.toHaveBeenCalled();
   });
 });

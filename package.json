@@ -1,7 +1,7 @@
 {
   "name": "swedish-secondhand-ai",
   "private": true,
-  "version": "0.5.0",
+  "version": "1.0.0-beta.1",
   "description": "Desktop app for Swedish secondhand item valuation and listing templates",
   "author": "Loofi",
   "license": "MIT",
@@ -21,7 +21,11 @@
     "docs:screenshots": "playwright test --config playwright.screenshots.config.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "validate": "npm run lint && npm run typecheck && npm run test && npm run build && npm run format:check"
+    "validate": "npm run lint && npm run typecheck && npm run test && npm run build && npm run format:check",
+    "validate:release": "npm run validate && npm run test:e2e && node scripts/validate-release.mjs",
+    "sbom": "cyclonedx-npm --output-file release/swedish-secondhand-ai-sbom.cdx.json --output-format JSON --spec-version 1.6 --omit dev",
+    "package:smoke": "node scripts/package-smoke.mjs",
+    "checksums": "node scripts/generate-checksums.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.41.0",
@@ -34,6 +38,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "^6.0.0",
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
@@ -75,7 +80,8 @@
       "target": [
         "AppImage"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "artifactName": "Swedish-Secondhand-AI-${version}-linux-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -92,10 +98,10 @@
           ]
         }
       ],
-      "artifactName": "${productName}-${version}-${os}-${arch}-setup.${ext}"
+      "artifactName": "Swedish-Secondhand-AI-${version}-windows-${arch}-setup.${ext}"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
+      "artifactName": "Swedish-Secondhand-AI-${version}-windows-${arch}-portable.${ext}"
     },
     "nsis": {
       "oneClick": false,

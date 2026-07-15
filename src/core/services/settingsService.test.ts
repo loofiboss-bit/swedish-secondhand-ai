@@ -175,4 +175,18 @@ describe('settingsService secret migration', () => {
       ollamaBaseUrl: 'http://localhost:11434/v1',
     });
   });
+
+  it('migrates the legacy provider preference to the v1 AI mode contract', async () => {
+    await set(SETTINGS_KEY, { aiProvider: 'ollama' });
+
+    const settings = await settingsService.getSettings();
+    await settingsService.updateSettings({ fallbackEnabled: true });
+
+    expect(settings).toMatchObject({
+      aiMode: 'ollama',
+      fallbackEnabled: false,
+      onboardingCompleted: false,
+    });
+    expect(await persistedSettings()).toMatchObject({ aiMode: 'ollama', fallbackEnabled: true });
+  });
 });

@@ -45,6 +45,7 @@ interface ValuationState {
   addImage: (dataUrl: string) => void;
   removeImage: (index: number) => void;
   analyzeItem: () => Promise<void>;
+  cancelAnalysis: () => void;
   fetchTraderaComparables: () => Promise<void>;
   loadManualComparables: () => Promise<void>;
   addManualComparable: (
@@ -66,6 +67,8 @@ interface ValuationState {
   buildDraft: (currentStep: WorkflowStep, completedSteps: WorkflowStep[]) => ListingDraft;
 }
 
+let activeAnalysis: AbortController | null = null;
+
 export const useValuationStore = create<ValuationState>((set, get) => ({
   inputText: '',
   images: [],
@@ -83,6 +86,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   removeImage: (index) =>
     set((state) => ({ images: state.images.filter((_, currentIndex) => currentIndex !== index) })),
   analyzeItem: async () => {
+    activeAnalysis?.abort();
+    activeAnalysis = new AbortController();
+    const controller = activeAnalysis;
     set({ loading: true, error: null });
     try {
       const state = get();
@@ -91,17 +97,33 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         return;
       }
 
-      const fingerprint = await valuationService.analyzeInput(state.inputText, state.images);
+      const fingerprint = await valuationService.analyzeInput(
+        state.inputText,
+        state.images,
+        controller.signal,
+      );
+      if (controller.signal.aborted) return;
       const productFacts = mergeAnalyzedFacts(state.productFacts, fingerprint);
       set({ fingerprint, productFacts, loading: false });
       useWorkflowStore.getState().markStepComplete('analyze');
     } catch (error) {
+      if (controller.signal.aborted) {
+        set({ loading: false, error: 'Analysis cancelled.' });
+        return;
+      }
       set({
         loading: false,
         error: error instanceof Error ? error.message : 'Failed to analyze item',
       });
       useWorkflowStore.getState().setStepError('analyze', 'Analysis failed. Try again.');
+    } finally {
+      if (activeAnalysis === controller) activeAnalysis = null;
     }
+  },
+  cancelAnalysis: () => {
+    activeAnalysis?.abort();
+    activeAnalysis = null;
+    set({ loading: false, error: 'Analysis cancelled.' });
   },
   fetchTraderaComparables: async () => {
     const { fingerprint, productFacts } = get();

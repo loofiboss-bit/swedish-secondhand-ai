@@ -1,7 +1,16 @@
 import { test, expect } from '@playwright/test';
 
+async function finishOnboarding(page: import('@playwright/test').Page, mode = 'offline') {
+  const dialog = page.getByRole('dialog', { name: /välkommen|welcome/i });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('radio', { name: new RegExp(mode, 'i') }).check();
+  await dialog.getByRole('button', { name: /spara och börja|save and start/i }).click();
+  await expect(dialog).toBeHidden();
+}
+
 test('loads guided workflow sections', async ({ page }) => {
   await page.goto('/');
+  await finishOnboarding(page);
 
   await expect(page.getByRole('heading', { name: /swedish secondhand ai/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /analysera|analyze/i })).toBeVisible();
@@ -43,6 +52,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
     };
   });
   await page.goto('/');
+  await finishOnboarding(page, 'gemini');
 
   await page.getByLabel(/beskriv varan|describe the item/i).fill('Sony camera in good condition');
   await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();

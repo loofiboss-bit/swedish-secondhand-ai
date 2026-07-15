@@ -161,7 +161,7 @@ export interface MarketplaceAdapter {
 }
 
 export interface ValuationService {
-  analyzeInput(text: string, images: string[]): Promise<ItemFingerprint>;
+  analyzeInput(text: string, images: string[], signal?: AbortSignal): Promise<ItemFingerprint>;
   estimateValue(
     facts: VerifiedProductFacts,
     comps: ComparableRecord[],
@@ -173,7 +173,9 @@ export interface AppSettings {
   language: SupportedLanguage;
   currency: 'SEK';
   traderaBaseUrl: string;
-  aiProvider?: 'gemini' | 'ollama';
+  aiMode: 'gemini' | 'ollama' | 'offline';
+  fallbackEnabled: boolean;
+  onboardingCompleted: boolean;
   ollamaBaseUrl?: string;
   ollamaModel?: string;
   secretStatus: AppSecretStatus;
