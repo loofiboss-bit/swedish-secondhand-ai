@@ -82,7 +82,7 @@ invent or hide material facts; validation and data-flow E2E pass.
 
 ## M4 — Public desktop beta
 
-Status: pending.
+Status: implementation completed and validated in merge `feb7d58`; beta tag publication pending.
 
 - Add first-run onboarding for language, privacy, AI mode, provider status, and offline use.
 - Use explicit `gemini`, `ollama`, and `offline` modes plus a user-controlled transient-fallback
@@ -117,5 +117,5 @@ are verified.
 - [x] M1 Secure Electron and provider boundary
 - [x] M2 Trustworthy deterministic valuation
 - [x] M3 Versioned user data and verified listings
-- [ ] M4 Public desktop beta
+- [ ] M4 Public desktop beta (implementation merged; tag publication pending)
 - [ ] M5 Stable v1.0.0
