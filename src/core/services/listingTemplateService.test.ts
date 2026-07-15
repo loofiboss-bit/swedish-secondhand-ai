@@ -13,6 +13,7 @@ const fingerprint = {
 };
 
 const valuation = {
+  status: 'ready' as const,
   priceMinSek: 300,
   priceRecommendedSek: 450,
   priceMaxSek: 550,
@@ -26,6 +27,7 @@ const valuation = {
     calibration: 1,
   },
   compsUsed: [],
+  adjustments: [],
 };
 
 describe('listingTemplateService', () => {

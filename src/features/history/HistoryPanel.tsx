@@ -93,8 +93,10 @@ export function HistoryPanel() {
               >
                 <h3>{entry.fingerprint.title}</h3>
                 <p>
-                  {entry.valuation.priceRecommendedSek} SEK (
-                  {Math.round(entry.valuation.confidence * 100)}%)
+                  {entry.valuation.priceRecommendedSek === null
+                    ? t('noNumericPrice')
+                    : `${entry.valuation.priceRecommendedSek} SEK`}{' '}
+                  ({Math.round(entry.valuation.confidence * 100)}%)
                 </p>
                 <p>{formatDate(entry.createdAt)}</p>
                 <p>
@@ -116,12 +118,19 @@ export function HistoryPanel() {
         {selected && (
           <aside className="history-detail" aria-label={t('historyDetail')}>
             <h3>{selected.fingerprint.title}</h3>
-            <p>
-              {t('recommended')}: {selected.valuation.priceRecommendedSek} SEK
-            </p>
-            <p>
-              {t('range')}: {selected.valuation.priceMinSek} - {selected.valuation.priceMaxSek} SEK
-            </p>
+            {selected.valuation.status === 'insufficient-evidence' ? (
+              <p>{selected.valuation.action}</p>
+            ) : (
+              <>
+                <p>
+                  {t('recommended')}: {selected.valuation.priceRecommendedSek} SEK
+                </p>
+                <p>
+                  {t('range')}: {selected.valuation.priceMinSek} - {selected.valuation.priceMaxSek}{' '}
+                  SEK
+                </p>
+              </>
+            )}
             <p>{selected.valuation.rationale}</p>
 
             <label className="field">

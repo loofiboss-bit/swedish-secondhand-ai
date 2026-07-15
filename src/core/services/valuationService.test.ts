@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { valuationService } from './valuationService';
+import { rankComparables, valuationService } from './valuationService';
+import { factsFromFingerprint } from './verifiedFactsService';
 
 const fingerprint = {
   title: 'IKEA Poang Chair',
@@ -13,10 +14,15 @@ const fingerprint = {
 };
 
 describe('valuationService', () => {
-  it('returns fallback estimate when comps are missing', async () => {
-    const result = await valuationService.estimateValue(fingerprint, []);
+  it('returns no numeric price when evidence is missing', async () => {
+    const result = await valuationService.estimateValue(factsFromFingerprint(fingerprint), []);
 
-    expect(result.priceRecommendedSek).toBeGreaterThan(0);
+    expect(result).toMatchObject({
+      status: 'insufficient-evidence',
+      priceMinSek: null,
+      priceRecommendedSek: null,
+      priceMaxSek: null,
+    });
     expect(result.confidence).toBeLessThan(0.5);
     expect(result.pricingStrategy).toBe('balanced');
   });
@@ -61,12 +67,79 @@ describe('valuationService', () => {
       },
     ];
 
-    const fastSale = await valuationService.estimateValue(fingerprint, comps, 'fast_sale');
-    const balanced = await valuationService.estimateValue(fingerprint, comps, 'balanced');
-    const maxValue = await valuationService.estimateValue(fingerprint, comps, 'max_value');
+    const facts = factsFromFingerprint(fingerprint);
+    const fastSale = await valuationService.estimateValue(facts, comps, 'fast_sale');
+    const balanced = await valuationService.estimateValue(facts, comps, 'balanced');
+    const maxValue = await valuationService.estimateValue(facts, comps, 'max_value');
 
+    expect(fastSale.status).not.toBe('insufficient-evidence');
+    expect(balanced.status).not.toBe('insufficient-evidence');
+    expect(maxValue.status).not.toBe('insufficient-evidence');
+    if (
+      fastSale.status === 'insufficient-evidence' ||
+      balanced.status === 'insufficient-evidence' ||
+      maxValue.status === 'insufficient-evidence'
+    ) {
+      throw new Error('Expected priced valuation');
+    }
     expect(fastSale.priceRecommendedSek).toBeLessThan(balanced.priceRecommendedSek);
     expect(maxValue.priceRecommendedSek).toBeGreaterThan(balanced.priceRecommendedSek);
     expect(balanced.confidenceBreakdown.similarity).toBeGreaterThan(0);
+  });
+
+  it('preserves user exclusions and excludes them from the result', async () => {
+    const facts = factsFromFingerprint(fingerprint);
+    const comparables = [300, 400, 500, 9_000].map((priceSek, index) => ({
+      id: `comp-${index}`,
+      source: 'manual' as const,
+      site: 'blocket' as const,
+      title: 'IKEA Poang Chair Furniture',
+      priceSek,
+      soldAt: '2026-07-01T00:00:00.000Z',
+      conditionHint: 'good',
+      url: '',
+      similarityScore: 0.9,
+      sourceQuality: 0.9,
+      decision:
+        priceSek === 9_000
+          ? { included: false, reason: 'Different edition', decidedBy: 'user' as const }
+          : { included: true, reason: 'Reviewed match', decidedBy: 'user' as const },
+    }));
+
+    const ranked = rankComparables(facts, comparables);
+    const result = await valuationService.estimateValue(facts, ranked);
+
+    expect(ranked.find((item) => item.priceSek === 9_000)?.decision).toMatchObject({
+      included: false,
+      decidedBy: 'user',
+    });
+    expect(result.compsUsed.map((item) => item.priceSek)).not.toContain(9_000);
+    expect(result.priceRecommendedSek).toBe(400);
+  });
+
+  it('shows condition and strategy adjustments without using them as an anchor', async () => {
+    const facts = factsFromFingerprint({ ...fingerprint, conditionGrade: 'fair' });
+    const comps = [400, 500, 600, 700].map((priceSek, index) => ({
+      id: `adjustment-${index}`,
+      source: 'manual' as const,
+      site: 'blocket' as const,
+      title: 'IKEA Poang Chair Furniture',
+      priceSek,
+      soldAt: '2026-07-01T00:00:00.000Z',
+      conditionHint: 'unknown',
+      url: '',
+      similarityScore: 0.9,
+      sourceQuality: 0.9,
+      decision: { included: true, reason: 'Reviewed match', decidedBy: 'user' as const },
+    }));
+
+    const result = await valuationService.estimateValue(facts, comps, 'fast_sale');
+
+    expect(result.status).toBe('ready');
+    expect(result.adjustments.map((adjustment) => adjustment.id)).toEqual([
+      'condition',
+      'strategy',
+    ]);
+    expect(result.priceRecommendedSek).toBe(387);
   });
 });

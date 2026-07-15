@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added versioned, source-labelled product facts whose locked user corrections survive AI
+  reanalysis, including explicit defects, accessories, and testing status.
+- Added deterministic comparable relevance, visible weights, user inclusion/exclusion reasons,
+  inspectable price adjustments, and five category benchmark fixtures.
+- Replaced condition-only fallback prices with `ready`, `low-confidence`, and
+  `insufficient-evidence`; insufficient evidence never contains a numeric price.
 - Moved Gemini and Tradera secrets and cloud requests behind a validated Electron main-process
   boundary with OS-protected storage, safe legacy migration, CSP, and navigation restrictions.
 - Added masked secret status, Gemini connection testing, and Swedish/English privacy and recovery

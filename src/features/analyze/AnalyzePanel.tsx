@@ -1,5 +1,6 @@
 import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ProductFactKey, ProductListFactKey } from '@core/types';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { SectionCard } from '@shared/components/SectionCard';
@@ -36,11 +37,16 @@ export function AnalyzePanel() {
     inputText,
     images,
     fingerprint,
+    productFacts,
     loading,
     error,
     setInputText,
     addImage,
     removeImage,
+    updateFact,
+    updateListFact,
+    setTestedStatus,
+    setFactLocked,
     analyzeItem,
     runPipeline,
   } = useValuationStore();
@@ -111,23 +117,94 @@ export function AnalyzePanel() {
         </ul>
       )}
 
-      {fingerprint && (
+      {fingerprint && productFacts && (
         <div className="detected-item" aria-label={t('detectedItem')}>
           <h3>{t('detectedItem')}</h3>
-          <dl>
-            <dt>{t('title')}</dt>
-            <dd>{fingerprint.title}</dd>
-            <dt>{t('category')}</dt>
-            <dd>{fingerprint.category}</dd>
-            <dt>{t('brand')}</dt>
-            <dd>{fingerprint.brand}</dd>
-            <dt>{t('model')}</dt>
-            <dd>{fingerprint.model}</dd>
-            <dt>{t('condition')}</dt>
-            <dd>{fingerprint.conditionGrade}</dd>
-            <dt>{t('confidence')}</dt>
-            <dd>{Math.round(fingerprint.confidence * 100)}%</dd>
-          </dl>
+          {(
+            [
+              ['title', t('title')],
+              ['category', t('category')],
+              ['brand', t('brand')],
+              ['model', t('model')],
+            ] as Array<[ProductFactKey, string]>
+          ).map(([key, label]) => {
+            const fact = productFacts[key];
+            return (
+              <label className="field" key={key}>
+                <span>
+                  {label} — {t('factSource')}: {fact.source}
+                </span>
+                <input
+                  key={`${key}-${fact.value}`}
+                  defaultValue={String(fact.value)}
+                  onBlur={(event) => updateFact(key, event.target.value)}
+                />
+                <span>
+                  <input
+                    type="checkbox"
+                    checked={fact.locked}
+                    onChange={(event) => setFactLocked(key, event.target.checked)}
+                  />{' '}
+                  {t('lockFact')}
+                </span>
+              </label>
+            );
+          })}
+          <label className="field">
+            <span>
+              {t('condition')} — {t('factSource')}: {productFacts.conditionGrade.source}
+            </span>
+            <select
+              value={productFacts.conditionGrade.value}
+              onChange={(event) => updateFact('conditionGrade', event.target.value)}
+            >
+              {['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].map((condition) => (
+                <option key={condition} value={condition}>
+                  {condition}
+                </option>
+              ))}
+            </select>
+            <span>
+              <input
+                type="checkbox"
+                checked={productFacts.conditionGrade.locked}
+                onChange={(event) => setFactLocked('conditionGrade', event.target.checked)}
+              />{' '}
+              {t('lockFact')}
+            </span>
+          </label>
+          {(
+            [
+              ['defects', t('defects')],
+              ['includedAccessories', t('includedAccessories')],
+              ['missingAccessories', t('missingAccessories')],
+            ] as Array<[ProductListFactKey, string]>
+          ).map(([key, label]) => (
+            <label className="field" key={key}>
+              <span>{label}</span>
+              <input
+                defaultValue={productFacts[key].value.join(', ')}
+                onBlur={(event) => updateListFact(key, event.target.value)}
+                placeholder={t('commaSeparated')}
+              />
+            </label>
+          ))}
+          <label className="field">
+            <span>{t('testedStatus')}</span>
+            <select
+              value={productFacts.testedStatus.value}
+              onChange={(event) =>
+                setTestedStatus(event.target.value as 'tested' | 'untested' | 'unknown')
+              }
+            >
+              <option value="tested">{t('tested')}</option>
+              <option value="untested">{t('untested')}</option>
+              <option value="unknown">{t('unknown')}</option>
+            </select>
+          </label>
+          <p>
+            {t('confidence')}: {Math.round(fingerprint.confidence * 100)}%
+          </p>
         </div>
       )}
     </SectionCard>

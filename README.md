@@ -16,7 +16,11 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - Draft autosave and resume across app restarts.
 - One-click `Run full pipeline` orchestration.
 - Pricing strategies: `fast_sale`, `balanced`, `max_value`.
-- Comparable normalization and outlier handling in valuation.
+- Deterministic comparable ranking, user inclusion decisions, visible weighting, and outlier
+  handling in valuation.
+- Source-labelled product facts with user locks; a later AI analysis cannot overwrite a locked
+  correction.
+- Evidence-aware valuation statuses. Fewer than two approved comparables produce no numeric price.
 - Confidence explanation breakdown (similarity, sample size, source quality, calibration).
 - History outcome capture (`pending`, `sold`, `not_sold`) with sold-price feedback loop.
 - Marketplace assist layer with per-site policy checks and quality scoring.
