@@ -1,4 +1,3 @@
-import { get, set } from 'idb-keyval';
 import type { AppSecretStatus, AppSettings } from '@core/types';
 import {
   DEFAULT_OLLAMA_BASE_URL,
@@ -6,17 +5,40 @@ import {
 } from '@core/ai/providers/ollama/OllamaConfig';
 import { DEFAULT_GEMINI_MODEL } from '@core/ai/providers/gemini';
 import { logger } from './loggerService';
-
-const SETTINGS_KEY = 'swedish-secondhand-ai:settings';
-const SETTINGS_SCHEMA_VERSION = 2;
+import { readVersionedDataset, writeVersionedDataset } from './persistenceService';
 
 interface LegacySecretFields {
   geminiApiKey?: string;
   traderaApiKey?: string;
 }
 
-type PersistedSettings = Partial<Omit<AppSettings, 'secretStatus'>> &
-  LegacySecretFields & { schemaVersion?: number };
+export type PersistedSettings = Partial<Omit<AppSettings, 'secretStatus'>> & LegacySecretFields;
+
+export function isPersistedSettings(value: unknown): value is PersistedSettings {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const settings = value as Record<string, unknown>;
+  return (
+    (settings.language === undefined || settings.language === 'sv' || settings.language === 'en') &&
+    (settings.currency === undefined || settings.currency === 'SEK') &&
+    (settings.traderaBaseUrl === undefined || typeof settings.traderaBaseUrl === 'string') &&
+    (settings.aiProvider === undefined ||
+      settings.aiProvider === 'gemini' ||
+      settings.aiProvider === 'ollama') &&
+    (settings.ollamaBaseUrl === undefined || typeof settings.ollamaBaseUrl === 'string') &&
+    (settings.ollamaModel === undefined || typeof settings.ollamaModel === 'string') &&
+    (settings.geminiApiKey === undefined || typeof settings.geminiApiKey === 'string') &&
+    (settings.traderaApiKey === undefined || typeof settings.traderaApiKey === 'string')
+  );
+}
+
+async function readPersistedSettings(): Promise<PersistedSettings> {
+  return (
+    (await readVersionedDataset('settings', isPersistedSettings, (legacy) => {
+      if (!isPersistedSettings(legacy)) throw new Error('Invalid legacy settings dataset.');
+      return legacy;
+    })) ?? {}
+  );
+}
 
 const DEFAULT_SECRET_STATUS: AppSecretStatus = {
   geminiConfigured: false,
@@ -109,7 +131,7 @@ class SettingsService {
   async getSettings(): Promise<AppSettings> {
     let persisted: PersistedSettings | undefined;
     try {
-      persisted = await get<PersistedSettings>(SETTINGS_KEY);
+      persisted = await readPersistedSettings();
     } catch (error) {
       logger.error('Failed to read settings', {
         errorCode: error instanceof Error && 'name' in error ? error.name : 'unknown',
@@ -160,7 +182,7 @@ class SettingsService {
       }
 
       if (changed) {
-        await set(SETTINGS_KEY, { ...migrated, schemaVersion: SETTINGS_SCHEMA_VERSION });
+        await writeVersionedDataset('settings', migrated);
       }
       const hadLegacy = Boolean(geminiLegacy || traderaLegacy);
       const migrationStatus = migrationFailed ? 'failed' : hadLegacy ? 'completed' : 'not-needed';
@@ -180,12 +202,11 @@ class SettingsService {
   }
 
   async updateSettings(partial: Partial<Omit<AppSettings, 'secretStatus'>>): Promise<AppSettings> {
-    const persisted = (await get<PersistedSettings>(SETTINGS_KEY)) ?? {};
+    const persisted = await readPersistedSettings();
     const current = normalizePreferences(persisted);
     const next = normalizePreferences({ ...persisted, ...current, ...partial });
-    await set(SETTINGS_KEY, {
+    await writeVersionedDataset('settings', {
       ...persisted,
-      schemaVersion: SETTINGS_SCHEMA_VERSION,
       language: next.language,
       currency: next.currency,
       traderaBaseUrl: next.traderaBaseUrl,
@@ -202,20 +223,20 @@ class SettingsService {
     const status = await bridge.secrets.update(secretId, value);
     const configured = secretId === 'gemini' ? status.gemini.configured : status.tradera.configured;
     if (!configured) throw new Error('Protected secret verification failed.');
-    const persisted = (await get<PersistedSettings>(SETTINGS_KEY)) ?? {};
+    const persisted = await readPersistedSettings();
     if (secretId === 'gemini') delete persisted.geminiApiKey;
     else delete persisted.traderaApiKey;
-    await set(SETTINGS_KEY, { ...persisted, schemaVersion: SETTINGS_SCHEMA_VERSION });
+    await writeVersionedDataset('settings', persisted);
     return this.getSettings();
   }
 
   async deleteSecret(secretId: DesktopSecretId): Promise<AppSettings> {
     const bridge = desktopBridge();
     if (!bridge) throw new Error('Secret configuration requires the desktop application.');
-    const persisted = (await get<PersistedSettings>(SETTINGS_KEY)) ?? {};
+    const persisted = await readPersistedSettings();
     if (secretId === 'gemini') delete persisted.geminiApiKey;
     else delete persisted.traderaApiKey;
-    await set(SETTINGS_KEY, { ...persisted, schemaVersion: SETTINGS_SCHEMA_VERSION });
+    await writeVersionedDataset('settings', persisted);
     await bridge.secrets.delete(secretId);
     return this.getSettings();
   }

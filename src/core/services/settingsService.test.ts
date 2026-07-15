@@ -8,6 +8,14 @@ import { settingsService } from './settingsService';
 
 const SETTINGS_KEY = 'swedish-secondhand-ai:settings';
 
+async function persistedSettings(): Promise<Record<string, unknown>> {
+  const envelope = await get<{ schemaVersion: number; data: Record<string, unknown> }>(
+    SETTINGS_KEY,
+  );
+  expect(envelope).toMatchObject({ schemaVersion: 2 });
+  return envelope?.data ?? {};
+}
+
 function status(gemini = false, tradera = false): DesktopSecretStatus {
   return {
     gemini: { configured: gemini },
@@ -58,7 +66,7 @@ describe('settingsService secret migration', () => {
     });
 
     const settings = await settingsService.getSettings();
-    const persisted = await get<Record<string, unknown>>(SETTINGS_KEY);
+    const persisted = await persistedSettings();
 
     expect(secrets.update).toHaveBeenNthCalledWith(1, 'gemini', 'legacy-gemini');
     expect(secrets.update).toHaveBeenNthCalledWith(2, 'tradera', 'legacy-tradera');
@@ -69,7 +77,6 @@ describe('settingsService secret migration', () => {
     });
     expect(persisted).not.toHaveProperty('geminiApiKey');
     expect(persisted).not.toHaveProperty('traderaApiKey');
-    expect(persisted).toHaveProperty('schemaVersion', 2);
     expect(JSON.stringify(settings)).not.toContain('legacy-gemini');
   });
 
@@ -86,7 +93,7 @@ describe('settingsService secret migration', () => {
     });
 
     const settings = await settingsService.getSettings();
-    const persisted = await get<Record<string, unknown>>(SETTINGS_KEY);
+    const persisted = await persistedSettings();
 
     expect(settings.secretStatus.migrationStatus).toBe('failed');
     expect(persisted).not.toHaveProperty('geminiApiKey');
@@ -103,14 +110,14 @@ describe('settingsService secret migration', () => {
     await settingsService.getSettings();
 
     expect(secrets.update).toHaveBeenCalledWith('gemini', 'legacy-gemini');
-    expect(await get<Record<string, unknown>>(SETTINGS_KEY)).not.toHaveProperty('geminiApiKey');
+    expect(await persistedSettings()).not.toHaveProperty('geminiApiKey');
   });
 
   it('keeps legacy data pending and hidden when no desktop bridge exists', async () => {
     await set(SETTINGS_KEY, { geminiApiKey: 'legacy-gemini' });
 
     const settings = await settingsService.getSettings();
-    const persisted = await get<Record<string, unknown>>(SETTINGS_KEY);
+    const persisted = await persistedSettings();
 
     expect(settings.secretStatus.migrationStatus).toBe('pending');
     expect(settings).not.toHaveProperty('geminiApiKey');
@@ -140,7 +147,7 @@ describe('settingsService secret migration', () => {
     await settingsService.setGeminiApiKey('');
 
     expect(secrets.delete).toHaveBeenCalledWith('gemini');
-    expect(await get<Record<string, unknown>>(SETTINGS_KEY)).not.toHaveProperty('geminiApiKey');
+    expect(await persistedSettings()).not.toHaveProperty('geminiApiKey');
   });
 
   it('persists legacy cleanup before deleting the protected value', async () => {
@@ -148,7 +155,7 @@ describe('settingsService secret migration', () => {
     const secrets = installBridge({
       getStatus: vi.fn().mockResolvedValue(status(false, false)),
       delete: vi.fn().mockImplementation(async () => {
-        expect(await get<Record<string, unknown>>(SETTINGS_KEY)).not.toHaveProperty('geminiApiKey');
+        expect(await persistedSettings()).not.toHaveProperty('geminiApiKey');
         return status(false, false);
       }),
     });
@@ -164,7 +171,7 @@ describe('settingsService secret migration', () => {
     const settings = await settingsService.setOllamaBaseUrl('https://remote.example/v1');
 
     expect(settings.ollamaBaseUrl).toBe('http://localhost:11434/v1');
-    expect(await get<Record<string, unknown>>(SETTINGS_KEY)).toMatchObject({
+    expect(await persistedSettings()).toMatchObject({
       ollamaBaseUrl: 'http://localhost:11434/v1',
     });
   });

@@ -1,7 +1,22 @@
-import { get, set } from 'idb-keyval';
 import type { HistoryEntry, SaleStatus } from '@core/types';
+import { readVersionedDataset, writeVersionedDataset } from './persistenceService';
 
-const KEY = 'swedish-secondhand-ai:history';
+function isHistoryEntry(value: unknown): value is HistoryEntry {
+  if (typeof value !== 'object' || value === null) return false;
+  const entry = value as Partial<HistoryEntry>;
+  return (
+    typeof entry.id === 'string' &&
+    typeof entry.createdAt === 'string' &&
+    typeof entry.fingerprint === 'object' &&
+    typeof entry.valuation === 'object' &&
+    Array.isArray(entry.templates) &&
+    ['pending', 'sold', 'not_sold'].includes(String(entry.saleStatus))
+  );
+}
+
+export function isHistoryDataset(value: unknown): value is HistoryEntry[] {
+  return Array.isArray(value) && value.every(isHistoryEntry);
+}
 
 class HistoryService {
   private static instance: HistoryService;
@@ -14,7 +29,11 @@ class HistoryService {
   }
 
   async list(limit = 50): Promise<HistoryEntry[]> {
-    const entries = (await get<HistoryEntry[]>(KEY)) ?? [];
+    const entries =
+      (await readVersionedDataset('history', isHistoryDataset, (legacy) => {
+        if (!isHistoryDataset(legacy)) throw new Error('Invalid legacy history dataset.');
+        return legacy;
+      })) ?? [];
     return entries.slice(0, limit);
   }
 
@@ -26,7 +45,7 @@ class HistoryService {
       saleStatus: 'pending',
     };
     const current = await this.list(200);
-    await set(KEY, [next, ...current]);
+    await writeVersionedDataset('history', [next, ...current]);
     return next;
   }
 
@@ -46,12 +65,17 @@ class HistoryService {
         soldAt: soldAt ?? (saleStatus === 'sold' ? new Date().toISOString() : undefined),
       };
     });
-    await set(KEY, next);
+    await writeVersionedDataset('history', next);
     return next;
   }
 
   async clear(): Promise<void> {
-    await set(KEY, []);
+    await writeVersionedDataset('history', []);
+  }
+
+  async replace(entries: HistoryEntry[]): Promise<void> {
+    if (!isHistoryDataset(entries)) throw new Error('Invalid history dataset.');
+    await writeVersionedDataset('history', entries);
   }
 }
 

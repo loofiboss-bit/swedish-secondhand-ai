@@ -79,6 +79,10 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - Gemini and Tradera API keys are user-provided and encrypted through the operating system's
   protected credential storage. The renderer receives only configured/not-configured status.
 
+See [Privacy](./PRIVACY.md), [Security](./SECURITY.md), and
+[Support and recovery](./SUPPORT.md) for provider data flows, vulnerability reporting, backups,
+migrations, and reset behavior.
+
 ## Build Targets
 
 - Windows (NSIS + portable)
@@ -87,3 +91,6 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 ## Documentation
 
 - [User Guide](./USER_GUIDE.md)
+- [Privacy](./PRIVACY.md)
+- [Security policy](./SECURITY.md)
+- [Support and recovery](./SUPPORT.md)

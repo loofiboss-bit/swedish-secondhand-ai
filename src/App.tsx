@@ -18,6 +18,11 @@ const HistoryPanel = lazy(() =>
 const SettingsPanel = lazy(() =>
   import('@features/settings/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 );
+const DataManagementPanel = lazy(() =>
+  import('@features/settings/DataManagementPanel').then((module) => ({
+    default: module.DataManagementPanel,
+  })),
+);
 const TemplatesPanel = lazy(() =>
   import('@features/templates/TemplatesPanel').then((module) => ({
     default: module.TemplatesPanel,
@@ -250,6 +255,7 @@ export function App() {
             {(currentStep === 'templates' || currentStep === 'review') && <TemplatesPanel />}
             {currentStep === 'review' && <HistoryPanel />}
             <SettingsPanel />
+            <DataManagementPanel />
           </Suspense>
         </section>
 

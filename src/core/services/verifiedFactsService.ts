@@ -16,9 +16,51 @@ function aiFact<T>(value: T, confidence: number): VerifiedFact<T> {
   };
 }
 
+function isFact(value: unknown): value is VerifiedFact<unknown> {
+  if (typeof value !== 'object' || value === null) return false;
+  const fact = value as Partial<VerifiedFact<unknown>>;
+  return (
+    'value' in fact &&
+    ['ai', 'user', 'heuristic'].includes(String(fact.source)) &&
+    typeof fact.locked === 'boolean'
+  );
+}
+
+export function isVerifiedProductFacts(value: unknown): value is VerifiedProductFacts {
+  if (typeof value !== 'object' || value === null) return false;
+  const facts = value as Partial<VerifiedProductFacts>;
+  return (
+    facts.schemaVersion === 2 &&
+    isFact(facts.title) &&
+    typeof facts.title.value === 'string' &&
+    isFact(facts.category) &&
+    typeof facts.category.value === 'string' &&
+    isFact(facts.brand) &&
+    typeof facts.brand.value === 'string' &&
+    isFact(facts.model) &&
+    typeof facts.model.value === 'string' &&
+    isFact(facts.conditionGrade) &&
+    ['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].includes(
+      String(facts.conditionGrade.value),
+    ) &&
+    isFact(facts.defects) &&
+    Array.isArray(facts.defects.value) &&
+    isFact(facts.includedAccessories) &&
+    Array.isArray(facts.includedAccessories.value) &&
+    isFact(facts.missingAccessories) &&
+    Array.isArray(facts.missingAccessories.value) &&
+    isFact(facts.testedStatus) &&
+    ['tested', 'untested', 'unknown'].includes(String(facts.testedStatus.value)) &&
+    isFact(facts.authenticityStatus) &&
+    ['verified', 'unverified', 'unknown'].includes(String(facts.authenticityStatus.value)) &&
+    typeof facts.attributes === 'object' &&
+    facts.attributes !== null
+  );
+}
+
 export function factsFromFingerprint(fingerprint: ItemFingerprint): VerifiedProductFacts {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     title: aiFact(fingerprint.title, fingerprint.confidence),
     category: aiFact(fingerprint.category, fingerprint.confidence),
     brand: aiFact(fingerprint.brand, fingerprint.confidence),
@@ -28,6 +70,12 @@ export function factsFromFingerprint(fingerprint: ItemFingerprint): VerifiedProd
     includedAccessories: aiFact([], fingerprint.confidence),
     missingAccessories: aiFact([], fingerprint.confidence),
     testedStatus: aiFact<'unknown'>('unknown', fingerprint.confidence),
+    authenticityStatus: {
+      value: 'unknown',
+      source: 'heuristic',
+      locked: false,
+      evidence: 'Authenticity has not been verified',
+    },
     attributes: Object.fromEntries(
       Object.entries(fingerprint.attributes).map(([key, value]) => [
         key,
@@ -63,6 +111,7 @@ export function mergeAnalyzedFacts(
     includedAccessories: preserveLocked(current.includedAccessories, analyzed.includedAccessories),
     missingAccessories: preserveLocked(current.missingAccessories, analyzed.missingAccessories),
     testedStatus: preserveLocked(current.testedStatus, analyzed.testedStatus),
+    authenticityStatus: preserveLocked(current.authenticityStatus, analyzed.authenticityStatus),
     attributes,
   };
 }
@@ -156,5 +205,35 @@ export function updateTestedStatus(
       locked: true,
       evidence: 'Confirmed by user',
     },
+  };
+}
+
+export function updateAuthenticityStatus(
+  facts: VerifiedProductFacts,
+  value: VerifiedProductFacts['authenticityStatus']['value'],
+): VerifiedProductFacts {
+  return {
+    ...facts,
+    authenticityStatus: {
+      value,
+      source: 'user',
+      locked: true,
+      evidence: 'Confirmed by user',
+    },
+  };
+}
+
+export function upgradeProductFacts(
+  value: unknown,
+  fingerprint: ItemFingerprint,
+): VerifiedProductFacts {
+  const fallback = factsFromFingerprint(fingerprint);
+  if (typeof value !== 'object' || value === null) return fallback;
+  const legacy = value as Partial<VerifiedProductFacts>;
+  return {
+    ...fallback,
+    ...legacy,
+    schemaVersion: 2,
+    authenticityStatus: legacy.authenticityStatus ?? fallback.authenticityStatus,
   };
 }

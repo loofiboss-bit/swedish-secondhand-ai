@@ -99,15 +99,14 @@ class TraderaAdapterService implements MarketplaceAdapter {
   }
 
   renderTemplate(input: ListingTemplateInput): ListingTemplate {
+    const facts = input.facts;
     return {
       site: 'tradera',
-      title: input.fingerprint.title.slice(0, 80),
-      description: `${input.fingerprint.title}\n\nSkick: ${input.fingerprint.conditionGrade}\nKategori: ${input.fingerprint.category}\nPrisstrategi: ${input.valuation.pricingStrategy}`,
+      title: facts.title.value.slice(0, 80),
+      description: `${facts.title.value}\n\nSkick: ${facts.conditionGrade.value}\nKategori: ${facts.category.value}\nDefekter: ${facts.defects.value.join(', ') || 'Inte fullständigt verifierat'}\nSaknade tillbehör: ${facts.missingAccessories.value.join(', ') || 'Inte verifierat'}\nTeststatus: ${facts.testedStatus.value}\nÄkthet: ${facts.authenticityStatus.value}\nPrisstrategi: ${input.valuation.pricingStrategy}`,
       priceSuggestionSek: input.valuation.priceRecommendedSek,
       shippingSuggestion: 'Skickas spårbart inom Sverige.',
-      tags: [input.fingerprint.category, input.fingerprint.brand].filter(
-        (entry) => entry !== 'Unknown',
-      ),
+      tags: [facts.category.value, facts.brand.value].filter((entry) => entry !== 'Unknown'),
       disclaimer: 'Prisforslag baserat pa historiska jamforelser och manuell granskning.',
     };
   }

@@ -24,6 +24,7 @@ import {
   updateProductFact,
   updateProductListFact,
   updateTestedStatus,
+  updateAuthenticityStatus,
 } from '@core/services/verifiedFactsService';
 import { useListingStore } from './useListingStore';
 import { useWorkflowStore } from './useWorkflowStore';
@@ -55,6 +56,7 @@ interface ValuationState {
   updateFact: (key: ProductFactKey, value: string) => void;
   updateListFact: (key: ProductListFactKey, value: string) => void;
   setTestedStatus: (value: VerifiedProductFacts['testedStatus']['value']) => void;
+  setAuthenticityStatus: (value: VerifiedProductFacts['authenticityStatus']['value']) => void;
   setFactLocked: (key: ProductFactKey, locked: boolean) => void;
   estimateValue: () => Promise<void>;
   runPipeline: () => Promise<void>;
@@ -131,8 +133,12 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     }
   },
   loadManualComparables: async () => {
-    const manualComps = await manualCompsService.list();
-    set({ manualComps });
+    try {
+      const manualComps = await manualCompsService.list();
+      set({ manualComps });
+    } catch {
+      set({ error: 'Manual comparable data is corrupt or from an unsupported version.' });
+    }
   },
   addManualComparable: async (comp) => {
     const next = await manualCompsService.add(comp);
@@ -188,6 +194,11 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     const productFacts = get().productFacts;
     if (!productFacts) return;
     set({ productFacts: updateTestedStatus(productFacts, value), valuation: null });
+  },
+  setAuthenticityStatus: (value) => {
+    const productFacts = get().productFacts;
+    if (!productFacts) return;
+    set({ productFacts: updateAuthenticityStatus(productFacts, value), valuation: null });
   },
   setFactLocked: (key, locked) => {
     const productFacts = get().productFacts;
@@ -263,10 +274,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       set({ error: state.valuation.action });
       return;
     }
-    const templates = listingTemplateService.generateTemplates(
-      fingerprintFromFacts(state.productFacts, state.fingerprint),
-      state.valuation,
-    );
+    const templates = listingTemplateService.generateTemplates(state.productFacts, state.valuation);
     useListingStore.getState().setTemplates(templates);
     useWorkflowStore.getState().markStepComplete('templates');
     useWorkflowStore.getState().setCurrentStep('review');
