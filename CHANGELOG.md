@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Moved Gemini and Tradera secrets and cloud requests behind a validated Electron main-process
+  boundary with OS-protected storage, safe legacy migration, CSP, and navigation restrictions.
+- Added masked secret status, Gemini connection testing, and Swedish/English privacy and recovery
+  guidance without exposing saved values to renderer state.
 - Added provider-neutral AI contracts, registry, capabilities, and normalized errors.
 - Migrated Gemini analysis and structured response parsing behind a tested provider adapter.
 - Added an Ollama provider adapter with bounded configuration, health checks, and response

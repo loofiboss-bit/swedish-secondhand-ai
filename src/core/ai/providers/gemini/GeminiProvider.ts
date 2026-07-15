@@ -1,4 +1,3 @@
-import { GoogleGenAI } from '@google/genai';
 import type {
   AiProvider,
   AiProviderCapabilities,
@@ -48,16 +47,6 @@ const capabilities: AiProviderCapabilities = {
   healthCheck: false,
 };
 
-function defaultClientFactory(apiKey: string): GeminiClient {
-  const client = new GoogleGenAI({ apiKey });
-  return {
-    async generateContent(request) {
-      const response = await client.models.generateContent(request);
-      return { text: response.text };
-    },
-  };
-}
-
 function normalizeConfig(config: GeminiProviderConfig): GeminiProviderConfig {
   const apiKey = config.apiKey.trim();
   const modelId = config.modelId.trim();
@@ -97,8 +86,38 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message.toLowerCase() : '';
 }
 
+function normalizedDesktopError(error: unknown): AiProviderError | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
+  const code = error.code;
+  if (
+    ![
+      'authentication',
+      'rate_limit',
+      'timeout',
+      'cancellation',
+      'network',
+      'model_not_found',
+      'invalid_response',
+      'schema_validation',
+      'invalid_configuration',
+    ].includes(typeof code === 'string' ? code : '')
+  ) {
+    return undefined;
+  }
+  return new AiProviderError(
+    error instanceof Error ? error.message : 'Gemini desktop operation failed.',
+    {
+      code: code as AiProviderError['code'],
+      providerId: 'gemini',
+      retryable: ['rate_limit', 'timeout', 'network'].includes(String(code)),
+    },
+  );
+}
+
 function mapGeminiError(error: unknown, signal?: AbortSignal): AiProviderError {
-  if (error instanceof AiProviderError) return error;
+  if (error instanceof AiProviderError && error.providerId) return error;
+  const desktopError = normalizedDesktopError(error);
+  if (desktopError) return desktopError;
   if (signal?.aborted || errorName(error) === 'AbortError') {
     return new AiProviderError('Gemini analysis was cancelled.', {
       code: 'cancellation',
@@ -187,7 +206,14 @@ export class GeminiProvider implements AiProvider {
   constructor(options: GeminiProviderOptions) {
     this.resolveConfig = options.resolveConfig;
     this.createFallback = options.createFallback;
-    this.createClient = options.createClient ?? defaultClientFactory;
+    this.createClient =
+      options.createClient ??
+      (() => {
+        throw new AiProviderError('Gemini requires a configured desktop transport.', {
+          code: 'invalid_configuration',
+          providerId: 'gemini',
+        });
+      });
     this.now = options.now ?? (() => performance.now());
   }
 

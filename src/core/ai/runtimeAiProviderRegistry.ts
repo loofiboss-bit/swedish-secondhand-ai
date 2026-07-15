@@ -4,6 +4,7 @@ import type { ItemAnalysisRequest } from './contracts';
 import { aiProviderRegistry, type AiProviderRegistry } from './AiProviderRegistry';
 import { DEFAULT_GEMINI_MODEL, GeminiProvider } from './providers/gemini';
 import { OllamaProvider } from './providers/ollama';
+import { createDesktopGeminiClient } from '@core/platform/desktopBridge';
 
 export interface RuntimeAiProviderOptions {
   readonly createItemFallback: (request: ItemAnalysisRequest) => ItemFingerprint;
@@ -13,14 +14,12 @@ export function configureRuntimeAiProviders(options: RuntimeAiProviderOptions): 
   if (!aiProviderRegistry.has('gemini')) {
     aiProviderRegistry.register(
       new GeminiProvider({
-        resolveConfig: async () => {
-          const settings = await settingsService.getSettings();
-          return {
-            apiKey: settings.geminiApiKey,
-            modelId: DEFAULT_GEMINI_MODEL,
-          };
-        },
+        resolveConfig: async () => ({
+          apiKey: 'desktop-managed',
+          modelId: DEFAULT_GEMINI_MODEL,
+        }),
         createFallback: options.createItemFallback,
+        createClient: createDesktopGeminiClient,
       }),
     );
   }
