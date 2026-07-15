@@ -1,26 +1,25 @@
-# Product Roadmap
+# Product roadmap
 
-The detailed implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
+The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
 
-## Released
+## Released baseline
 
 - v0.1.0 — MVP
-- v0.2.0 — Guided listing flow
-- v0.3.0 — Valuation trust and sale outcomes
-- v0.4.0 — Marketplace assist layer
-- v0.5.0 — Design system and productivity
+- v0.5.0 — guided workflow, drafts, valuation calibration, marketplace checks, and productivity
 
-## Path to v1.0.0
+Provider-neutral contracts, the Gemini adapter, the Ollama adapter, and explicit AI routing are
+merged on top of v0.5.0 and recorded under `CHANGELOG.md` Unreleased.
 
-- v0.6.0 — safe Gemini/Ollama provider architecture and protected desktop secrets;
-- v0.7.0 — user-correctable product facts and evidence-based deterministic valuation;
-- v0.8.0 — verified deterministic listings, versioned data, backup and privacy diagnostics;
-- v0.9.0 — hardened Electron beta with accessible onboarding and Windows/Linux release CI;
-- v1.0.0 — beta blocker fixes, final upgrade validation and stable artifacts.
+## Direct path to v1.0.0
 
-## v1 scope decision
+All remaining work is delivered as five sequential v1 milestones:
 
-The first stable release supports Gemini, Ollama and deterministic offline fallback. OpenAI,
-compatible endpoints, AI-generated listing copy, automatic updates, additional marketplaces,
-mobile, accounts and cloud services are post-v1 work. This keeps the critical path focused on
-valuation integrity, secret protection, user-data safety and installable desktop packages.
+1. secure Electron/provider boundary;
+2. user-correctable facts and evidence-based deterministic valuation;
+3. versioned data, backup/import, verified listings, and privacy diagnostics;
+4. accessible Windows/Linux public beta and release pipeline;
+5. blocker-only stabilization followed by stable v1.0.0.
+
+There are no intermediate v0.7-v0.9 releases. The first stable release supports Gemini, Ollama,
+deterministic offline analysis, and manual listing copy/export. Broader provider, cloud, mobile,
+payment, scraping, publishing, and automatic-update work remains post-v1.
