@@ -5,7 +5,9 @@ const {
   getSettingsMock,
   updateSettingsMock,
   setGeminiApiKeyMock,
-  setAiProviderMock,
+  setAiModeMock,
+  setFallbackEnabledMock,
+  completeOnboardingMock,
   setOllamaBaseUrlMock,
   setOllamaModelMock,
   setTraderaApiKeyMock,
@@ -14,7 +16,9 @@ const {
   getSettingsMock: vi.fn(),
   updateSettingsMock: vi.fn(),
   setGeminiApiKeyMock: vi.fn(),
-  setAiProviderMock: vi.fn(),
+  setAiModeMock: vi.fn(),
+  setFallbackEnabledMock: vi.fn(),
+  completeOnboardingMock: vi.fn(),
   setOllamaBaseUrlMock: vi.fn(),
   setOllamaModelMock: vi.fn(),
   setTraderaApiKeyMock: vi.fn(),
@@ -25,7 +29,9 @@ const baseSettings: AppSettings = {
   language: 'sv',
   currency: 'SEK',
   traderaBaseUrl: 'https://api.tradera.com/v3',
-  aiProvider: 'gemini',
+  aiMode: 'gemini',
+  fallbackEnabled: false,
+  onboardingCompleted: true,
   ollamaBaseUrl: 'http://localhost:11434/v1',
   ollamaModel: 'llava',
   secretStatus: {
@@ -42,7 +48,9 @@ vi.mock('@core/services/settingsService', () => ({
     language: 'sv',
     currency: 'SEK',
     traderaBaseUrl: 'https://api.tradera.com/v3',
-    aiProvider: 'gemini',
+    aiMode: 'offline',
+    fallbackEnabled: false,
+    onboardingCompleted: false,
     ollamaBaseUrl: 'http://localhost:11434/v1',
     ollamaModel: 'llava',
     secretStatus: {
@@ -56,7 +64,9 @@ vi.mock('@core/services/settingsService', () => ({
     getSettings: getSettingsMock,
     updateSettings: updateSettingsMock,
     setGeminiApiKey: setGeminiApiKeyMock,
-    setAiProvider: setAiProviderMock,
+    setAiMode: setAiModeMock,
+    setFallbackEnabled: setFallbackEnabledMock,
+    completeOnboarding: completeOnboardingMock,
     setOllamaBaseUrl: setOllamaBaseUrlMock,
     setOllamaModel: setOllamaModelMock,
     setTraderaApiKey: setTraderaApiKeyMock,
@@ -81,7 +91,9 @@ describe('useSettingsStore', () => {
       ...baseSettings,
       secretStatus: { ...baseSettings.secretStatus, geminiConfigured: true },
     });
-    setAiProviderMock.mockResolvedValue({ ...baseSettings, aiProvider: 'ollama' });
+    setAiModeMock.mockResolvedValue({ ...baseSettings, aiMode: 'ollama' });
+    setFallbackEnabledMock.mockResolvedValue({ ...baseSettings, fallbackEnabled: true });
+    completeOnboardingMock.mockResolvedValue({ ...baseSettings, onboardingCompleted: true });
     setOllamaBaseUrlMock.mockResolvedValue({
       ...baseSettings,
       ollamaBaseUrl: 'http://localhost:11435/v1',
@@ -119,9 +131,25 @@ describe('useSettingsStore', () => {
   });
 
   it('updates provider through service', async () => {
-    await useSettingsStore.getState().setAiProvider('ollama');
-    expect(setAiProviderMock).toHaveBeenCalledWith('ollama');
-    expect(useSettingsStore.getState().settings.aiProvider).toBe('ollama');
+    await useSettingsStore.getState().setAiMode('ollama');
+    expect(setAiModeMock).toHaveBeenCalledWith('ollama');
+    expect(useSettingsStore.getState().settings.aiMode).toBe('ollama');
+  });
+
+  it('does not let an older load overwrite a completed first-run update', async () => {
+    let resolveLoad: ((settings: AppSettings) => void) | undefined;
+    getSettingsMock.mockReturnValueOnce(
+      new Promise<AppSettings>((resolve) => {
+        resolveLoad = resolve;
+      }),
+    );
+
+    const loading = useSettingsStore.getState().load();
+    await useSettingsStore.getState().completeOnboarding('sv', 'offline', false);
+    resolveLoad?.({ ...baseSettings, onboardingCompleted: false });
+    await loading;
+
+    expect(useSettingsStore.getState().settings.onboardingCompleted).toBe(true);
   });
 
   it('updates Ollama preferences through service', async () => {

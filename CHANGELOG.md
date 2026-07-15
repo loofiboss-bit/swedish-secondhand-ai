@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.0.0-beta.1 - 2026-07-15
+
+- Added first-run language, privacy, provider-status, and AI-mode onboarding with safe offline
+  defaults and explicit transient fallback control.
+- Added deterministic offline analysis, provider cancellation, bounded JPEG/PNG/WebP uploads,
+  and localized recovery guidance.
+- Added tag/version/changelog release validation, Windows NSIS/portable and Linux AppImage jobs,
+  executable smoke checks, SHA-256 checksums, CycloneDX SBOM, and draft prereleases.
+
 - Wrapped settings, drafts, history, and manual comparables in idempotent schema 2 envelopes;
   added strict v0.5/current-main migration and corrupt/unsupported-data behavior.
 - Added secret-free format-1 backup, fully validated atomic selective import, selective/full reset,

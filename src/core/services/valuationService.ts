@@ -235,8 +235,8 @@ class ValuationServiceImpl implements ValuationService {
     return ValuationServiceImpl.instance;
   }
 
-  analyzeInput(text: string, images: string[]) {
-    return itemAnalysisService.analyzeInput(text, images);
+  analyzeInput(text: string, images: string[], signal?: AbortSignal) {
+    return itemAnalysisService.analyzeInput(text, images, signal);
   }
 
   async estimateValue(

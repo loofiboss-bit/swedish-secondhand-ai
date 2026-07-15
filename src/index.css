@@ -374,6 +374,41 @@ select {
   z-index: 50;
 }
 
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(2, 8, 5, 0.9);
+}
+
+.onboarding-dialog {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.onboarding-dialog h2,
+.onboarding-dialog p {
+  margin: 0;
+}
+
+.privacy-summary {
+  padding: 0.7rem;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-secondary);
+}
+
 .command-palette {
   width: min(640px, calc(100% - 2rem));
   background: #0d1b14;

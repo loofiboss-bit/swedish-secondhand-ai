@@ -7,7 +7,7 @@ const KNOWN_BRANDS = ['IKEA', 'Apple', 'Samsung', 'Sony', 'Dyson', 'Bosch', 'Ele
 
 function inferCondition(text: string): ConditionGrade {
   const normalized = text.toLowerCase();
-  if (normalized.includes('new') || normalized.includes('ny')) return 'new';
+  if (/\b(new|ny)\b/u.test(normalized)) return 'new';
   if (normalized.includes('like new') || normalized.includes('nyskick')) return 'like_new';
   if (normalized.includes('good') || normalized.includes('bra skick')) return 'good';
   if (normalized.includes('fair') || normalized.includes('ok skick')) return 'fair';
@@ -44,7 +44,11 @@ class ItemAnalysisService {
     return ItemAnalysisService.instance;
   }
 
-  async analyzeInput(text: string, images: string[]): Promise<ItemFingerprint> {
+  async analyzeInput(
+    text: string,
+    images: string[],
+    signal?: AbortSignal,
+  ): Promise<ItemFingerprint> {
     const contentText = text.trim();
     const hasImage = images.length > 0;
 
@@ -53,17 +57,20 @@ class ItemAnalysisService {
     }
 
     const settings = await settingsService.getSettings();
+    if (signal?.aborted) throw new DOMException('Analysis cancelled.', 'AbortError');
+    if (settings.aiMode === 'offline') return this.fallbackFingerprint(contentText);
 
-    const providerId = settings.aiProvider ?? 'gemini';
+    const providerId = settings.aiMode;
     try {
       const response = await this.router.analyzeItem(providerId, {
         text: contentText,
         images: images.map((dataUrl) => ({ dataUrl })),
         language: inferLanguage(contentText),
+        context: { signal },
       });
       return response.fingerprint;
     } catch (error) {
-      if (canUseHeuristicFallback(error)) {
+      if (settings.fallbackEnabled && canUseHeuristicFallback(error)) {
         logger.warn('AI analysis unavailable. Falling back to heuristic analysis.', {
           providerId,
           errorCode: error.code,

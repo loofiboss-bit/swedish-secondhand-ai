@@ -10,6 +10,7 @@ import { readVersionedDataset, writeVersionedDataset } from './persistenceServic
 interface LegacySecretFields {
   geminiApiKey?: string;
   traderaApiKey?: string;
+  aiProvider?: 'gemini' | 'ollama';
 }
 
 export type PersistedSettings = Partial<Omit<AppSettings, 'secretStatus'>> & LegacySecretFields;
@@ -24,6 +25,13 @@ export function isPersistedSettings(value: unknown): value is PersistedSettings 
     (settings.aiProvider === undefined ||
       settings.aiProvider === 'gemini' ||
       settings.aiProvider === 'ollama') &&
+    (settings.aiMode === undefined ||
+      settings.aiMode === 'gemini' ||
+      settings.aiMode === 'ollama' ||
+      settings.aiMode === 'offline') &&
+    (settings.fallbackEnabled === undefined || typeof settings.fallbackEnabled === 'boolean') &&
+    (settings.onboardingCompleted === undefined ||
+      typeof settings.onboardingCompleted === 'boolean') &&
     (settings.ollamaBaseUrl === undefined || typeof settings.ollamaBaseUrl === 'string') &&
     (settings.ollamaModel === undefined || typeof settings.ollamaModel === 'string') &&
     (settings.geminiApiKey === undefined || typeof settings.geminiApiKey === 'string') &&
@@ -51,7 +59,9 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   language: 'sv',
   currency: 'SEK',
   traderaBaseUrl: 'https://api.tradera.com/v3',
-  aiProvider: 'gemini',
+  aiMode: 'offline',
+  fallbackEnabled: false,
+  onboardingCompleted: false,
   ollamaBaseUrl: DEFAULT_OLLAMA_BASE_URL,
   ollamaModel: DEFAULT_OLLAMA_MODEL,
   secretStatus: DEFAULT_SECRET_STATUS,
@@ -92,7 +102,18 @@ function normalizePreferences(settings: PersistedSettings | undefined): AppSetti
       settings?.traderaBaseUrl,
       DEFAULT_APP_SETTINGS.traderaBaseUrl,
     ),
-    aiProvider: settings?.aiProvider === 'ollama' ? 'ollama' : 'gemini',
+    aiMode:
+      settings?.aiMode === 'gemini' ||
+      settings?.aiMode === 'ollama' ||
+      settings?.aiMode === 'offline'
+        ? settings.aiMode
+        : settings?.aiProvider === 'ollama'
+          ? 'ollama'
+          : settings?.aiProvider === 'gemini'
+            ? 'gemini'
+            : 'offline',
+    fallbackEnabled: settings?.fallbackEnabled === true,
+    onboardingCompleted: settings?.onboardingCompleted === true,
     ollamaBaseUrl: normalizeOllamaBaseUrl(settings?.ollamaBaseUrl),
     ollamaModel: normalizeTrimmedValue(settings?.ollamaModel, DEFAULT_OLLAMA_MODEL),
     secretStatus: DEFAULT_SECRET_STATUS,
@@ -210,7 +231,9 @@ class SettingsService {
       language: next.language,
       currency: next.currency,
       traderaBaseUrl: next.traderaBaseUrl,
-      aiProvider: next.aiProvider,
+      aiMode: next.aiMode,
+      fallbackEnabled: next.fallbackEnabled,
+      onboardingCompleted: next.onboardingCompleted,
       ollamaBaseUrl: next.ollamaBaseUrl,
       ollamaModel: next.ollamaModel,
     });
@@ -256,8 +279,20 @@ class SettingsService {
     return result.connected;
   }
 
-  async setAiProvider(aiProvider: NonNullable<AppSettings['aiProvider']>): Promise<AppSettings> {
-    return this.updateSettings({ aiProvider });
+  async setAiMode(aiMode: AppSettings['aiMode']): Promise<AppSettings> {
+    return this.updateSettings({ aiMode });
+  }
+
+  async setFallbackEnabled(fallbackEnabled: boolean): Promise<AppSettings> {
+    return this.updateSettings({ fallbackEnabled });
+  }
+
+  async completeOnboarding(
+    language: AppSettings['language'],
+    aiMode: AppSettings['aiMode'],
+    fallbackEnabled: boolean,
+  ): Promise<AppSettings> {
+    return this.updateSettings({ language, aiMode, fallbackEnabled, onboardingCompleted: true });
   }
 
   async setOllamaBaseUrl(ollamaBaseUrl: string): Promise<AppSettings> {

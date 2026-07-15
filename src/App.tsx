@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useValuationStore } from '@core/store/useValuationStore';
@@ -43,10 +43,15 @@ const WorkflowStepper = lazy(() =>
     default: module.WorkflowStepper,
   })),
 );
+const OnboardingDialog = lazy(() =>
+  import('@features/onboarding/OnboardingDialog').then((module) => ({
+    default: module.OnboardingDialog,
+  })),
+);
 
 export function App() {
   const { t } = useTranslation('common');
-  const { settings, load } = useSettingsStore();
+  const { settings, isLoading: settingsLoading, load } = useSettingsStore();
   const valuationStore = useValuationStore();
   const listingStore = useListingStore();
   const workflowStore = useWorkflowStore();
@@ -57,6 +62,7 @@ export function App() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [isSaveDraftBusy, setIsSaveDraftBusy] = useState(false);
   const [restoreMode, setRestoreMode] = useState<'normal' | 'conflict'>('normal');
+  const workspaceMainRef = useRef<HTMLElement>(null);
 
   const {
     error,
@@ -165,6 +171,10 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [nextStep, previousStep, runPipeline]);
 
+  useEffect(() => {
+    if (completedSteps.length > 0) workspaceMainRef.current?.focus();
+  }, [currentStep, completedSteps.length]);
+
   const commandActions = useMemo(
     () => [
       { id: 'pipeline', label: t('cmdRunPipeline'), run: () => runPipeline() },
@@ -193,6 +203,11 @@ export function App() {
 
   return (
     <div className="app-shell">
+      {!settingsLoading && !settings.onboardingCompleted && (
+        <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
+          <OnboardingDialog />
+        </Suspense>
+      )}
       <header className="app-header">
         <div>
           <h1>{t('appTitle')}</h1>
@@ -241,14 +256,23 @@ export function App() {
         </div>
       )}
 
-      {error && <p className="error-banner">{error}</p>}
+      {error && (
+        <p className="error-banner" role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
 
       <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
         <WorkflowStepper />
       </Suspense>
 
       <main className="workspace-layout">
-        <section className="workspace-main">
+        <section
+          className="workspace-main"
+          ref={workspaceMainRef}
+          tabIndex={-1}
+          aria-label={t(`step${currentStep[0].toUpperCase()}${currentStep.slice(1)}`)}
+        >
           <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
             {(currentStep === 'analyze' || completedSteps.length === 0) && <AnalyzePanel />}
             {(currentStep === 'comparables' || currentStep === 'price') && <ValuationPanel />}

@@ -1,4 +1,4 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProductFactKey, ProductListFactKey } from '@core/types';
 import { useValuationStore } from '@core/store/useValuationStore';
@@ -16,20 +16,28 @@ async function fileToDataUrl(file: File): Promise<string> {
   }
 
   const bitmap = await createImageBitmap(file);
-  const maxSize = 1280;
-  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
+  try {
+    const maxSize = 1280;
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
 
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Could not process image');
-  context.drawImage(bitmap, 0, 0, width, height);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not process image');
+    context.drawImage(bitmap, 0, 0, width, height);
 
-  return canvas.toDataURL('image/jpeg', 0.82);
+    return canvas.toDataURL('image/jpeg', 0.82);
+  } finally {
+    bitmap.close();
+  }
 }
+
+const MAX_IMAGES = 6;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 export function AnalyzePanel() {
   const { t } = useTranslation('common');
@@ -49,17 +57,38 @@ export function AnalyzePanel() {
     setAuthenticityStatus,
     setFactLocked,
     analyzeItem,
+    cancelAnalysis,
     runPipeline,
   } = useValuationStore();
   const { stepErrors } = useWorkflowStore();
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
     if (!fileList) return;
+    setUploadError(null);
+    let acceptedCount = images.length;
 
     for (const file of Array.from(fileList)) {
-      const dataUrl = await fileToDataUrl(file);
-      addImage(dataUrl);
+      if (acceptedCount >= MAX_IMAGES) {
+        setUploadError(t('imageLimitError', { count: MAX_IMAGES }));
+        break;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+        setUploadError(t('imageTypeError'));
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setUploadError(t('imageSizeError'));
+        continue;
+      }
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        addImage(dataUrl);
+        acceptedCount += 1;
+      } catch {
+        setUploadError(t('imageProcessingError'));
+      }
     }
 
     event.target.value = '';
@@ -76,12 +105,22 @@ export function AnalyzePanel() {
           <button type="button" onClick={() => void runPipeline()} disabled={loading}>
             {t('runFullPipeline')}
           </button>
+          {loading && (
+            <button type="button" onClick={cancelAnalysis}>
+              {t('cancelAnalysis')}
+            </button>
+          )}
         </div>
       }
     >
       {(error || stepErrors.analyze) && (
         <p className="inline-warning" role="alert">
           {stepErrors.analyze || error}
+        </p>
+      )}
+      {uploadError && (
+        <p className="inline-warning" role="alert">
+          {uploadError}
         </p>
       )}
 
@@ -100,7 +139,7 @@ export function AnalyzePanel() {
         <input
           type="file"
           multiple
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           onChange={(event) => void handleUpload(event)}
         />
       </label>

@@ -35,7 +35,7 @@ describe('backupService', () => {
     const backup = await backupService.exportBackup(new Date('2026-07-15T12:00:00.000Z'));
     const stored = await get<DataEnvelope<unknown>>(DATASET_KEYS['listing-draft']);
 
-    expect(backup).toMatchObject({ formatVersion: 1, appVersion: '0.5.0' });
+    expect(backup).toMatchObject({ formatVersion: 1, appVersion: '1.0.0-beta.1' });
     expect(JSON.stringify(backup)).not.toContain('legacy-secret');
     expect(JSON.stringify(backup)).not.toMatch(/geminiApiKey|traderaApiKey/);
     expect(stored).toMatchObject({ schemaVersion: 2, dataset: 'listing-draft', data: draft });

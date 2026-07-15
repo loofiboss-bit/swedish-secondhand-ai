@@ -10,7 +10,15 @@
 
 Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
-## What's New in v0.5.0
+## What's New in v1.0.0-beta.1
+
+- Safe-by-default offline first run, with optional Ollama or Gemini modes and explicit transient
+  fallback.
+- Protected main-process provider boundary, evidence-gated pricing, verified listing facts, and
+  versioned backup/migration support.
+- Reproducible Windows NSIS/portable and Linux AppImage release artifacts with checksums and SBOM.
+
+## v0.5 workflow foundation
 
 - Guided listing workflow: `Analyze -> Comparables -> Price -> Templates -> Review`.
 - Draft autosave and resume across app restarts.
@@ -70,6 +78,7 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - `npm run test`
 - `npm run test:e2e`
 - `npm run validate`
+- `npm run validate:release`
 - `npm run dist`
 
 ## API Notes

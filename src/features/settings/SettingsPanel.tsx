@@ -12,7 +12,8 @@ export function SettingsPanel() {
     connectionState,
     setLanguage,
     setGeminiApiKey,
-    setAiProvider,
+    setAiMode,
+    setFallbackEnabled,
     setOllamaBaseUrl,
     setOllamaModel,
     setTraderaApiKey,
@@ -109,17 +110,39 @@ export function SettingsPanel() {
         </label>
 
         <label className="field">
-          <span>{t('aiProvider')}</span>
+          <span>{t('aiMode')}</span>
           <select
-            value={settings.aiProvider ?? 'gemini'}
+            value={settings.aiMode}
             onChange={(event) => {
-              void setAiProvider(event.target.value as 'gemini' | 'ollama');
+              void setAiMode(event.target.value as 'gemini' | 'ollama' | 'offline');
             }}
           >
-            <option value="gemini">{t('aiProviderGemini')}</option>
-            <option value="ollama">{t('aiProviderOllama')}</option>
+            <option value="offline">{t('aiMode_offline')}</option>
+            <option value="gemini">{t('aiMode_gemini')}</option>
+            <option value="ollama">{t('aiMode_ollama')}</option>
           </select>
         </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={settings.fallbackEnabled}
+            disabled={settings.aiMode === 'offline'}
+            onChange={(event) => void setFallbackEnabled(event.target.checked)}
+          />{' '}
+          {t('transientFallback')}
+        </label>
+
+        <p role="status">
+          {t('providerStatus')}:{' '}
+          {settings.aiMode === 'gemini'
+            ? settings.secretStatus.geminiConfigured
+              ? t('configured')
+              : t('notConfigured')
+            : settings.aiMode === 'ollama'
+              ? t('providerLocalStatus')
+              : t('providerOfflineReady')}
+        </p>
 
         <label className="field">
           <span>{t('ollamaBaseUrl')}</span>

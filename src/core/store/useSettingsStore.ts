@@ -10,33 +10,47 @@ interface SettingsState {
   load: () => Promise<void>;
   setLanguage: (language: SupportedLanguage) => Promise<void>;
   setGeminiApiKey: (apiKey: string) => Promise<void>;
-  setAiProvider: (aiProvider: NonNullable<AppSettings['aiProvider']>) => Promise<void>;
+  setAiMode: (aiMode: AppSettings['aiMode']) => Promise<void>;
+  setFallbackEnabled: (enabled: boolean) => Promise<void>;
+  completeOnboarding: (
+    language: SupportedLanguage,
+    aiMode: AppSettings['aiMode'],
+    fallbackEnabled: boolean,
+  ) => Promise<void>;
   setOllamaBaseUrl: (ollamaBaseUrl: string) => Promise<void>;
   setOllamaModel: (ollamaModel: string) => Promise<void>;
   setTraderaApiKey: (apiKey: string) => Promise<void>;
   testGeminiConnection: () => Promise<void>;
 }
 
+let settingsMutationRevision = 0;
+
 export const useSettingsStore = create<SettingsState>((set) => {
   const applyUpdate = async (operation: () => Promise<AppSettings>): Promise<void> => {
+    settingsMutationRevision += 1;
     set({ error: null });
     try {
-      set({ settings: await operation() });
+      const settings = await operation();
+      settingsMutationRevision += 1;
+      set({ settings });
     } catch (error) {
+      settingsMutationRevision += 1;
       set({ error: error instanceof Error ? error.message : 'Settings update failed' });
     }
   };
 
   return {
     settings: DEFAULT_APP_SETTINGS,
-    isLoading: false,
+    isLoading: true,
     error: null,
     connectionState: 'idle',
     load: async () => {
+      const loadRevision = settingsMutationRevision;
       set({ isLoading: true, error: null });
       try {
         const settings = await settingsService.getSettings();
-        set({ settings, isLoading: false });
+        if (settingsMutationRevision === loadRevision) set({ settings, isLoading: false });
+        else set({ isLoading: false });
       } catch (error) {
         set({
           isLoading: false,
@@ -46,7 +60,10 @@ export const useSettingsStore = create<SettingsState>((set) => {
     },
     setLanguage: (language) => applyUpdate(() => settingsService.updateSettings({ language })),
     setGeminiApiKey: (apiKey) => applyUpdate(() => settingsService.setGeminiApiKey(apiKey)),
-    setAiProvider: (aiProvider) => applyUpdate(() => settingsService.setAiProvider(aiProvider)),
+    setAiMode: (aiMode) => applyUpdate(() => settingsService.setAiMode(aiMode)),
+    setFallbackEnabled: (enabled) => applyUpdate(() => settingsService.setFallbackEnabled(enabled)),
+    completeOnboarding: (language, aiMode, fallbackEnabled) =>
+      applyUpdate(() => settingsService.completeOnboarding(language, aiMode, fallbackEnabled)),
     setOllamaBaseUrl: (ollamaBaseUrl) =>
       applyUpdate(() => settingsService.setOllamaBaseUrl(ollamaBaseUrl)),
     setOllamaModel: (ollamaModel) => applyUpdate(() => settingsService.setOllamaModel(ollamaModel)),
