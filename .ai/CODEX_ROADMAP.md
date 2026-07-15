@@ -82,7 +82,9 @@ invent or hide material facts; validation and data-flow E2E pass.
 
 ## M4 — Public desktop beta
 
-Status: implementation completed and validated in merge `feb7d58`; beta tag publication pending.
+Status: completed. Merge `feb7d58` was published as public prerelease `v1.0.0-beta.1` on
+2026-07-15 at 06:35:48 UTC. Release run `29394334330` passed validation, Linux AppImage startup,
+Windows package smoke, artifact upload, SBOM, and checksum generation.
 
 - Add first-run onboarding for language, privacy, AI mode, provider status, and offline use.
 - Use explicit `gemini`, `ollama`, and `offline` modes plus a user-controlled transient-fallback
@@ -98,7 +100,8 @@ validation, E2E, security, migration, package, and release jobs pass.
 
 ## M5 — Stable v1.0.0
 
-Status: blocked until M4 is complete and the beta gate has elapsed.
+Status: time-gated until 2026-07-22 at 06:35:48 UTC at the earliest, then contingent on the
+remaining no-P0/P1, security, data-loss, upgrade, package, and artifact-readback gates.
 
 - Keep beta public for at least seven calendar days.
 - Fix reproducible P0/P1 and common core-flow P2 bugs only; do not expand product scope.
@@ -117,5 +120,5 @@ are verified.
 - [x] M1 Secure Electron and provider boundary
 - [x] M2 Trustworthy deterministic valuation
 - [x] M3 Versioned user data and verified listings
-- [ ] M4 Public desktop beta (implementation merged; tag publication pending)
+- [x] M4 Public desktop beta
 - [ ] M5 Stable v1.0.0

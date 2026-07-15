@@ -6,9 +6,11 @@ The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
 
 - v0.1.0 — MVP
 - v0.5.0 — guided workflow, drafts, valuation calibration, marketplace checks, and productivity
+- v1.0.0-beta.1 — public Windows/Linux beta with protected provider boundary, evidence-gated
+  valuation, versioned local data, onboarding, checksums, and SBOM (published 2026-07-15)
 
-Provider-neutral contracts, the Gemini adapter, the Ollama adapter, and explicit AI routing are
-merged on top of v0.5.0 and recorded under `CHANGELOG.md` Unreleased.
+The stable v1 gate opens no earlier than 2026-07-22 at 06:35:48 UTC and remains conditional on
+the blocker, security, upgrade, package, and artifact gates in the implementation authority.
 
 ## Direct path to v1.0.0
 
