@@ -159,6 +159,7 @@ export function App() {
     valuationStore.knowledgeGaps,
     valuationStore.photoAssessments,
     valuationStore.comparableQueryPlan,
+    valuationStore.localLearningSampleSize,
     valuationStore.traderaComps,
     valuationStore.manualComps,
     valuationStore.valuation,
@@ -355,7 +356,9 @@ export function App() {
                     {workspaceSection === 'item' && <AnalyzePanel />}
                     {workspaceSection === 'market' && <ValuationPanel />}
                     {workspaceSection === 'listing' && <TemplatesPanel />}
-                    {workspaceSection === 'follow-up' && <ProjectFollowUpPanel />}
+                    {workspaceSection === 'follow-up' && (
+                      <ProjectFollowUpPanel onNavigate={openCoachAction} />
+                    )}
                   </section>
                   <SummarySidebar />
                 </div>

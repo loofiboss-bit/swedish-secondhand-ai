@@ -5,6 +5,7 @@ import type { HistoryEntry, ListingDraft } from '@core/types';
 import { DATASET_KEYS, createEnvelope } from './persistenceService';
 import { listingDraftService } from './listingDraftService';
 import { listingTemplateService } from './listingTemplateService';
+import { factsFromFingerprint } from './verifiedFactsService';
 import { PROJECT_STORE, projectRepository } from './projectRepository';
 
 const draft: ListingDraft = {
@@ -172,5 +173,46 @@ describe('projectRepository', () => {
 
     expect(state).toMatchObject({ status: 'recovery', activeProjectId: null, projects: [] });
     expect(state.error).toMatch(/draft|corrupt|unsupported/i);
+  });
+
+  it('records a verified sale outcome and exposes only complete local calibration evidence', async () => {
+    await projectRepository.initialize();
+    const created = await projectRepository.create();
+    await projectRepository.save(created.project.id, {
+      ...created.draft,
+      fingerprint: draft.fingerprint,
+      productFacts: factsFromFingerprint(draft.fingerprint!),
+      valuation: historyEntry.valuation,
+    });
+
+    await expect(
+      projectRepository.setOutcome(created.project.id, {
+        saleStatus: 'pending',
+        marketplace: 'blocket',
+        listedAt: '2026-07-01T12:00:00.000Z',
+        askingPriceSek: 520,
+        listingUrl: 'javascript:alert(1)',
+      }),
+    ).rejects.toThrow(/HTTP or HTTPS/);
+
+    const updated = await projectRepository.setOutcome(created.project.id, {
+      saleStatus: 'sold',
+      marketplace: 'blocket',
+      listedAt: '2026-07-01T12:00:00.000Z',
+      askingPriceSek: 520,
+      soldPriceSek: 480,
+      soldAt: '2026-07-08T12:00:00.000Z',
+    });
+
+    expect(updated).toMatchObject({ status: 'sold', outcome: { saleDurationDays: 7 } });
+    await expect(projectRepository.listVerifiedOutcomes()).resolves.toEqual([
+      expect.objectContaining({
+        projectId: created.project.id,
+        category: 'Furniture',
+        recommendedPriceSek: 500,
+        soldPriceSek: 480,
+        saleDurationDays: 7,
+      }),
+    ]);
   });
 });

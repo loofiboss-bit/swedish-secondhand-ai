@@ -4,6 +4,7 @@ import { projectRepository } from '@core/services/projectRepository';
 import type {
   ItemProject,
   ListingDraft,
+  ProjectOutcome,
   ProjectSection,
   ProjectStatus,
   ProjectSummary,
@@ -20,6 +21,7 @@ interface ProjectState {
   openProject: (id: string) => Promise<HydratedProject | null>;
   saveActive: (draft: ListingDraft) => Promise<void>;
   setActiveStatus: (status: ProjectStatus) => Promise<void>;
+  updateActiveOutcome: (outcome: ProjectOutcome) => Promise<void>;
   setActiveSection: (section: ProjectSection) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
 }
@@ -114,6 +116,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       }));
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Project status could not be saved.' });
+    }
+  },
+  updateActiveOutcome: async (outcome) => {
+    const id = get().activeProjectId;
+    if (!id) return;
+    try {
+      const updated = await projectRepository.setOutcome(id, outcome);
+      set((state) => ({
+        projects: replaceSummary(state.projects, updated.summary),
+        activeProject:
+          state.activeProject?.id === id
+            ? {
+                ...state.activeProject,
+                status: updated.status,
+                outcome: updated.outcome,
+                updatedAt: updated.summary.updatedAt,
+              }
+            : state.activeProject,
+        error: null,
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Listing outcome could not be saved.',
+      });
     }
   },
   setActiveSection: async (section) => {

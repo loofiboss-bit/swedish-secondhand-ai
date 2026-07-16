@@ -30,6 +30,12 @@
   improvements, plus versioned official marketplace-policy sources and check dates.
 - Added a deterministic sell plan for marketplace, fixed price/auction, pricing strategy, and
   fulfillment with explicit market-data/general-rule/history basis labels.
+- Added local publication tracking for date, marketplace, URL, actual starting price, sold/not
+  sold/paused outcome, final price, and calculated sale duration.
+- Added on-demand 3/7/14-day photo, price, and description advice without background notifications
+  or automatic listing changes.
+- Restricted confidence and strategy calibration to at least five complete user-owned outcomes in
+  the matching category, with own-history basis and a visible deterministic price adjustment.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
   App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
 - Distinguished asking, realized, and unknown comparable prices; only user-approved realized

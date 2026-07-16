@@ -192,7 +192,11 @@ function hasValidSmartIntake(value: Partial<ListingDraft>): boolean {
         value.listingDrafts.every(isMarketplaceListingDraft))) &&
     (value.sellerTimePreference === undefined ||
       ['fast', 'balanced', 'patient'].includes(String(value.sellerTimePreference))) &&
-    (value.sellPlan === undefined || isSellPlan(value.sellPlan))
+    (value.sellPlan === undefined || isSellPlan(value.sellPlan)) &&
+    (value.localLearningSampleSize === undefined ||
+      (Number.isInteger(value.localLearningSampleSize) &&
+        Number(value.localLearningSampleSize) >= 0 &&
+        Number(value.localLearningSampleSize) <= 10_000))
   );
 }
 

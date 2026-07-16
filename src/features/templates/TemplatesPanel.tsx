@@ -22,8 +22,15 @@ export function TemplatesPanel() {
     setSellPlan,
     exportCopyBundle,
   } = useListingStore();
-  const { generateTemplates, images, productFacts, traderaComps, manualComps, valuation } =
-    useValuationStore();
+  const {
+    generateTemplates,
+    images,
+    productFacts,
+    traderaComps,
+    manualComps,
+    valuation,
+    localLearningSampleSize,
+  } = useValuationStore();
   const [copiedSite, setCopiedSite] = useState<string | null>(null);
 
   const handleCopy = async (site: MarketplaceSite, text: string) => {
@@ -45,6 +52,7 @@ export function TemplatesPanel() {
         comparables: [...traderaComps, ...manualComps],
         valuation,
         timePreference: preference,
+        ownHistorySampleSize: localLearningSampleSize,
       }),
     );
   };

@@ -144,4 +144,14 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await expect(titleInput).toHaveValue('Min egen Sony A6400-rubrik');
   await expect(traderaEditor.getByText(/din redigering|your edit/i).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: /blockerare|blockers/i }).first()).toBeVisible();
+
+  await page.getByRole('button', { name: /uppföljning|follow-up/i }).click();
+  await page.getByLabel(/annons-url|listing url/i).fill('https://www.blocket.se/annons/test');
+  await page.getByLabel(/faktiskt utgångspris|actual starting price/i).fill('5500');
+  await page.getByRole('button', { name: /markera som publicerad|mark as listed/i }).click();
+  await expect(page.getByText(/publicerad|listed/i).first()).toBeVisible();
+
+  await page.getByLabel(/verifierat slutpris|verified final price/i).fill('5200');
+  await page.getByRole('button', { name: /markera såld|mark sold/i }).click();
+  await expect(page.getByText(/såld för 5200 SEK|sold for 5200 SEK/i)).toBeVisible();
 });

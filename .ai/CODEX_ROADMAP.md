@@ -65,7 +65,7 @@ Status: completed and validated on `feature/v2-listing-studio`.
 
 ## M5 — Follow-up and local learning
 
-Status: pending.
+Status: completed and validated on `feature/v2-follow-up-learning`.
 
 - Track listing date, marketplace, URL, asking price, outcome and realized price.
 - Add local 3/7/14-day follow-up guidance.
@@ -86,5 +86,5 @@ Status: pending.
 - [x] M2 Deterministic seller coach and smart intake
 - [x] M3 Market intelligence and pricing workshop
 - [x] M4 Listing studio and sell plan
-- [ ] M5 Follow-up and local learning
+- [x] M5 Follow-up and local learning
 - [ ] M6 Public beta and stable v2

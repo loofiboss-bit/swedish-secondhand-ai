@@ -7,6 +7,8 @@ import type {
   ProjectSection,
   ProjectStatus,
   ProjectSummary,
+  ProjectOutcome,
+  VerifiedProjectOutcome,
 } from '@core/types';
 import { historyService } from './historyService';
 import { isListingDraft, listingDraftService } from './listingDraftService';
@@ -56,6 +58,12 @@ export interface ProjectBackupDataset {
   records: ProjectBackupRecord[];
 }
 
+export interface ProjectOutcomeUpdate {
+  summary: ProjectSummary;
+  outcome: ProjectOutcome;
+  status: ProjectStatus;
+}
+
 function projectKey(id: string): string {
   return `${PROJECT_KEY_PREFIX}${id}`;
 }
@@ -86,6 +94,38 @@ function isProjectSection(value: unknown): value is ProjectSection {
 function isItemProject(value: unknown): value is ItemProject {
   if (!isRecord(value) || !isRecord(value.workspace)) return false;
   const workspace = value.workspace;
+  const outcome = value.outcome;
+  const validOutcome =
+    outcome === undefined ||
+    (isRecord(outcome) &&
+      ['pending', 'sold', 'not_sold'].includes(String(outcome.saleStatus)) &&
+      (outcome.marketplace === undefined ||
+        ['tradera', 'blocket', 'vinted'].includes(String(outcome.marketplace))) &&
+      (outcome.listedAt === undefined ||
+        (typeof outcome.listedAt === 'string' && Number.isFinite(Date.parse(outcome.listedAt)))) &&
+      (outcome.listingUrl === undefined ||
+        (typeof outcome.listingUrl === 'string' &&
+          outcome.listingUrl.length <= 2_048 &&
+          /^https?:\/\//i.test(outcome.listingUrl))) &&
+      (outcome.askingPriceSek === undefined ||
+        (typeof outcome.askingPriceSek === 'number' &&
+          Number.isFinite(outcome.askingPriceSek) &&
+          outcome.askingPriceSek > 0 &&
+          outcome.askingPriceSek <= 10_000_000)) &&
+      (outcome.soldPriceSek === undefined ||
+        (typeof outcome.soldPriceSek === 'number' &&
+          Number.isFinite(outcome.soldPriceSek) &&
+          outcome.soldPriceSek > 0 &&
+          outcome.soldPriceSek <= 10_000_000)) &&
+      (outcome.soldAt === undefined ||
+        (typeof outcome.soldAt === 'string' && Number.isFinite(Date.parse(outcome.soldAt)))) &&
+      (outcome.pausedAt === undefined ||
+        (typeof outcome.pausedAt === 'string' && Number.isFinite(Date.parse(outcome.pausedAt)))) &&
+      (outcome.saleDurationDays === undefined ||
+        (typeof outcome.saleDurationDays === 'number' &&
+          Number.isInteger(outcome.saleDurationDays) &&
+          outcome.saleDurationDays >= 0 &&
+          outcome.saleDurationDays <= 3_650)));
   return (
     value.schemaVersion === PROJECT_SCHEMA_VERSION &&
     typeof value.id === 'string' &&
@@ -96,6 +136,7 @@ function isItemProject(value: unknown): value is ItemProject {
     Number.isFinite(Date.parse(value.createdAt)) &&
     typeof value.updatedAt === 'string' &&
     Number.isFinite(Date.parse(value.updatedAt)) &&
+    validOutcome &&
     Array.isArray(workspace.mediaIds) &&
     workspace.mediaIds.every((id) => typeof id === 'string') &&
     isListingDraft({ ...workspace, images: [] })
@@ -485,6 +526,77 @@ class ProjectRepository {
     };
     await setMany([[projectKey(id), next]], PROJECT_STORE);
     return summary(next);
+  }
+
+  async setOutcome(id: string, update: ProjectOutcome): Promise<ProjectOutcomeUpdate> {
+    const record = await this.requireRecord(id);
+    if (!update.listedAt || !update.marketplace || !update.askingPriceSek) {
+      throw new Error('Publication date, marketplace, and asking price are required.');
+    }
+    if (update.listingUrl && !/^https?:\/\//i.test(update.listingUrl)) {
+      throw new Error('Listing URL must use HTTP or HTTPS.');
+    }
+    if (
+      update.saleStatus === 'sold' &&
+      (!update.soldAt ||
+        !update.soldPriceSek ||
+        Date.parse(update.soldAt) < Date.parse(update.listedAt))
+    ) {
+      throw new Error('A sold outcome requires a final price and a date after publication.');
+    }
+    const now = new Date().toISOString();
+    const saleDurationDays =
+      update.saleStatus === 'sold' && update.listedAt && update.soldAt
+        ? Math.max(
+            0,
+            Math.floor((Date.parse(update.soldAt) - Date.parse(update.listedAt)) / 86_400_000),
+          )
+        : update.saleDurationDays;
+    const outcome = { ...update, saleDurationDays };
+    const status: ProjectStatus =
+      outcome.saleStatus === 'sold'
+        ? 'sold'
+        : outcome.saleStatus === 'not_sold'
+          ? 'paused'
+          : 'listed';
+    const next: ProjectRecord = {
+      ...record,
+      project: { ...record.project, outcome, status, updatedAt: now },
+    };
+    if (!isProjectRecord(next)) throw new Error('Listing outcome is invalid.');
+    await setMany([[projectKey(id), next]], PROJECT_STORE);
+    return { summary: summary(next), outcome, status };
+  }
+
+  async listVerifiedOutcomes(): Promise<VerifiedProjectOutcome[]> {
+    const index = await this.requireIndex();
+    const records = await Promise.all(index.projectIds.map((id) => this.requireRecord(id)));
+    return records.flatMap((record) => {
+      const outcome = record.project.outcome;
+      const facts = record.project.workspace.productFacts;
+      const valuation = record.project.workspace.valuation;
+      if (
+        outcome?.saleStatus !== 'sold' ||
+        !facts ||
+        !valuation ||
+        valuation.priceRecommendedSek === null ||
+        typeof outcome.soldPriceSek !== 'number' ||
+        typeof outcome.saleDurationDays !== 'number'
+      ) {
+        return [];
+      }
+      return [
+        {
+          projectId: record.project.id,
+          category: facts.category.value,
+          brand: facts.brand.value,
+          pricingStrategy: valuation.pricingStrategy,
+          recommendedPriceSek: valuation.priceRecommendedSek,
+          soldPriceSek: outcome.soldPriceSek,
+          saleDurationDays: outcome.saleDurationDays,
+        },
+      ];
+    });
   }
 
   async setSection(id: string, currentSection: ProjectSection): Promise<ItemProject> {

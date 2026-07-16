@@ -403,6 +403,7 @@ export interface ListingDraft {
   listingDrafts?: MarketplaceListingDraft[];
   sellerTimePreference?: SellerTimePreference;
   sellPlan?: SellPlan;
+  localLearningSampleSize?: number;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
@@ -426,8 +427,33 @@ export type ProjectWorkspace = Omit<ListingDraft, 'images'> & {
 
 export interface ProjectOutcome {
   saleStatus: SaleStatus;
+  marketplace?: MarketplaceSite;
+  listedAt?: string;
+  listingUrl?: string;
+  askingPriceSek?: number;
   soldPriceSek?: number;
   soldAt?: string;
+  pausedAt?: string;
+  saleDurationDays?: number;
+}
+
+export interface FollowUpAction {
+  id: string;
+  afterDays: 3 | 7 | 14;
+  kind: 'photos' | 'price' | 'description';
+  titleKey: string;
+  reasonKey: string;
+  basis: 'general-rule' | 'market-data' | 'own-history';
+}
+
+export interface VerifiedProjectOutcome {
+  projectId: string;
+  category: string;
+  brand: string;
+  pricingStrategy: PricingStrategy;
+  recommendedPriceSek: number;
+  soldPriceSek: number;
+  saleDurationDays: number;
 }
 
 export interface ItemProject {

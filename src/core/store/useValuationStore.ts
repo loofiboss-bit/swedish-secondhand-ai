@@ -52,6 +52,7 @@ interface ValuationState {
   valuation: ValuationResult | null;
   comparableQueryPlan: ComparableQueryPlan | null;
   valuationScenarios: ValuationScenario[];
+  localLearningSampleSize: number;
   loading: boolean;
   error: string | null;
   setInputText: (text: string) => void;
@@ -103,6 +104,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   valuation: null,
   comparableQueryPlan: null,
   valuationScenarios: [],
+  localLearningSampleSize: 0,
   loading: false,
   error: null,
   setInputText: (inputText) => set({ inputText }),
@@ -388,10 +390,11 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         {
           category: state.productFacts.category.value,
           brand: state.productFacts.brand.value,
+          pricingStrategy: state.pricingStrategy,
         },
       );
 
-      const valuation: ValuationResult = {
+      let valuation: ValuationResult = {
         ...baseValuation,
         confidence: calibration.adjustedConfidence,
         confidenceBreakdown: {
@@ -400,8 +403,28 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         },
         rationale: `${baseValuation.rationale} ${calibration.summary}`,
       };
+      const strategyFactor = calibration.strategyFactor ?? 1;
+      if (valuation.status !== 'insufficient-evidence' && Math.abs(strategyFactor - 1) >= 0.001) {
+        const before = valuation.priceRecommendedSek;
+        valuation = {
+          ...valuation,
+          priceMinSek: Math.round(valuation.priceMinSek * strategyFactor),
+          priceRecommendedSek: Math.round(valuation.priceRecommendedSek * strategyFactor),
+          priceMaxSek: Math.round(valuation.priceMaxSek * strategyFactor),
+          adjustments: [
+            ...valuation.adjustments,
+            {
+              id: 'own-history-strategy',
+              label: 'Own verified history',
+              factor: strategyFactor,
+              amountSek: Math.round(before * (strategyFactor - 1)),
+              reason: `${calibration.sampleSize} verified outcomes in the category segment`,
+            },
+          ],
+        };
+      }
 
-      set({ valuation, loading: false });
+      set({ valuation, localLearningSampleSize: calibration.sampleSize, loading: false });
       useWorkflowStore.getState().markStepComplete('price');
     } catch (error) {
       set({
@@ -474,6 +497,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         comparables: [...state.traderaComps, ...state.manualComps],
         valuation: state.valuation,
         timePreference: listingStore.sellerTimePreference,
+        ownHistorySampleSize: state.localLearningSampleSize,
       }),
     );
     useWorkflowStore.getState().markStepComplete('templates');
@@ -518,6 +542,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         draft.comparableQueryPlan ??
         (draft.productFacts ? marketIntelligenceService.buildQueryPlan(draft.productFacts) : null),
       valuationScenarios: [],
+      localLearningSampleSize: draft.localLearningSampleSize ?? 0,
       error: null,
     });
   },
@@ -543,6 +568,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       listingDrafts: useListingStore.getState().listingDrafts,
       sellerTimePreference: useListingStore.getState().sellerTimePreference,
       sellPlan: useListingStore.getState().sellPlan ?? undefined,
+      localLearningSampleSize: state.localLearningSampleSize,
       templates: useListingStore.getState().templates,
     };
   },

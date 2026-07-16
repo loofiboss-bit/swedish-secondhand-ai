@@ -603,6 +603,64 @@ select {
   gap: 0.5rem;
 }
 
+.follow-up-form,
+.follow-up-actions,
+.publication-summary {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(8, 20, 13, 0.65);
+}
+
+.publication-summary {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.publication-summary div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.publication-summary dt {
+  color: var(--text-muted);
+}
+
+.publication-summary dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.follow-up-actions ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.follow-up-actions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border-left: 3px solid var(--accent);
+  background: rgba(5, 17, 10, 0.65);
+}
+
+.follow-up-actions p {
+  margin: 0.2rem 0;
+}
+
+.outcome-confirmed {
+  padding: 0.75rem;
+  color: #9ee6b9;
+  border: 1px solid #2e7a4f;
+  border-radius: var(--radius-sm);
+}
+
 .query-plan,
 .scenario-workshop {
   display: grid;

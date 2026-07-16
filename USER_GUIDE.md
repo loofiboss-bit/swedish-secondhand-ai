@@ -108,19 +108,23 @@ Each draft shows the marketplace-policy version, official source URL, and last c
 
 ![Templates quality](./docs/screenshots/04-templates-quality.png)
 
-## 5. Review and History
+## 5. Follow-up and local learning
 
-In **Review/History**:
+In **Follow-up**:
 
-1. Save your listing result to history.
-2. Search and filter previous valuations.
-3. Open a history entry to inspect details.
-4. Update sale outcome:
-   - `pending`
-   - `sold` (optionally add sold price)
-   - `not_sold`
+1. After manually publishing, record date, marketplace, optional HTTP/HTTPS URL, and actual
+   starting price. The project becomes `listed`.
+2. When opening the project after 3, 7, or 14 days, review due local advice for photos, price, or
+   description. These are rules shown on demand, not notifications or automatic changes.
+3. Record `sold`, `not sold`, or `paused`. A sold outcome requires verified final price and a sale
+   date after publication; sale duration is calculated locally.
+4. Every recommendation states whether it uses a general rule, market evidence, or sufficient own
+   verified history. The app never presents a sale-probability estimate without evidence.
 
-Outcome updates improve confidence calibration over time.
+Local learning stays inactive until at least five complete sold outcomes exist in the same
+category. It never pools unrelated categories. When active, confidence and any strategy price
+factor identify own history as their basis, and the factor appears in visible valuation
+adjustments.
 
 ![Review and history](./docs/screenshots/05-review-history.png)
 
@@ -202,4 +206,4 @@ is known; unknown and asking prices do not determine the recommendation.
 4. Estimate with strategy
 5. Generate templates
 6. Fix blockers and copy bundle
-7. Save to history and update sold outcome later
+7. Record manual publication and verified outcome later

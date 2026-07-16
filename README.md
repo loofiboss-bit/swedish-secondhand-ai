@@ -34,6 +34,10 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
   packages.
 - Readiness uses clickable blockers, warnings, and improvements instead of a generic score. A
   transparent sell plan explains marketplace, sale format, price strategy, and fulfillment.
+- Follow-up records manual publication, URL, starting price, sold/not-sold/paused outcome, final
+  price, and sale duration locally, with due advice after 3, 7, and 14 days.
+- Confidence and strategy calibration activates only after five verified own outcomes in the same
+  category; any resulting price factor is shown as an explicit adjustment.
 
 ## What's New in v1.0.0-beta.1
 

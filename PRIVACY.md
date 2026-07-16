@@ -20,6 +20,10 @@ Photo quality measurements, perceptual duplicate hashes, category checklists, co
 candidates, and knowledge gaps are computed or stored locally. Photo assessment does not alter an
 image. Ollama receives at most three images only when it is selected; offline mode receives none.
 
+Publication URLs, dates, asking prices, outcomes, final prices, and sale duration remain inside the
+local project database and backup. Local learning uses only complete user-recorded outcomes on the
+device, requires at least five outcomes in the matching category, and is never uploaded.
+
 ## Backups and diagnostics
 
 Backup format 2 contains selected non-secret datasets, app version, export time, and optionally

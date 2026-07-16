@@ -150,6 +150,9 @@ describe('useValuationStore runPipeline', () => {
     recalculateConfidenceMock.mockResolvedValue({
       adjustedConfidence: 0.79,
       calibrationFactor: 1.03,
+      strategyFactor: 1,
+      sampleSize: 0,
+      basis: 'general-rule',
       summary: 'Calibration applied.',
     });
     generateListingDraftsMock.mockReturnValue(
@@ -285,5 +288,29 @@ describe('useValuationStore runPipeline', () => {
     expect(
       useValuationStore.getState().valuationScenarios.map((scenario) => scenario.strategy),
     ).toEqual(['fast_sale', 'balanced', 'max_value']);
+  });
+
+  it('applies a visible strategy adjustment only when local learning reports enough outcomes', async () => {
+    useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
+    await useValuationStore.getState().analyzeItem();
+    useValuationStore.setState({ traderaComps: comparables });
+    recalculateConfidenceMock.mockResolvedValueOnce({
+      adjustedConfidence: 0.75,
+      calibrationFactor: 0.9,
+      strategyFactor: 0.9,
+      sampleSize: 5,
+      basis: 'own-history',
+      summary: 'Calibrated from own category outcomes.',
+    });
+
+    await useValuationStore.getState().estimateValue();
+
+    expect(useValuationStore.getState().valuation).toMatchObject({
+      priceRecommendedSek: 405,
+      adjustments: [
+        expect.objectContaining({ id: 'own-history-strategy', factor: 0.9, amountSek: -45 }),
+      ],
+    });
+    expect(useValuationStore.getState().localLearningSampleSize).toBe(5);
   });
 });
