@@ -1,5 +1,11 @@
 # Support and recovery
 
+## v2 project migration
+
+The first v2 start creates a schema 3 project index from the active v1 draft and history. The
+schema 2 source keys are retained. If validation or commit verification fails, the app shows
+read-only recovery and leaves the source untouched. Export a backup before resetting data.
+
 ## First checks
 
 1. Record app version, operating system, selected AI mode, and public provider status. Do not copy

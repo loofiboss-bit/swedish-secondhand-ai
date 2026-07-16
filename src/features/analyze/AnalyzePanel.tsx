@@ -1,38 +1,19 @@
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ProductFactKey, ProductListFactKey } from '@core/types';
+import type { PhotoRole, ProductFactKey, ProductListFactKey } from '@core/types';
+import { getCategoryProfile, isRequirementComplete } from '@core/services/categoryProfileService';
+import { photoAssessmentService } from '@core/services/photoAssessmentService';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { SectionCard } from '@shared/components/SectionCard';
 
 async function fileToDataUrl(file: File): Promise<string> {
-  if (typeof createImageBitmap === 'undefined') {
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  const bitmap = await createImageBitmap(file);
-  try {
-    const maxSize = 1280;
-    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Could not process image');
-    context.drawImage(bitmap, 0, 0, width, height);
-
-    return canvas.toDataURL('image/jpeg', 0.82);
-  } finally {
-    bitmap.close();
-  }
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 const MAX_IMAGES = 6;
@@ -46,13 +27,18 @@ export function AnalyzePanel() {
     images,
     fingerprint,
     productFacts,
+    factCandidates,
+    knowledgeGaps,
+    photoAssessments,
     loading,
     error,
     setInputText,
     addImage,
     removeImage,
+    setPhotoRole,
     updateFact,
     updateListFact,
+    updateAttribute,
     setTestedStatus,
     setAuthenticityStatus,
     setFactLocked,
@@ -62,6 +48,10 @@ export function AnalyzePanel() {
   } = useValuationStore();
   const { stepErrors } = useWorkflowStore();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const categoryProfile = useMemo(
+    () => getCategoryProfile(productFacts?.category.value),
+    [productFacts?.category.value],
+  );
 
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
@@ -74,6 +64,10 @@ export function AnalyzePanel() {
         setUploadError(t('imageLimitError', { count: MAX_IMAGES }));
         break;
       }
+      if (/\.(?:heic|heif)$/i.test(file.name) || /image\/hei[cf]/i.test(file.type)) {
+        setUploadError(t('heicNotSupported'));
+        continue;
+      }
       if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
         setUploadError(t('imageTypeError'));
         continue;
@@ -84,8 +78,18 @@ export function AnalyzePanel() {
       }
       try {
         const dataUrl = await fileToDataUrl(file);
-        addImage(dataUrl);
-        acceptedCount += 1;
+        try {
+          const current = useValuationStore.getState();
+          const assessment = await photoAssessmentService.assessDataUrl(
+            dataUrl,
+            current.images.length,
+            current.photoAssessments,
+          );
+          addImage(dataUrl, assessment);
+        } catch {
+          setUploadError(t('imageAssessmentError'));
+        }
+        if (useValuationStore.getState().images.length > acceptedCount) acceptedCount += 1;
       } catch {
         setUploadError(t('imageProcessingError'));
       }
@@ -145,20 +149,76 @@ export function AnalyzePanel() {
       </label>
 
       {images.length > 0 && (
-        <ul className="image-list">
-          {images.map((image, index) => (
-            <li key={`${image}-${index}`}>
-              <img src={image} alt={`upload-${index + 1}`} loading="lazy" decoding="async" />
-              <button type="button" onClick={() => removeImage(index)}>
-                {t('remove')}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div id="photo-checklist" tabIndex={-1} className="photo-coach">
+          <h3>{t('photoCoachTitle')}</h3>
+          <ul className="photo-requirements">
+            {categoryProfile.photos.map((requirement) => {
+              const complete = photoAssessments.some(
+                (assessment) => assessment.role === requirement.role,
+              );
+              return (
+                <li key={requirement.role} className={complete ? 'is-complete' : ''}>
+                  <span aria-hidden="true">{complete ? '✓' : '○'}</span>{' '}
+                  {t(`photoRole_${requirement.role}`)} · {t(requirement.level)}
+                </li>
+              );
+            })}
+          </ul>
+          <ul className="image-list">
+            {images.map((image, index) => (
+              <li key={`${image}-${index}`}>
+                <img src={image} alt={`upload-${index + 1}`} loading="lazy" decoding="async" />
+                {photoAssessments
+                  .filter((assessment) => assessment.imageIndex === index)
+                  .map((assessment) => (
+                    <div className="photo-assessment" key={assessment.imageIndex}>
+                      <label>
+                        <span>{t('photoPurpose')}</span>
+                        <select
+                          value={assessment.role}
+                          onChange={(event) => setPhotoRole(index, event.target.value as PhotoRole)}
+                        >
+                          {['cover', 'angle', 'defect', 'label_model', 'accessories'].map(
+                            (role) => (
+                              <option key={role} value={role}>
+                                {t(`photoRole_${role}`)}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                      <small>
+                        {assessment.width}×{assessment.height} · {t('brightness')}:{' '}
+                        {Math.round(assessment.brightness * 100)}% · {t('sharpness')}:{' '}
+                        {Math.round(assessment.sharpness * 100)}%
+                      </small>
+                      {assessment.issues.length === 0 ? (
+                        <span className="photo-ok">{t('photoQualityGood')}</span>
+                      ) : (
+                        <ul className="photo-issues">
+                          {assessment.issues.map((issue) => (
+                            <li key={issue}>{t(`photoIssue_${issue}`)}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                <button type="button" onClick={() => removeImage(index)}>
+                  {t('remove')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {fingerprint && productFacts && (
-        <div className="detected-item" aria-label={t('detectedItem')}>
+        <div
+          id="item-analysis"
+          tabIndex={-1}
+          className="detected-item"
+          aria-label={t('detectedItem')}
+        >
           <h3>{t('detectedItem')}</h3>
           {(
             [
@@ -170,7 +230,7 @@ export function AnalyzePanel() {
           ).map(([key, label]) => {
             const fact = productFacts[key];
             return (
-              <label className="field" key={key}>
+              <label className="field" key={key} id={`fact-${key}`}>
                 <span>
                   {label} — {t('factSource')}: {fact.source}
                 </span>
@@ -190,7 +250,7 @@ export function AnalyzePanel() {
               </label>
             );
           })}
-          <label className="field">
+          <label className="field" id="fact-conditionGrade">
             <span>
               {t('condition')} — {t('factSource')}: {productFacts.conditionGrade.source}
             </span>
@@ -213,7 +273,87 @@ export function AnalyzePanel() {
               {t('lockFact')}
             </span>
           </label>
-          <label className="field">
+          <section className="category-profile" aria-labelledby="category-profile-title">
+            <h3 id="category-profile-title">
+              {t('categoryProfileTitle')}: {categoryProfile.id}
+            </h3>
+            <ul className="fact-checklist">
+              {categoryProfile.facts.map((requirement) => (
+                <li
+                  key={requirement.key}
+                  className={
+                    isRequirementComplete(productFacts, requirement.key) ? 'is-complete' : ''
+                  }
+                >
+                  <span aria-hidden="true">
+                    {isRequirementComplete(productFacts, requirement.key) ? '✓' : '○'}
+                  </span>{' '}
+                  {t(`profileFact_${requirement.key.replace('.', '_')}`, {
+                    defaultValue: requirement.label,
+                  })}{' '}
+                  · {t(requirement.level)}
+                </li>
+              ))}
+            </ul>
+            {categoryProfile.facts
+              .filter((requirement) => requirement.key.startsWith('attributes.'))
+              .map((requirement) => {
+                const key = requirement.key.slice('attributes.'.length);
+                return (
+                  <label className="field" key={requirement.key} id={`fact-attributes-${key}`}>
+                    <span>
+                      {t(`profileFact_${requirement.key.replace('.', '_')}`, {
+                        defaultValue: requirement.label,
+                      })}
+                    </span>
+                    <input
+                      key={`${key}-${productFacts.attributes[key]?.value ?? ''}`}
+                      defaultValue={productFacts.attributes[key]?.value ?? ''}
+                      onBlur={(event) => updateAttribute(key, event.target.value)}
+                    />
+                  </label>
+                );
+              })}
+          </section>
+          {factCandidates.length > 0 && (
+            <section className="fact-candidates" aria-labelledby="fact-candidates-title">
+              <h3 id="fact-candidates-title">{t('factCandidatesTitle')}</h3>
+              <p>{t('factCandidatesIntro')}</p>
+              <ul>
+                {factCandidates.map((candidate) => (
+                  <li key={candidate.id}>
+                    <strong>
+                      {candidate.key}: {candidate.value}
+                    </strong>
+                    <span>
+                      {t('factSource')}: {candidate.source} · {t('uncertainty')}:{' '}
+                      {t(`uncertainty_${candidate.uncertainty}`)}
+                    </span>
+                    <small>
+                      {candidate.references
+                        .map((reference) =>
+                          reference.kind === 'image'
+                            ? t('imageReference', { count: Number(reference.index) + 1 })
+                            : t('textReference'),
+                        )
+                        .join(', ')}
+                    </small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {knowledgeGaps.length > 0 && (
+            <section className="knowledge-gaps">
+              <h3>{t('knowledgeGapsTitle')}</h3>
+              <ul>
+                {knowledgeGaps.map((gap) => (
+                  <li key={gap.key}>{t(gap.reasonKey)}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <label className="field" id="fact-authenticityStatus">
             <span>{t('authenticityStatus')}</span>
             <select
               value={productFacts.authenticityStatus.value}
@@ -242,7 +382,7 @@ export function AnalyzePanel() {
               />
             </label>
           ))}
-          <label className="field">
+          <label className="field" id="fact-testedStatus">
             <span>{t('testedStatus')}</span>
             <select
               value={productFacts.testedStatus.value}

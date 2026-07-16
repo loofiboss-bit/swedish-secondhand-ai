@@ -10,6 +10,35 @@
 
 Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
+## What's New in v2.0.0
+
+- A local project library keeps multiple items isolated as drafts, ready listings, published
+  items, sold items, or paused work.
+- Each item workspace is divided into Item, Market & price, Listing, and Follow-up; provider and
+  backup settings live in a separate Settings view.
+- Schema 3 migrates the active v1 draft and history without deleting the schema 2 rollback source.
+- Full backups include project images; compact backups explicitly omit images. Secrets remain
+  excluded from both formats.
+- A deterministic seller coach orders the next actions by safety, missing facts, photos, market
+  evidence, price, listing, and follow-up; every action explains why it matters.
+- Local photo checks measure resolution, light, contrast, sharpness, duplicates, and crop risk
+  without changing the original JPEG, PNG, or WebP.
+- Category profiles and source-labelled fact candidates make unknowns visible while preserving
+  every user correction and lock across later analysis.
+- The market workspace builds editable exact/broad searches, deduplicates observations across
+  queries, and exposes match type, price kind, source, date, relevance, and cache age.
+- Active asking prices remain a separate context interval. Only user-approved realized prices
+  enter the three reproducible fast, balanced, and max-value scenarios.
+- The listing studio owns every Tradera, Blocket, and Vinted field independently, preserves user
+  edits during regeneration, previews copy and cover crops, and exports structured manual-copy
+  packages.
+- Readiness uses clickable blockers, warnings, and improvements instead of a generic score. A
+  transparent sell plan explains marketplace, sale format, price strategy, and fulfillment.
+- Follow-up records manual publication, URL, starting price, sold/not-sold/paused outcome, final
+  price, and sale duration locally, with due advice after 3, 7, and 14 days.
+- Confidence and strategy calibration activates only after five verified own outcomes in the same
+  category; any resulting price factor is shown as an explicit adjustment.
+
 ## What's New in v1.0.0-beta.1
 
 - Safe-by-default offline first run, with optional Ollama or Gemini modes and explicit transient
@@ -47,13 +76,13 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - Local-first storage for settings, manual comps, drafts, and history.
 - Swedish-first UI with English fallback.
 
-## Guided Workflow
+## Item workspace
 
-1. Analyze item from text/images.
-2. Fetch Tradera comparables and add manual comps.
-3. Choose pricing strategy and estimate value.
-4. Generate site templates and quality checks.
-5. Review readiness, copy/export bundle, and save to history.
+1. Create or open an item project.
+2. Review the item from text/images.
+3. Fetch Tradera comparables, add manual evidence, and estimate value.
+4. Generate and review site listings.
+5. Copy/export manually and track the item in Follow-up.
 
 ## Keyboard Shortcuts
 
@@ -79,6 +108,8 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - `npm run test:e2e`
 - `npm run validate`
 - `npm run validate:release`
+- `npm run validate:publication` (requires verified repository release-gate variables)
+- `npm run validate:security-deps`
 - `npm run dist`
 
 ## API Notes

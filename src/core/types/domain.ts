@@ -10,11 +10,42 @@ export type WorkflowStep = 'analyze' | 'comparables' | 'price' | 'templates' | '
 
 export type SaleStatus = 'pending' | 'sold' | 'not_sold';
 
+export type ProjectStatus = 'draft' | 'ready' | 'listed' | 'sold' | 'paused';
+
+export type ProjectSection = 'item' | 'market' | 'listing' | 'follow-up';
+
 export type MarketPriceKind = 'asking' | 'realized' | 'unknown';
 
 export type MarketState = 'active' | 'sold' | 'unknown';
 
+export type ComparableHitType = 'exact' | 'broad' | 'manual';
+
 export type FactSource = 'ai' | 'user' | 'heuristic';
+
+export type SellerCategory = 'Electronics' | 'Fashion' | 'Furniture' | 'Collectibles' | 'General';
+
+export type FactCandidateSource = 'gemini' | 'ollama' | 'offline';
+
+export interface EvidenceReference {
+  kind: 'text' | 'image';
+  index?: number;
+  excerpt?: string;
+}
+
+export interface FactCandidate {
+  id: string;
+  key: string;
+  value: string;
+  source: FactCandidateSource;
+  confidence: number;
+  uncertainty: 'low' | 'medium' | 'high';
+  references: EvidenceReference[];
+}
+
+export interface AnalysisKnowledgeGap {
+  key: string;
+  reasonKey: string;
+}
 
 export interface VerifiedFact<T> {
   value: T;
@@ -52,18 +83,88 @@ export interface ItemFingerprint {
   confidence: number;
 }
 
-export interface ComparableRecord {
+export interface ItemAnalysisResult {
+  fingerprint: ItemFingerprint;
+  candidates: FactCandidate[];
+  knowledgeGaps: AnalysisKnowledgeGap[];
+  mode: FactCandidateSource;
+}
+
+export type PhotoRole = 'cover' | 'angle' | 'defect' | 'label_model' | 'accessories';
+
+export type PhotoIssue =
+  | 'low_resolution'
+  | 'too_dark'
+  | 'too_bright'
+  | 'low_contrast'
+  | 'blurry'
+  | 'duplicate'
+  | 'crop_risk';
+
+export interface PhotoAssessment {
+  version: 1;
+  imageIndex: number;
+  role: PhotoRole;
+  width: number;
+  height: number;
+  brightness: number;
+  contrast: number;
+  sharpness: number;
+  perceptualHash: string;
+  duplicateOfIndex?: number;
+  cropRisk: boolean;
+  issues: PhotoIssue[];
+  assessedAt: string;
+}
+
+export interface EvidenceGap {
+  id: string;
+  key: string;
+  severity: 'blocking' | 'recommended';
+  reason: string;
+  targetSection: ProjectSection;
+  targetId?: string;
+}
+
+export type CoachActionKind =
+  | 'safety'
+  | 'facts'
+  | 'photos'
+  | 'comparables'
+  | 'price'
+  | 'listing'
+  | 'follow-up';
+
+export interface CoachAction {
+  id: string;
+  kind: CoachActionKind;
+  priority: number;
+  severity: 'blocking' | 'improvement';
+  titleKey: string;
+  reasonKey: string;
+  impactKey: string;
+  targetSection: ProjectSection;
+  targetId?: string;
+}
+
+export interface MarketObservation {
   id: string;
   source: 'tradera' | 'manual';
   site: MarketplaceSite;
   title: string;
   priceSek: number;
-  soldAt: string;
-  priceKind?: MarketPriceKind;
-  marketState?: MarketState;
+  priceKind: MarketPriceKind;
+  marketState: MarketState;
   observedAt?: string;
-  conditionHint: string;
   url: string;
+  queryVariantIds?: string[];
+  hitType?: ComparableHitType;
+  cacheAgeMs?: number;
+}
+
+export interface ComparableRecord extends MarketObservation {
+  soldAt: string;
+  conditionHint: string;
   similarityScore: number;
   sourceQuality: number;
   location?: string;
@@ -86,6 +187,32 @@ export interface ComparableRecord {
     reason: string;
     decidedBy: 'system' | 'user';
   };
+}
+
+export interface ComparableQueryVariant {
+  id: string;
+  type: 'exact' | 'broad';
+  query: string;
+  enabled: boolean;
+  userEdited: boolean;
+}
+
+export interface ComparableQueryPlan {
+  version: 1;
+  generatedAt: string;
+  variants: ComparableQueryVariant[];
+}
+
+export interface ValuationScenario {
+  strategy: PricingStrategy;
+  result: ValuationResult;
+}
+
+export interface AskingPriceRange {
+  count: number;
+  minSek: number;
+  medianSek: number;
+  maxSek: number;
 }
 
 export interface ConfidenceBreakdown {
@@ -148,12 +275,62 @@ export interface ListingTemplate {
   disclaimer: string;
 }
 
+export type ListingFieldOrigin = 'generated' | 'user';
+
+export interface ListingOwnedField<T> {
+  value: T;
+  origin: ListingFieldOrigin;
+  userEdited: boolean;
+}
+
+export interface MarketplaceListingDraft {
+  version: 1;
+  site: MarketplaceSite;
+  updatedAt: string;
+  fields: {
+    title: ListingOwnedField<string>;
+    description: ListingOwnedField<string>;
+    priceSek: ListingOwnedField<number>;
+    category: ListingOwnedField<string>;
+    attributes: ListingOwnedField<string[]>;
+    shippingPickup: ListingOwnedField<string>;
+    tags: ListingOwnedField<string[]>;
+    disclosure: ListingOwnedField<string>;
+  };
+  imageOrder: number[];
+  coverImageIndex: number | null;
+}
+
+export type ListingDraftFieldKey = keyof MarketplaceListingDraft['fields'];
+
+export interface ListingReadinessIssue {
+  id: string;
+  severity: 'blocker' | 'warning' | 'improvement';
+  field: ListingDraftFieldKey | 'images';
+  message: string;
+}
+
+export type SellerTimePreference = 'fast' | 'balanced' | 'patient';
+
+export interface SellPlan {
+  version: 1;
+  generatedAt: string;
+  marketplace: MarketplaceSite;
+  saleFormat: 'fixed-price' | 'auction';
+  pricingStrategy: PricingStrategy;
+  fulfillment: 'shipping' | 'pickup' | 'shipping-or-pickup';
+  rationale: Array<{ key: string; params?: Record<string, string | number> }>;
+  basis: Array<'market-data' | 'general-rule' | 'own-history'>;
+}
+
 export interface ComparableQuery {
   title: string;
   category?: string;
   brand?: string;
   model?: string;
   limit?: number;
+  variantId?: string;
+  hitType?: Exclude<ComparableHitType, 'manual'>;
 }
 
 export interface ListingTemplateInput {
@@ -168,7 +345,7 @@ export interface MarketplaceAdapter {
 }
 
 export interface ValuationService {
-  analyzeInput(text: string, images: string[], signal?: AbortSignal): Promise<ItemFingerprint>;
+  analyzeInput(text: string, images: string[], signal?: AbortSignal): Promise<ItemAnalysisResult>;
   estimateValue(
     facts: VerifiedProductFacts,
     comps: ComparableRecord[],
@@ -219,10 +396,86 @@ export interface ListingDraft {
   images: string[];
   fingerprint: ItemFingerprint | null;
   productFacts?: VerifiedProductFacts | null;
+  factCandidates?: FactCandidate[];
+  knowledgeGaps?: AnalysisKnowledgeGap[];
+  photoAssessments?: PhotoAssessment[];
+  comparableQueryPlan?: ComparableQueryPlan;
+  listingDrafts?: MarketplaceListingDraft[];
+  sellerTimePreference?: SellerTimePreference;
+  sellPlan?: SellPlan;
+  localLearningSampleSize?: number;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
   templates: ListingTemplate[];
+}
+
+export interface MediaAsset {
+  version: 1;
+  id: string;
+  projectId: string;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+  size: number;
+  createdAt: string;
+  contentHash: string;
+  blob: Blob;
+}
+
+export type ProjectWorkspace = Omit<ListingDraft, 'images'> & {
+  mediaIds: string[];
+};
+
+export interface ProjectOutcome {
+  saleStatus: SaleStatus;
+  marketplace?: MarketplaceSite;
+  listedAt?: string;
+  listingUrl?: string;
+  askingPriceSek?: number;
+  soldPriceSek?: number;
+  soldAt?: string;
+  pausedAt?: string;
+  saleDurationDays?: number;
+}
+
+export interface FollowUpAction {
+  id: string;
+  afterDays: 3 | 7 | 14;
+  kind: 'photos' | 'price' | 'description';
+  titleKey: string;
+  reasonKey: string;
+  basis: 'general-rule' | 'market-data' | 'own-history';
+}
+
+export interface VerifiedProjectOutcome {
+  projectId: string;
+  category: string;
+  brand: string;
+  pricingStrategy: PricingStrategy;
+  recommendedPriceSek: number;
+  soldPriceSek: number;
+  saleDurationDays: number;
+}
+
+export interface ItemProject {
+  schemaVersion: 3;
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  currentSection: ProjectSection;
+  createdAt: string;
+  updatedAt: string;
+  workspace: ProjectWorkspace;
+  outcome?: ProjectOutcome;
+  migratedFrom?: 'listing-draft' | 'history';
+}
+
+export interface ProjectSummary {
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  updatedAt: string;
+  recommendedPriceSek: number | null;
+  thumbnailMediaId?: string;
 }
 
 export interface SiteConstraint {
@@ -232,6 +485,13 @@ export interface SiteConstraint {
   severity: 'error' | 'warning';
   message: string;
   validate: (template: ListingTemplate) => boolean;
+}
+
+export interface MarketplacePolicyMetadata {
+  site: MarketplaceSite;
+  version: string;
+  sourceUrl: string;
+  checkedAt: string;
 }
 
 export interface PolicyIssue {

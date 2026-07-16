@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { sitePolicyService } from './sitePolicyService';
 
 describe('sitePolicyService', () => {
+  it('versions every marketplace policy with an official source and check time', () => {
+    for (const site of ['tradera', 'blocket', 'vinted'] as const) {
+      expect(sitePolicyService.getMetadata(site)).toMatchObject({ site, version: '2026-07-16' });
+      expect(sitePolicyService.getMetadata(site).sourceUrl).toMatch(/^https:\/\//);
+      expect(Date.parse(sitePolicyService.getMetadata(site).checkedAt)).not.toBeNaN();
+    }
+  });
+
   it('returns blocking issue for invalid title length', () => {
     const result = sitePolicyService.validate('vinted', {
       site: 'vinted',

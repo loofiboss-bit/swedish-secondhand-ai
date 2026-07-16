@@ -1,4 +1,9 @@
-import type { ComparableRecord, ItemFingerprint, ListingTemplate } from '@core/types';
+import type {
+  ComparableRecord,
+  FactCandidate,
+  ItemFingerprint,
+  ListingTemplate,
+} from '@core/types';
 import type { AiProviderCapabilities } from './AiCapabilities';
 import type { AiProviderId } from './AiProvider';
 
@@ -10,6 +15,7 @@ export interface AiResponseMetadata {
 
 export interface ItemAnalysisResponse {
   readonly fingerprint: ItemFingerprint;
+  readonly candidates: readonly FactCandidate[];
   readonly metadata: AiResponseMetadata;
 }
 

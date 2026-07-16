@@ -1,14 +1,15 @@
 # Swedish Secondhand AI — repository instructions
 
-## Mission and v1 scope
+## Mission and v2 scope
 
-Build a trustworthy local-first Windows and Linux desktop assistant for Swedish secondhand
-valuation and copy-ready listings. The v1 implementation roadmap is `.ai/CODEX_ROADMAP.md`.
+Build a trustworthy local-first Windows and Linux desktop seller coach for Swedish secondhand
+valuation, project management, and copy-ready listings. The v2 implementation roadmap is
+`.ai/CODEX_ROADMAP.md`.
 
-v1 supports Gemini, Ollama, deterministic offline analysis, Tradera comparables, and manual
+v2 supports Gemini, Ollama, deterministic offline analysis, Tradera comparables, and manual
 copy/export for Tradera, Blocket, and Vinted. Do not add OpenAI runtimes, accounts, cloud sync,
 payments, mobile/web clients, scraping, browser publishing, automatic marketplace publishing,
-or automatic updates before v1.
+or automatic updates in v2.
 
 ## Read order
 
@@ -38,7 +39,7 @@ platform/provider adapters -> core services -> Zustand stores -> features/compon
 - Components render state, accept input, and call store actions. They do not access IndexedDB,
   Node APIs, provider SDKs, raw secrets, or unrestricted IPC.
 
-## Non-negotiable v1 invariants
+## Non-negotiable v2 invariants
 
 ### Security
 

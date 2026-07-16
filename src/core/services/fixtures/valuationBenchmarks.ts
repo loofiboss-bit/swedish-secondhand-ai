@@ -38,6 +38,7 @@ function benchmark(
       priceSek,
       soldAt: `2026-06-0${index + 1}T12:00:00.000Z`,
       priceKind: 'realized',
+      marketState: 'sold',
       conditionHint: 'good',
       url: '',
       similarityScore: 0.9,

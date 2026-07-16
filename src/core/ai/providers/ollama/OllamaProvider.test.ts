@@ -144,6 +144,17 @@ describe('OllamaProvider', () => {
     }
   });
 
+  it('rejects an oversized response before parsing provider output', async () => {
+    const provider = createProvider(
+      vi.fn().mockResolvedValue(new Response('x'.repeat(2 * 1024 * 1024 + 1))),
+    );
+
+    await expect(provider.analyzeItem({ text: 'Chair', images: [] })).rejects.toMatchObject({
+      code: 'invalid_response',
+      providerId: 'ollama',
+    });
+  });
+
   it.each([
     [401, 'authentication', false],
     [404, 'model_not_found', false],

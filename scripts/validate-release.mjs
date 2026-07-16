@@ -6,8 +6,8 @@ const version = packageJson.version;
 const expectedTag = process.env.RELEASE_TAG || process.env.GITHUB_REF_NAME || '';
 const errors = [];
 
-if (!/^1\.0\.0(?:-beta\.\d+)?$/.test(version)) {
-  errors.push(`package version ${version} is outside the approved v1 beta/stable train`);
+if (!/^(?:1\.0\.0|2\.0\.0)(?:-beta\.\d+)?$/.test(version)) {
+  errors.push(`package version ${version} is outside the approved v1/v2 beta or stable trains`);
 }
 if (expectedTag && expectedTag !== `v${version}`) {
   errors.push(`tag ${expectedTag} does not match package version v${version}`);
@@ -22,7 +22,7 @@ for (const relativePath of [
   'PRIVACY.md',
   'SECURITY.md',
   'SUPPORT.md',
-  'docs/releases/v1.0.0-beta.1.md',
+  `docs/releases/v${version}.md`,
   '.ai/CODEX_ROADMAP.md',
 ]) {
   try {

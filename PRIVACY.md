@@ -7,7 +7,7 @@ use.
 
 ## Provider data
 
-- **Gemini:** when selected, item text and at most two prepared images are sent to Google. The key
+- **Gemini:** when selected, item text and at most two supported original images are sent to Google. The key
   remains in operating-system protected storage and is used only by the Electron main process.
 - **Ollama:** requests are restricted to HTTP loopback on port `11434`.
 - **Offline:** deterministic analysis does not send item content to an AI provider.
@@ -16,11 +16,20 @@ use.
   for 24 hours to reduce external requests.
 - **Blocket and Vinted:** v1 creates copy-ready text only. It does not scrape or publish.
 
+Photo quality measurements, perceptual duplicate hashes, category checklists, coach actions, fact
+candidates, and knowledge gaps are computed or stored locally. Photo assessment does not alter an
+image. Ollama receives at most three images only when it is selected; offline mode receives none.
+
+Publication URLs, dates, asking prices, outcomes, final prices, and sale duration remain inside the
+local project database and backup. Local learning uses only complete user-recorded outcomes on the
+device, requires at least five outcomes in the matching category, and is never uploaded.
+
 ## Backups and diagnostics
 
-Backup format 1 contains selected non-secret datasets, app version, and export time. It never
-contains API keys, protected values, or secret status. Imports are fully validated before an
-atomic replacement is committed.
+Backup format 2 contains selected non-secret datasets, app version, export time, and optionally
+project images. Compact exports explicitly omit images. It never contains API keys, protected
+values, or secret status. Legacy format-1 imports remain supported. Imports are fully validated
+before replacement is committed, with rollback of legacy datasets if project replacement fails.
 
 Diagnostics retain at most 100 local entries and sanitize credential-shaped values, sensitive
 keys, errors, large strings, and deep data. Diagnostics are not uploaded automatically.

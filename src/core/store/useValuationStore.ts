@@ -1,12 +1,18 @@
 import { create } from 'zustand';
 import type {
   ComparableRecord,
+  ComparableQueryPlan,
+  AnalysisKnowledgeGap,
+  FactCandidate,
   ItemFingerprint,
   ListingDraft,
   PricingStrategy,
   ProductFactKey,
   ProductListFactKey,
+  PhotoAssessment,
+  PhotoRole,
   ValuationResult,
+  ValuationScenario,
   VerifiedProductFacts,
   WorkflowStep,
 } from '@core/types';
@@ -15,6 +21,8 @@ import { traderaAdapterService } from '@core/services/traderaAdapterService';
 import { manualCompsService } from '@core/services/manualCompsService';
 import { listingTemplateService } from '@core/services/listingTemplateService';
 import { historyService } from '@core/services/historyService';
+import { marketIntelligenceService } from '@core/services/marketIntelligenceService';
+import { sellPlanService } from '@core/services/sellPlanService';
 import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
 import {
   factsFromFingerprint,
@@ -23,6 +31,7 @@ import {
   setProductFactLock,
   updateProductFact,
   updateProductListFact,
+  updateProductAttribute,
   updateTestedStatus,
   updateAuthenticityStatus,
 } from '@core/services/verifiedFactsService';
@@ -35,18 +44,28 @@ interface ValuationState {
   pricingStrategy: PricingStrategy;
   fingerprint: ItemFingerprint | null;
   productFacts: VerifiedProductFacts | null;
+  factCandidates: FactCandidate[];
+  knowledgeGaps: AnalysisKnowledgeGap[];
+  photoAssessments: PhotoAssessment[];
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
+  comparableQueryPlan: ComparableQueryPlan | null;
+  valuationScenarios: ValuationScenario[];
+  localLearningSampleSize: number;
   loading: boolean;
   error: string | null;
   setInputText: (text: string) => void;
   setPricingStrategy: (strategy: PricingStrategy) => void;
-  addImage: (dataUrl: string) => void;
+  addImage: (dataUrl: string, assessment?: PhotoAssessment) => void;
   removeImage: (index: number) => void;
+  setPhotoRole: (index: number, role: PhotoRole) => void;
   analyzeItem: () => Promise<void>;
   cancelAnalysis: () => void;
   fetchTraderaComparables: () => Promise<void>;
+  updateComparableQuery: (id: string, query: string) => void;
+  setComparableQueryEnabled: (id: string, enabled: boolean) => void;
+  regenerateComparableQueryPlan: () => void;
   loadManualComparables: () => Promise<void>;
   addManualComparable: (
     comp: Omit<ComparableRecord, 'id' | 'source' | 'sourceQuality'> &
@@ -56,12 +75,14 @@ interface ValuationState {
   setComparableIncluded: (id: string, included: boolean, reason?: string) => void;
   updateFact: (key: ProductFactKey, value: string) => void;
   updateListFact: (key: ProductListFactKey, value: string) => void;
+  updateAttribute: (key: string, value: string) => void;
   setTestedStatus: (value: VerifiedProductFacts['testedStatus']['value']) => void;
   setAuthenticityStatus: (value: VerifiedProductFacts['authenticityStatus']['value']) => void;
   setFactLocked: (key: ProductFactKey, locked: boolean) => void;
   estimateValue: () => Promise<void>;
+  compareScenarios: () => Promise<void>;
   runPipeline: () => Promise<void>;
-  generateTemplates: () => void;
+  generateTemplates: (replaceUserEdits?: boolean) => void;
   saveToHistory: () => Promise<void>;
   hydrateFromDraft: (draft: ListingDraft) => void;
   buildDraft: (currentStep: WorkflowStep, completedSteps: WorkflowStep[]) => ListingDraft;
@@ -75,16 +96,58 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   pricingStrategy: 'balanced',
   fingerprint: null,
   productFacts: null,
+  factCandidates: [],
+  knowledgeGaps: [],
+  photoAssessments: [],
   traderaComps: [],
   manualComps: [],
   valuation: null,
+  comparableQueryPlan: null,
+  valuationScenarios: [],
+  localLearningSampleSize: 0,
   loading: false,
   error: null,
   setInputText: (inputText) => set({ inputText }),
-  setPricingStrategy: (pricingStrategy) => set({ pricingStrategy }),
-  addImage: (dataUrl) => set((state) => ({ images: [...state.images, dataUrl].slice(0, 6) })),
+  setPricingStrategy: (pricingStrategy) =>
+    set({ pricingStrategy, valuation: null, valuationScenarios: [] }),
+  addImage: (dataUrl, assessment) =>
+    set((state) => {
+      if (state.images.length >= 6) return state;
+      const imageIndex = state.images.length;
+      return {
+        images: [...state.images, dataUrl],
+        photoAssessments: assessment
+          ? [...state.photoAssessments, { ...assessment, imageIndex }]
+          : state.photoAssessments,
+      };
+    }),
   removeImage: (index) =>
-    set((state) => ({ images: state.images.filter((_, currentIndex) => currentIndex !== index) })),
+    set((state) => ({
+      images: state.images.filter((_, currentIndex) => currentIndex !== index),
+      photoAssessments: state.photoAssessments
+        .filter((assessment) => assessment.imageIndex !== index)
+        .map((assessment) => ({
+          ...assessment,
+          imageIndex:
+            assessment.imageIndex > index ? assessment.imageIndex - 1 : assessment.imageIndex,
+          duplicateOfIndex:
+            assessment.duplicateOfIndex === undefined || assessment.duplicateOfIndex === index
+              ? undefined
+              : assessment.duplicateOfIndex > index
+                ? assessment.duplicateOfIndex - 1
+                : assessment.duplicateOfIndex,
+          issues:
+            assessment.duplicateOfIndex === index
+              ? assessment.issues.filter((issue) => issue !== 'duplicate')
+              : assessment.issues,
+        })),
+    })),
+  setPhotoRole: (index, role) =>
+    set((state) => ({
+      photoAssessments: state.photoAssessments.map((assessment) =>
+        assessment.imageIndex === index ? { ...assessment, role } : assessment,
+      ),
+    })),
   analyzeItem: async () => {
     activeAnalysis?.abort();
     activeAnalysis = new AbortController();
@@ -97,14 +160,25 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         return;
       }
 
-      const fingerprint = await valuationService.analyzeInput(
+      const analysis = await valuationService.analyzeInput(
         state.inputText,
         state.images,
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      const productFacts = mergeAnalyzedFacts(state.productFacts, fingerprint);
-      set({ fingerprint, productFacts, loading: false });
+      const productFacts = mergeAnalyzedFacts(state.productFacts, analysis.fingerprint);
+      const comparableQueryPlan = marketIntelligenceService.buildQueryPlan(
+        productFacts,
+        state.comparableQueryPlan,
+      );
+      set({
+        fingerprint: analysis.fingerprint,
+        productFacts,
+        factCandidates: analysis.candidates,
+        knowledgeGaps: analysis.knowledgeGaps,
+        comparableQueryPlan,
+        loading: false,
+      });
       useWorkflowStore.getState().markStepComplete('analyze');
     } catch (error) {
       if (controller.signal.aborted) {
@@ -134,14 +208,33 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      const traderaComps = await traderaAdapterService.getComparables({
-        title: productFacts.title.value,
-        category: productFacts.category.value,
-        brand: productFacts.brand.value,
-        model: productFacts.model.value,
-        limit: 20,
+      const comparableQueryPlan =
+        get().comparableQueryPlan ?? marketIntelligenceService.buildQueryPlan(productFacts);
+      const variants = comparableQueryPlan.variants
+        .filter((variant) => variant.enabled)
+        .slice(0, 3);
+      if (variants.length === 0) throw new Error('Enable at least one comparable search.');
+      const results = await Promise.all(
+        variants.map((variant) =>
+          traderaAdapterService.getComparables({
+            title: variant.query,
+            category: productFacts.category.value,
+            brand: productFacts.brand.value,
+            model: productFacts.model.value,
+            limit: 20,
+            variantId: variant.id,
+            hitType: variant.type,
+          }),
+        ),
+      );
+      const traderaComps = marketIntelligenceService.normalizeAndDedupe(results.flat());
+      set({
+        comparableQueryPlan,
+        traderaComps: rankComparables(productFacts, traderaComps),
+        valuation: null,
+        valuationScenarios: [],
+        loading: false,
       });
-      set({ traderaComps: rankComparables(productFacts, traderaComps), loading: false });
       useWorkflowStore.getState().markStepComplete('comparables');
       useWorkflowStore.getState().setCurrentStep('price');
     } catch (error) {
@@ -153,6 +246,23 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         .getState()
         .setStepError('comparables', 'Unable to fetch Tradera comparables.');
     }
+  },
+  updateComparableQuery: (id, query) => {
+    const plan = get().comparableQueryPlan;
+    if (!plan) return;
+    set({ comparableQueryPlan: marketIntelligenceService.updateQueryVariant(plan, id, { query }) });
+  },
+  setComparableQueryEnabled: (id, enabled) => {
+    const plan = get().comparableQueryPlan;
+    if (!plan) return;
+    set({
+      comparableQueryPlan: marketIntelligenceService.updateQueryVariant(plan, id, { enabled }),
+    });
+  },
+  regenerateComparableQueryPlan: () => {
+    const facts = get().productFacts;
+    if (!facts) return;
+    set({ comparableQueryPlan: marketIntelligenceService.buildQueryPlan(facts, null) });
   },
   loadManualComparables: async () => {
     try {
@@ -168,11 +278,13 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       manualComps: state.productFacts
         ? rankComparables(state.productFacts, [next, ...state.manualComps])
         : [next, ...state.manualComps],
+      valuation: null,
+      valuationScenarios: [],
     }));
   },
   removeManualComparable: async (id) => {
     const manualComps = await manualCompsService.remove(id);
-    set({ manualComps });
+    set({ manualComps, valuation: null, valuationScenarios: [] });
   },
   setComparableIncluded: (id, included, reason) => {
     const update = (items: ComparableRecord[]) =>
@@ -194,6 +306,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       traderaComps: update(state.traderaComps),
       manualComps: update(state.manualComps),
       valuation: null,
+      valuationScenarios: [],
     }));
   },
   updateFact: (key, value) => {
@@ -205,22 +318,53 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       traderaComps: rankComparables(productFacts, state.traderaComps),
       manualComps: rankComparables(productFacts, state.manualComps),
       valuation: null,
+      valuationScenarios: [],
+      comparableQueryPlan: marketIntelligenceService.buildQueryPlan(
+        productFacts,
+        state.comparableQueryPlan,
+      ),
     });
   },
   updateListFact: (key, value) => {
     const state = get();
     if (!state.productFacts) return;
-    set({ productFacts: updateProductListFact(state.productFacts, key, value), valuation: null });
+    set({
+      productFacts: updateProductListFact(state.productFacts, key, value),
+      valuation: null,
+      valuationScenarios: [],
+    });
+  },
+  updateAttribute: (key, value) => {
+    const state = get();
+    if (!state.productFacts) return;
+    const productFacts = updateProductAttribute(state.productFacts, key, value);
+    set({
+      productFacts,
+      valuation: null,
+      valuationScenarios: [],
+      comparableQueryPlan: marketIntelligenceService.buildQueryPlan(
+        productFacts,
+        state.comparableQueryPlan,
+      ),
+    });
   },
   setTestedStatus: (value) => {
     const productFacts = get().productFacts;
     if (!productFacts) return;
-    set({ productFacts: updateTestedStatus(productFacts, value), valuation: null });
+    set({
+      productFacts: updateTestedStatus(productFacts, value),
+      valuation: null,
+      valuationScenarios: [],
+    });
   },
   setAuthenticityStatus: (value) => {
     const productFacts = get().productFacts;
     if (!productFacts) return;
-    set({ productFacts: updateAuthenticityStatus(productFacts, value), valuation: null });
+    set({
+      productFacts: updateAuthenticityStatus(productFacts, value),
+      valuation: null,
+      valuationScenarios: [],
+    });
   },
   setFactLocked: (key, locked) => {
     const productFacts = get().productFacts;
@@ -246,10 +390,11 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         {
           category: state.productFacts.category.value,
           brand: state.productFacts.brand.value,
+          pricingStrategy: state.pricingStrategy,
         },
       );
 
-      const valuation: ValuationResult = {
+      let valuation: ValuationResult = {
         ...baseValuation,
         confidence: calibration.adjustedConfidence,
         confidenceBreakdown: {
@@ -258,8 +403,28 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         },
         rationale: `${baseValuation.rationale} ${calibration.summary}`,
       };
+      const strategyFactor = calibration.strategyFactor ?? 1;
+      if (valuation.status !== 'insufficient-evidence' && Math.abs(strategyFactor - 1) >= 0.001) {
+        const before = valuation.priceRecommendedSek;
+        valuation = {
+          ...valuation,
+          priceMinSek: Math.round(valuation.priceMinSek * strategyFactor),
+          priceRecommendedSek: Math.round(valuation.priceRecommendedSek * strategyFactor),
+          priceMaxSek: Math.round(valuation.priceMaxSek * strategyFactor),
+          adjustments: [
+            ...valuation.adjustments,
+            {
+              id: 'own-history-strategy',
+              label: 'Own verified history',
+              factor: strategyFactor,
+              amountSek: Math.round(before * (strategyFactor - 1)),
+              reason: `${calibration.sampleSize} verified outcomes in the category segment`,
+            },
+          ],
+        };
+      }
 
-      set({ valuation, loading: false });
+      set({ valuation, localLearningSampleSize: calibration.sampleSize, loading: false });
       useWorkflowStore.getState().markStepComplete('price');
     } catch (error) {
       set({
@@ -267,6 +432,26 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         error: error instanceof Error ? error.message : 'Failed to estimate value',
       });
       useWorkflowStore.getState().setStepError('price', 'Estimation failed.');
+    }
+  },
+  compareScenarios: async () => {
+    const state = get();
+    if (!state.productFacts) {
+      set({ error: 'Analyze item before comparing price scenarios.' });
+      return;
+    }
+    set({ loading: true, error: null });
+    try {
+      const valuationScenarios = await marketIntelligenceService.buildScenarios(
+        state.productFacts,
+        [...state.traderaComps, ...state.manualComps],
+      );
+      set({ valuationScenarios, loading: false });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Failed to compare price scenarios.',
+      });
     }
   },
   runPipeline: async () => {
@@ -286,7 +471,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       useWorkflowStore.getState().setStepError('templates', 'Template generation failed.');
     }
   },
-  generateTemplates: () => {
+  generateTemplates: (replaceUserEdits = false) => {
     const state = get();
     if (!state.fingerprint || !state.productFacts || !state.valuation) {
       set({ error: 'Estimate value before generating templates.' });
@@ -296,8 +481,25 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       set({ error: state.valuation.action });
       return;
     }
-    const templates = listingTemplateService.generateTemplates(state.productFacts, state.valuation);
-    useListingStore.getState().setTemplates(templates);
+    const listingStore = useListingStore.getState();
+    const listingDrafts = listingTemplateService.generateListingDrafts(
+      state.productFacts,
+      state.valuation,
+      state.images.length,
+      listingStore.listingDrafts,
+      replaceUserEdits,
+    );
+    listingStore.setListingDrafts(listingDrafts);
+    listingStore.setSellPlan(
+      listingStore.sellerTimePreference,
+      sellPlanService.create({
+        facts: state.productFacts,
+        comparables: [...state.traderaComps, ...state.manualComps],
+        valuation: state.valuation,
+        timePreference: listingStore.sellerTimePreference,
+        ownHistorySampleSize: state.localLearningSampleSize,
+      }),
+    );
     useWorkflowStore.getState().markStepComplete('templates');
     useWorkflowStore.getState().setCurrentStep('review');
   },
@@ -330,9 +532,17 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       fingerprint: draft.fingerprint,
       productFacts:
         draft.productFacts ?? (draft.fingerprint ? factsFromFingerprint(draft.fingerprint) : null),
+      factCandidates: draft.factCandidates ?? [],
+      knowledgeGaps: draft.knowledgeGaps ?? [],
+      photoAssessments: draft.photoAssessments ?? [],
       traderaComps: draft.traderaComps,
       manualComps: draft.manualComps,
       valuation: draft.valuation,
+      comparableQueryPlan:
+        draft.comparableQueryPlan ??
+        (draft.productFacts ? marketIntelligenceService.buildQueryPlan(draft.productFacts) : null),
+      valuationScenarios: [],
+      localLearningSampleSize: draft.localLearningSampleSize ?? 0,
       error: null,
     });
   },
@@ -348,9 +558,17 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       images: state.images,
       fingerprint: state.fingerprint,
       productFacts: state.productFacts,
+      factCandidates: state.factCandidates,
+      knowledgeGaps: state.knowledgeGaps,
+      photoAssessments: state.photoAssessments,
       traderaComps: state.traderaComps,
       manualComps: state.manualComps,
       valuation: state.valuation,
+      comparableQueryPlan: state.comparableQueryPlan ?? undefined,
+      listingDrafts: useListingStore.getState().listingDrafts,
+      sellerTimePreference: useListingStore.getState().sellerTimePreference,
+      sellPlan: useListingStore.getState().sellPlan ?? undefined,
+      localLearningSampleSize: state.localLearningSampleSize,
       templates: useListingStore.getState().templates,
     };
   },

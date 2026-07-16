@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+## 2.0.0 - 2026-07-16
+
+- Added a local project library with draft, ready, listed, sold, and paused states plus separate
+  Home, Projects, item workspace, and Settings views.
+- Added atomic schema 3 project/media persistence with idempotent active-draft/history migration,
+  read-only recovery, and retained schema 2 rollback data.
+- Added format-2 full project backup with images and explicit compact backup without images.
+- Added a deterministic next-action seller coach with safety/fact blockers, reasons, expected
+  impact, direct navigation, and prioritized projects on Home.
+- Added local photo assessment for resolution, brightness, contrast, blur, duplicates, and crop
+  risk plus category-aware shot lists; original images are never modified.
+- Added Electronics, Fashion, Furniture, Collectibles, and General fact profiles plus editable
+  category attributes.
+- Extended Gemini, Ollama, and conservative offline analysis with source-labelled fact candidates,
+  uncertainty, input references, explicit knowledge gaps, and persistence without overriding user
+  locks.
+- Added editable exact/broad comparable query plans, bounded multi-query Tradera lookup,
+  normalization and deterministic cross-query deduplication with provenance and cache age.
+- Added source/price-kind comparison filters, explicit manual observation date and URL, a separate
+  asking-price context interval, and user-only approval for realized valuation evidence.
+- Added a three-column price workshop for fast sale, balanced, and max value with every
+  deterministic adjustment exposed per scenario.
+- Replaced static templates with field-owned Tradera, Blocket, and Vinted listing drafts that
+  preserve user edits during regeneration and require explicit confirmation before replacement.
+- Added editable category/attribute, fulfillment, tag, disclosure, image-order, cover-crop,
+  preview, character-count, and structured copy-package controls.
+- Replaced the generic 100-point listing display with clickable blockers, warnings, and
+  improvements, plus versioned official marketplace-policy sources and check dates.
+- Added a deterministic sell plan for marketplace, fixed price/auction, pricing strategy, and
+  fulfillment with explicit market-data/general-rule/history basis labels.
+- Added local publication tracking for date, marketplace, URL, actual starting price, sold/not
+  sold/paused outcome, final price, and calculated sale duration.
+- Added on-demand 3/7/14-day photo, price, and description advice without background notifications
+  or automatic listing changes.
+- Restricted confidence and strategy calibration to at least five complete user-owned outcomes in
+  the matching category, with own-history basis and a visible deterministic price adjustment.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
   App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
 - Distinguished asking, realized, and unknown comparable prices; only user-approved realized

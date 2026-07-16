@@ -17,12 +17,27 @@ function aiFact<T>(value: T, confidence: number): VerifiedFact<T> {
 }
 
 function isFact(value: unknown): value is VerifiedFact<unknown> {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const fact = value as Partial<VerifiedFact<unknown>>;
   return (
     'value' in fact &&
     ['ai', 'user', 'heuristic'].includes(String(fact.source)) &&
-    typeof fact.locked === 'boolean'
+    typeof fact.locked === 'boolean' &&
+    (fact.evidence === undefined ||
+      (typeof fact.evidence === 'string' && fact.evidence.length <= 2_000))
+  );
+}
+
+function isStringFact(value: unknown, maxLength = 2_000): value is VerifiedFact<string> {
+  return isFact(value) && typeof value.value === 'string' && value.value.length <= maxLength;
+}
+
+function isStringListFact(value: unknown): value is VerifiedFact<string[]> {
+  return (
+    isFact(value) &&
+    Array.isArray(value.value) &&
+    value.value.length <= 100 &&
+    value.value.every((entry) => typeof entry === 'string' && entry.length <= 500)
   );
 }
 
@@ -31,30 +46,28 @@ export function isVerifiedProductFacts(value: unknown): value is VerifiedProduct
   const facts = value as Partial<VerifiedProductFacts>;
   return (
     facts.schemaVersion === 2 &&
-    isFact(facts.title) &&
-    typeof facts.title.value === 'string' &&
-    isFact(facts.category) &&
-    typeof facts.category.value === 'string' &&
-    isFact(facts.brand) &&
-    typeof facts.brand.value === 'string' &&
-    isFact(facts.model) &&
-    typeof facts.model.value === 'string' &&
+    isStringFact(facts.title) &&
+    isStringFact(facts.category) &&
+    isStringFact(facts.brand) &&
+    isStringFact(facts.model) &&
     isFact(facts.conditionGrade) &&
     ['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].includes(
       String(facts.conditionGrade.value),
     ) &&
-    isFact(facts.defects) &&
-    Array.isArray(facts.defects.value) &&
-    isFact(facts.includedAccessories) &&
-    Array.isArray(facts.includedAccessories.value) &&
-    isFact(facts.missingAccessories) &&
-    Array.isArray(facts.missingAccessories.value) &&
+    isStringListFact(facts.defects) &&
+    isStringListFact(facts.includedAccessories) &&
+    isStringListFact(facts.missingAccessories) &&
     isFact(facts.testedStatus) &&
     ['tested', 'untested', 'unknown'].includes(String(facts.testedStatus.value)) &&
     isFact(facts.authenticityStatus) &&
     ['verified', 'unverified', 'unknown'].includes(String(facts.authenticityStatus.value)) &&
     typeof facts.attributes === 'object' &&
-    facts.attributes !== null
+    facts.attributes !== null &&
+    !Array.isArray(facts.attributes) &&
+    Object.entries(facts.attributes).length <= 100 &&
+    Object.entries(facts.attributes).every(
+      ([key, fact]) => key.length > 0 && key.length <= 100 && isStringFact(fact),
+    )
   );
 }
 
@@ -189,6 +202,28 @@ export function updateProductListFact(
       source: 'user',
       locked: true,
       evidence: 'Confirmed by user',
+    },
+  };
+}
+
+export function updateProductAttribute(
+  facts: VerifiedProductFacts,
+  key: string,
+  value: string,
+): VerifiedProductFacts {
+  const normalizedKey = key.trim();
+  const normalizedValue = value.trim();
+  if (!normalizedKey || !normalizedValue) return facts;
+  return {
+    ...facts,
+    attributes: {
+      ...facts.attributes,
+      [normalizedKey]: {
+        value: normalizedValue,
+        source: 'user',
+        locked: true,
+        evidence: 'Confirmed by user',
+      },
     },
   };
 }

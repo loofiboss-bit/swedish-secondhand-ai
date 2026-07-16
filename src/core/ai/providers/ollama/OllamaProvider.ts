@@ -14,6 +14,7 @@ import {
   type OllamaProviderConfig,
 } from './OllamaConfig';
 import { parseOllamaAnalysisResponse } from './OllamaResponseParser';
+import { buildFactCandidates } from '@core/ai/factCandidates';
 
 const SYSTEM_PROMPT = `You are a product analyzer for secondhand marketplace listings.
 Return only valid JSON with these exact keys:
@@ -24,6 +25,7 @@ Return only valid JSON with these exact keys:
 - confidence (number): 0 to 1
 
 Respond with JSON only, no other text.`;
+const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 
 const capabilities: AiProviderCapabilities = {
   itemAnalysis: true,
@@ -206,6 +208,64 @@ function extractMessageContent(value: unknown): string {
   return typeof message.content === 'string' ? message.content : '';
 }
 
+async function readBoundedJsonResponse(response: Response): Promise<unknown> {
+  const declaredLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
+    throw new AiProviderError('Ollama response exceeded the local safety limit.', {
+      code: 'invalid_response',
+      providerId: 'ollama',
+    });
+  }
+  if (!response.body) {
+    const text = await response.text();
+    if (new TextEncoder().encode(text).byteLength > MAX_RESPONSE_BYTES) {
+      throw new AiProviderError('Ollama response exceeded the local safety limit.', {
+        code: 'invalid_response',
+        providerId: 'ollama',
+      });
+    }
+    try {
+      return JSON.parse(text) as unknown;
+    } catch {
+      throw new AiProviderError('Ollama returned invalid JSON.', {
+        code: 'invalid_response',
+        providerId: 'ollama',
+      });
+    }
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_RESPONSE_BYTES) {
+      await reader.cancel();
+      throw new AiProviderError('Ollama response exceeded the local safety limit.', {
+        code: 'invalid_response',
+        providerId: 'ollama',
+      });
+    }
+    chunks.push(value);
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder().decode(body)) as unknown;
+  } catch {
+    throw new AiProviderError('Ollama returned invalid JSON.', {
+      code: 'invalid_response',
+      providerId: 'ollama',
+    });
+  }
+}
+
 export class OllamaProvider implements AiProvider {
   readonly id = 'ollama';
   readonly capabilities = capabilities;
@@ -246,10 +306,16 @@ export class OllamaProvider implements AiProvider {
       });
 
       if (!response.ok) throw new OllamaHttpError(response.status);
-      const rawContent = extractMessageContent(await response.json());
+      const rawContent = extractMessageContent(await readBoundedJsonResponse(response));
 
+      const fingerprint = parseOllamaAnalysisResponse(rawContent, this.createFallback(request));
       return {
-        fingerprint: parseOllamaAnalysisResponse(rawContent, this.createFallback(request)),
+        fingerprint,
+        candidates: buildFactCandidates(
+          fingerprint,
+          { ...request, images: request.images.slice(0, 3) },
+          'ollama',
+        ),
         metadata: {
           providerId: this.id,
           modelId: config.modelId,

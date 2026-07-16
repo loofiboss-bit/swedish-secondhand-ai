@@ -45,7 +45,8 @@ describe('valuation pipeline integration', () => {
       Object.assign(new Error('network unavailable'), { code: 'network' }),
     );
 
-    const fingerprint = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
+    const analysis = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
+    const fingerprint = analysis.fingerprint;
     const valuation = await valuationService.estimateValue(
       factsFromFingerprint(fingerprint),
       [
@@ -57,10 +58,12 @@ describe('valuation pipeline integration', () => {
           priceSek: 350,
           soldAt: '2026-02-10T00:00:00.000Z',
           priceKind: 'realized',
+          marketState: 'sold',
           conditionHint: 'good',
           url: '',
           similarityScore: 0.8,
           sourceQuality: 0.78,
+          decision: { included: true, reason: 'Reviewed', decidedBy: 'user' },
         },
         {
           id: '2',
@@ -70,10 +73,12 @@ describe('valuation pipeline integration', () => {
           priceSek: 450,
           soldAt: '2026-02-11T00:00:00.000Z',
           priceKind: 'realized',
+          marketState: 'sold',
           conditionHint: 'good',
           url: '',
           similarityScore: 0.7,
           sourceQuality: 0.6,
+          decision: { included: true, reason: 'Reviewed', decidedBy: 'user' },
         },
       ],
       'balanced',

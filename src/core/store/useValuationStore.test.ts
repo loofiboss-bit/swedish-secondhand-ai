@@ -11,13 +11,13 @@ const {
   estimateValueMock,
   getComparablesMock,
   recalculateConfidenceMock,
-  generateTemplatesMock,
+  generateListingDraftsMock,
 } = vi.hoisted(() => ({
   analyzeInputMock: vi.fn(),
   estimateValueMock: vi.fn(),
   getComparablesMock: vi.fn(),
   recalculateConfidenceMock: vi.fn(),
-  generateTemplatesMock: vi.fn(),
+  generateListingDraftsMock: vi.fn(),
 }));
 
 vi.mock('@core/services/valuationService', () => ({
@@ -42,7 +42,17 @@ vi.mock('@core/services/valuationCalibrationService', () => ({
 
 vi.mock('@core/services/listingTemplateService', () => ({
   listingTemplateService: {
-    generateTemplates: generateTemplatesMock,
+    generateListingDrafts: generateListingDraftsMock,
+    toTemplate: (draft: { site: string; fields: Record<string, { value: unknown }> }) => ({
+      site: draft.site,
+      title: draft.fields.title.value,
+      description: draft.fields.description.value,
+      priceSuggestionSek: draft.fields.priceSek.value,
+      shippingSuggestion: draft.fields.shippingPickup.value,
+      tags: draft.fields.tags.value,
+      disclaimer: draft.fields.disclosure.value,
+    }),
+    exportStructuredCopyPackage: vi.fn(),
   },
 }));
 
@@ -70,6 +80,7 @@ const comparables: ComparableRecord[] = [
     priceSek: 450,
     soldAt: '2026-02-11T00:00:00.000Z',
     priceKind: 'realized',
+    marketState: 'sold',
     conditionHint: 'good',
     url: 'https://example.test/item/1',
     similarityScore: 0.84,
@@ -128,15 +139,45 @@ describe('useValuationStore runPipeline', () => {
       error: null,
     });
 
-    analyzeInputMock.mockResolvedValue(fingerprint);
+    analyzeInputMock.mockResolvedValue({
+      fingerprint,
+      candidates: [],
+      knowledgeGaps: [],
+      mode: 'offline',
+    });
     getComparablesMock.mockResolvedValue(comparables);
     estimateValueMock.mockResolvedValue(valuation);
     recalculateConfidenceMock.mockResolvedValue({
       adjustedConfidence: 0.79,
       calibrationFactor: 1.03,
+      strategyFactor: 1,
+      sampleSize: 0,
+      basis: 'general-rule',
       summary: 'Calibration applied.',
     });
-    generateTemplatesMock.mockReturnValue(templates);
+    generateListingDraftsMock.mockReturnValue(
+      templates.map((template) => ({
+        version: 1,
+        site: template.site,
+        updatedAt: '2026-07-16T00:00:00Z',
+        fields: {
+          title: { value: template.title, origin: 'generated', userEdited: false },
+          description: { value: template.description, origin: 'generated', userEdited: false },
+          priceSek: { value: template.priceSuggestionSek, origin: 'generated', userEdited: false },
+          category: { value: 'Furniture', origin: 'generated', userEdited: false },
+          attributes: { value: [], origin: 'generated', userEdited: false },
+          shippingPickup: {
+            value: template.shippingSuggestion,
+            origin: 'generated',
+            userEdited: false,
+          },
+          tags: { value: template.tags, origin: 'generated', userEdited: false },
+          disclosure: { value: template.disclaimer, origin: 'generated', userEdited: false },
+        },
+        imageOrder: [],
+        coverImageIndex: null,
+      })),
+    );
   });
 
   it('runs full pipeline and advances workflow to review on success', async () => {
@@ -145,9 +186,9 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
-    expect(generateTemplatesMock).toHaveBeenCalledTimes(1);
+    expect(generateListingDraftsMock).toHaveBeenCalledTimes(1);
     expect(useWorkflowStore.getState().currentStep).toBe('review');
     expect(useWorkflowStore.getState().completedSteps).toEqual(
       expect.arrayContaining(['analyze', 'comparables', 'price', 'templates']),
@@ -162,7 +203,7 @@ describe('useValuationStore runPipeline', () => {
     expect(analyzeInputMock).not.toHaveBeenCalled();
     expect(getComparablesMock).not.toHaveBeenCalled();
     expect(estimateValueMock).not.toHaveBeenCalled();
-    expect(generateTemplatesMock).not.toHaveBeenCalled();
+    expect(generateListingDraftsMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toMatch(/add item text or at least one image/i);
     expect(useWorkflowStore.getState().currentStep).toBe('analyze');
   });
@@ -191,9 +232,9 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).not.toHaveBeenCalled();
-    expect(generateTemplatesMock).not.toHaveBeenCalled();
+    expect(generateListingDraftsMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toBe('Tradera timeout');
     expect(useWorkflowStore.getState().stepErrors.comparables).toBe(
       'Unable to fetch Tradera comparables.',
@@ -207,9 +248,9 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
-    expect(generateTemplatesMock).not.toHaveBeenCalled();
+    expect(generateListingDraftsMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toBe('Estimator down');
     expect(useWorkflowStore.getState().stepErrors.price).toBe('Estimation failed.');
     expect(useWorkflowStore.getState().currentStep).toBe('price');
@@ -217,17 +258,59 @@ describe('useValuationStore runPipeline', () => {
 
   it('sets template step error when template generation throws', async () => {
     useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
-    generateTemplatesMock.mockImplementationOnce(() => {
+    generateListingDraftsMock.mockImplementationOnce(() => {
       throw new Error('Template engine crashed');
     });
 
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
-    expect(generateTemplatesMock).toHaveBeenCalledTimes(1);
+    expect(generateListingDraftsMock).toHaveBeenCalledTimes(1);
     expect(useValuationStore.getState().error).toBe('Template engine crashed');
     expect(useWorkflowStore.getState().stepErrors.templates).toBe('Template generation failed.');
+  });
+
+  it('builds all three deterministic price scenarios from the same reviewed evidence', async () => {
+    useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
+    await useValuationStore.getState().analyzeItem();
+    estimateValueMock.mockClear();
+
+    await useValuationStore.getState().compareScenarios();
+
+    expect(estimateValueMock).toHaveBeenCalledTimes(3);
+    expect(estimateValueMock.mock.calls.map((call) => call[2])).toEqual([
+      'fast_sale',
+      'balanced',
+      'max_value',
+    ]);
+    expect(
+      useValuationStore.getState().valuationScenarios.map((scenario) => scenario.strategy),
+    ).toEqual(['fast_sale', 'balanced', 'max_value']);
+  });
+
+  it('applies a visible strategy adjustment only when local learning reports enough outcomes', async () => {
+    useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
+    await useValuationStore.getState().analyzeItem();
+    useValuationStore.setState({ traderaComps: comparables });
+    recalculateConfidenceMock.mockResolvedValueOnce({
+      adjustedConfidence: 0.75,
+      calibrationFactor: 0.9,
+      strategyFactor: 0.9,
+      sampleSize: 5,
+      basis: 'own-history',
+      summary: 'Calibrated from own category outcomes.',
+    });
+
+    await useValuationStore.getState().estimateValue();
+
+    expect(useValuationStore.getState().valuation).toMatchObject({
+      priceRecommendedSek: 405,
+      adjustments: [
+        expect.objectContaining({ id: 'own-history-strategy', factor: 0.9, amountSek: -45 }),
+      ],
+    });
+    expect(useValuationStore.getState().localLearningSampleSize).toBe(5);
   });
 });

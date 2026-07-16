@@ -1,8 +1,10 @@
 import { clear, get, set } from 'idb-keyval';
+import { Blob as NodeBlob } from 'node:buffer';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { HistoryEntry, ListingDraft } from '@core/types';
-import { backupService } from './backupService';
-import { DATASET_KEYS, type DataEnvelope } from './persistenceService';
+import { backupService, isBackupTextWithinLimit } from './backupService';
+import { DATASET_KEYS, createEnvelope, type DataEnvelope } from './persistenceService';
+import { PROJECT_STORE, projectRepository } from './projectRepository';
 
 const draft = {
   version: 1,
@@ -20,7 +22,11 @@ const draft = {
 } satisfies ListingDraft;
 
 describe('backupService', () => {
-  beforeEach(async () => clear());
+  beforeEach(async () => {
+    Object.defineProperty(globalThis, 'Blob', { configurable: true, value: NodeBlob });
+    await clear();
+    await clear(PROJECT_STORE);
+  });
 
   it('migrates bare v0.5 datasets to schema 2 and never exports secrets', async () => {
     await set(DATASET_KEYS.settings, {
@@ -35,7 +41,7 @@ describe('backupService', () => {
     const backup = await backupService.exportBackup(new Date('2026-07-15T12:00:00.000Z'));
     const stored = await get<DataEnvelope<unknown>>(DATASET_KEYS['listing-draft']);
 
-    expect(backup).toMatchObject({ formatVersion: 1, appVersion: '1.0.0-beta.1' });
+    expect(backup).toMatchObject({ formatVersion: 2, appVersion: '2.0.0' });
     expect(JSON.stringify(backup)).not.toContain('legacy-secret');
     expect(JSON.stringify(backup)).not.toMatch(/geminiApiKey|traderaApiKey/);
     expect(stored).toMatchObject({ schemaVersion: 2, dataset: 'listing-draft', data: draft });
@@ -112,7 +118,7 @@ describe('backupService', () => {
   });
 
   it('rejects unsupported formats and secret-bearing input', async () => {
-    await expect(backupService.importBackup({ formatVersion: 2 })).rejects.toThrow(/unsupported/i);
+    await expect(backupService.importBackup({ formatVersion: 7 })).rejects.toThrow(/unsupported/i);
     await expect(
       backupService.importBackup({
         formatVersion: 1,
@@ -121,5 +127,95 @@ describe('backupService', () => {
         datasets: { settings: { geminiApiKey: 'secret' } },
       }),
     ).rejects.toThrow(/invalid/i);
+  });
+
+  it('measures backup text bytes before parsing it', () => {
+    expect(isBackupTextWithinLimit('1234567890', 10)).toBe(true);
+    expect(isBackupTextWithinLimit('å'.repeat(6), 10)).toBe(false);
+  });
+
+  it('round-trips full project backups and makes compact image omission explicit', async () => {
+    await projectRepository.initialize();
+    const created = await projectRepository.create();
+    await projectRepository.save(created.project.id, {
+      ...created.draft,
+      inputText: 'Project with photo',
+      images: ['data:image/png;base64,AQID'],
+    });
+
+    const full = await backupService.exportBackup(new Date('2026-07-16T12:00:00.000Z'), true);
+    const compact = await backupService.exportBackup(new Date('2026-07-16T12:00:00.000Z'), false);
+
+    expect(full.datasets.projects).toMatchObject({ imagesIncluded: true });
+    expect(full.datasets.projects?.records[0]?.images).toEqual(['data:image/png;base64,AQID']);
+    expect(compact.datasets.projects).toMatchObject({ imagesIncluded: false });
+    expect(compact.datasets.projects?.records[0]?.images).toEqual([]);
+    expect(compact.datasets.projects?.records[0]?.project.workspace.mediaIds).toEqual([]);
+
+    await projectRepository.reset();
+    await backupService.importBackup(full, ['projects']);
+    const restored = await projectRepository.open(created.project.id);
+    expect(restored.draft.inputText).toBe('Project with photo');
+    expect(restored.draft.images).toEqual(['data:image/png;base64,AQID']);
+  });
+
+  it('rolls legacy datasets back when project replacement cannot commit', async () => {
+    await set(DATASET_KEYS.history, createEnvelope('history', []));
+    const before = await get(DATASET_KEYS.history);
+    await set('meta:project-index', { schemaVersion: 99 }, PROJECT_STORE);
+    const replacement = {
+      formatVersion: 2 as const,
+      appVersion: '2.0.0-beta.1',
+      exportedAt: '2026-07-16T12:00:00.000Z',
+      datasets: {
+        history: [
+          {
+            id: 'replacement',
+            createdAt: '2026-07-16T10:00:00.000Z',
+            fingerprint: {
+              title: 'Chair',
+              category: 'Furniture',
+              brand: 'IKEA',
+              model: 'Poang',
+              conditionGrade: 'good' as const,
+              attributes: {},
+              detectedLanguage: 'sv' as const,
+              confidence: 0.8,
+            },
+            valuation: {
+              status: 'insufficient-evidence' as const,
+              priceMinSek: null,
+              priceRecommendedSek: null,
+              priceMaxSek: null,
+              confidence: 0,
+              rationale: 'No evidence',
+              action: 'Add evidence',
+              pricingStrategy: 'balanced' as const,
+              confidenceBreakdown: {
+                similarity: 0,
+                sampleSize: 0,
+                sourceQuality: 0,
+                calibration: 1,
+              },
+              compsUsed: [],
+              adjustments: [],
+            },
+            templates: [],
+            saleStatus: 'pending' as const,
+          },
+        ],
+        projects: {
+          schemaVersion: 3 as const,
+          activeProjectId: null,
+          imagesIncluded: true,
+          records: [],
+        },
+      },
+    };
+
+    await expect(backupService.importBackup(replacement, ['history', 'projects'])).rejects.toThrow(
+      /project index/i,
+    );
+    expect(await get(DATASET_KEYS.history)).toEqual(before);
   });
 });
