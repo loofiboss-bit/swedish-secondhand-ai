@@ -18,6 +18,8 @@ export type MarketPriceKind = 'asking' | 'realized' | 'unknown';
 
 export type MarketState = 'active' | 'sold' | 'unknown';
 
+export type ComparableHitType = 'exact' | 'broad' | 'manual';
+
 export type FactSource = 'ai' | 'user' | 'heuristic';
 
 export type SellerCategory = 'Electronics' | 'Fashion' | 'Furniture' | 'Collectibles' | 'General';
@@ -145,18 +147,24 @@ export interface CoachAction {
   targetId?: string;
 }
 
-export interface ComparableRecord {
+export interface MarketObservation {
   id: string;
   source: 'tradera' | 'manual';
   site: MarketplaceSite;
   title: string;
   priceSek: number;
-  soldAt: string;
-  priceKind?: MarketPriceKind;
-  marketState?: MarketState;
+  priceKind: MarketPriceKind;
+  marketState: MarketState;
   observedAt?: string;
-  conditionHint: string;
   url: string;
+  queryVariantIds?: string[];
+  hitType?: ComparableHitType;
+  cacheAgeMs?: number;
+}
+
+export interface ComparableRecord extends MarketObservation {
+  soldAt: string;
+  conditionHint: string;
   similarityScore: number;
   sourceQuality: number;
   location?: string;
@@ -179,6 +187,32 @@ export interface ComparableRecord {
     reason: string;
     decidedBy: 'system' | 'user';
   };
+}
+
+export interface ComparableQueryVariant {
+  id: string;
+  type: 'exact' | 'broad';
+  query: string;
+  enabled: boolean;
+  userEdited: boolean;
+}
+
+export interface ComparableQueryPlan {
+  version: 1;
+  generatedAt: string;
+  variants: ComparableQueryVariant[];
+}
+
+export interface ValuationScenario {
+  strategy: PricingStrategy;
+  result: ValuationResult;
+}
+
+export interface AskingPriceRange {
+  count: number;
+  minSek: number;
+  medianSek: number;
+  maxSek: number;
 }
 
 export interface ConfidenceBreakdown {
@@ -247,6 +281,8 @@ export interface ComparableQuery {
   brand?: string;
   model?: string;
   limit?: number;
+  variantId?: string;
+  hitType?: Exclude<ComparableHitType, 'manual'>;
 }
 
 export interface ListingTemplateInput {
@@ -315,6 +351,7 @@ export interface ListingDraft {
   factCandidates?: FactCandidate[];
   knowledgeGaps?: AnalysisKnowledgeGap[];
   photoAssessments?: PhotoAssessment[];
+  comparableQueryPlan?: ComparableQueryPlan;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;

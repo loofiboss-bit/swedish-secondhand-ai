@@ -73,6 +73,8 @@ class TraderaAdapterService implements MarketplaceAdapter {
       if (!response.configured || !isTraderaApiResponse(response.data)) return [];
       const raw = response.data;
       const items = raw.items ?? raw.results ?? raw.endedItems ?? [];
+      const observedAt = response.fetchedAt ?? new Date().toISOString();
+      const cacheAgeMs = Math.max(0, Date.now() - Date.parse(observedAt));
 
       return items
         .map((item, index) => {
@@ -89,7 +91,10 @@ class TraderaAdapterService implements MarketplaceAdapter {
             soldAt,
             priceKind: item.priceKind ?? 'unknown',
             marketState: item.marketState ?? 'unknown',
-            observedAt: response.fetchedAt ?? new Date().toISOString(),
+            observedAt,
+            cacheAgeMs: Number.isFinite(cacheAgeMs) ? cacheAgeMs : 0,
+            queryVariantIds: criteria.variantId ? [criteria.variantId] : [],
+            hitType: criteria.hitType ?? 'broad',
             conditionHint: 'Unknown',
             url: item.url ?? 'https://www.tradera.com/',
             similarityScore,

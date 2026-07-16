@@ -153,6 +153,7 @@ export function App() {
     valuationStore.factCandidates,
     valuationStore.knowledgeGaps,
     valuationStore.photoAssessments,
+    valuationStore.comparableQueryPlan,
     valuationStore.traderaComps,
     valuationStore.manualComps,
     valuationStore.valuation,

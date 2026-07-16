@@ -251,6 +251,7 @@ class ValuationServiceImpl implements ValuationService {
     const approved = ranked.filter(
       (item) =>
         item.decision?.included &&
+        item.decision.decidedBy === 'user' &&
         item.priceKind === 'realized' &&
         Number.isFinite(item.priceSek) &&
         item.priceSek > 0 &&

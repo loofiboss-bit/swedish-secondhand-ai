@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   ComparableRecord,
+  ComparableQueryPlan,
   AnalysisKnowledgeGap,
   FactCandidate,
   ItemFingerprint,
@@ -11,6 +12,7 @@ import type {
   PhotoAssessment,
   PhotoRole,
   ValuationResult,
+  ValuationScenario,
   VerifiedProductFacts,
   WorkflowStep,
 } from '@core/types';
@@ -19,6 +21,7 @@ import { traderaAdapterService } from '@core/services/traderaAdapterService';
 import { manualCompsService } from '@core/services/manualCompsService';
 import { listingTemplateService } from '@core/services/listingTemplateService';
 import { historyService } from '@core/services/historyService';
+import { marketIntelligenceService } from '@core/services/marketIntelligenceService';
 import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
 import {
   factsFromFingerprint,
@@ -46,6 +49,8 @@ interface ValuationState {
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
+  comparableQueryPlan: ComparableQueryPlan | null;
+  valuationScenarios: ValuationScenario[];
   loading: boolean;
   error: string | null;
   setInputText: (text: string) => void;
@@ -56,6 +61,9 @@ interface ValuationState {
   analyzeItem: () => Promise<void>;
   cancelAnalysis: () => void;
   fetchTraderaComparables: () => Promise<void>;
+  updateComparableQuery: (id: string, query: string) => void;
+  setComparableQueryEnabled: (id: string, enabled: boolean) => void;
+  regenerateComparableQueryPlan: () => void;
   loadManualComparables: () => Promise<void>;
   addManualComparable: (
     comp: Omit<ComparableRecord, 'id' | 'source' | 'sourceQuality'> &
@@ -70,6 +78,7 @@ interface ValuationState {
   setAuthenticityStatus: (value: VerifiedProductFacts['authenticityStatus']['value']) => void;
   setFactLocked: (key: ProductFactKey, locked: boolean) => void;
   estimateValue: () => Promise<void>;
+  compareScenarios: () => Promise<void>;
   runPipeline: () => Promise<void>;
   generateTemplates: () => void;
   saveToHistory: () => Promise<void>;
@@ -91,10 +100,13 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   traderaComps: [],
   manualComps: [],
   valuation: null,
+  comparableQueryPlan: null,
+  valuationScenarios: [],
   loading: false,
   error: null,
   setInputText: (inputText) => set({ inputText }),
-  setPricingStrategy: (pricingStrategy) => set({ pricingStrategy }),
+  setPricingStrategy: (pricingStrategy) =>
+    set({ pricingStrategy, valuation: null, valuationScenarios: [] }),
   addImage: (dataUrl, assessment) =>
     set((state) => {
       if (state.images.length >= 6) return state;
@@ -152,11 +164,16 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       );
       if (controller.signal.aborted) return;
       const productFacts = mergeAnalyzedFacts(state.productFacts, analysis.fingerprint);
+      const comparableQueryPlan = marketIntelligenceService.buildQueryPlan(
+        productFacts,
+        state.comparableQueryPlan,
+      );
       set({
         fingerprint: analysis.fingerprint,
         productFacts,
         factCandidates: analysis.candidates,
         knowledgeGaps: analysis.knowledgeGaps,
+        comparableQueryPlan,
         loading: false,
       });
       useWorkflowStore.getState().markStepComplete('analyze');
@@ -188,14 +205,33 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      const traderaComps = await traderaAdapterService.getComparables({
-        title: productFacts.title.value,
-        category: productFacts.category.value,
-        brand: productFacts.brand.value,
-        model: productFacts.model.value,
-        limit: 20,
+      const comparableQueryPlan =
+        get().comparableQueryPlan ?? marketIntelligenceService.buildQueryPlan(productFacts);
+      const variants = comparableQueryPlan.variants
+        .filter((variant) => variant.enabled)
+        .slice(0, 3);
+      if (variants.length === 0) throw new Error('Enable at least one comparable search.');
+      const results = await Promise.all(
+        variants.map((variant) =>
+          traderaAdapterService.getComparables({
+            title: variant.query,
+            category: productFacts.category.value,
+            brand: productFacts.brand.value,
+            model: productFacts.model.value,
+            limit: 20,
+            variantId: variant.id,
+            hitType: variant.type,
+          }),
+        ),
+      );
+      const traderaComps = marketIntelligenceService.normalizeAndDedupe(results.flat());
+      set({
+        comparableQueryPlan,
+        traderaComps: rankComparables(productFacts, traderaComps),
+        valuation: null,
+        valuationScenarios: [],
+        loading: false,
       });
-      set({ traderaComps: rankComparables(productFacts, traderaComps), loading: false });
       useWorkflowStore.getState().markStepComplete('comparables');
       useWorkflowStore.getState().setCurrentStep('price');
     } catch (error) {
@@ -207,6 +243,23 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         .getState()
         .setStepError('comparables', 'Unable to fetch Tradera comparables.');
     }
+  },
+  updateComparableQuery: (id, query) => {
+    const plan = get().comparableQueryPlan;
+    if (!plan) return;
+    set({ comparableQueryPlan: marketIntelligenceService.updateQueryVariant(plan, id, { query }) });
+  },
+  setComparableQueryEnabled: (id, enabled) => {
+    const plan = get().comparableQueryPlan;
+    if (!plan) return;
+    set({
+      comparableQueryPlan: marketIntelligenceService.updateQueryVariant(plan, id, { enabled }),
+    });
+  },
+  regenerateComparableQueryPlan: () => {
+    const facts = get().productFacts;
+    if (!facts) return;
+    set({ comparableQueryPlan: marketIntelligenceService.buildQueryPlan(facts, null) });
   },
   loadManualComparables: async () => {
     try {
@@ -222,11 +275,13 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       manualComps: state.productFacts
         ? rankComparables(state.productFacts, [next, ...state.manualComps])
         : [next, ...state.manualComps],
+      valuation: null,
+      valuationScenarios: [],
     }));
   },
   removeManualComparable: async (id) => {
     const manualComps = await manualCompsService.remove(id);
-    set({ manualComps });
+    set({ manualComps, valuation: null, valuationScenarios: [] });
   },
   setComparableIncluded: (id, included, reason) => {
     const update = (items: ComparableRecord[]) =>
@@ -248,6 +303,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       traderaComps: update(state.traderaComps),
       manualComps: update(state.manualComps),
       valuation: null,
+      valuationScenarios: [],
     }));
   },
   updateFact: (key, value) => {
@@ -259,27 +315,53 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       traderaComps: rankComparables(productFacts, state.traderaComps),
       manualComps: rankComparables(productFacts, state.manualComps),
       valuation: null,
+      valuationScenarios: [],
+      comparableQueryPlan: marketIntelligenceService.buildQueryPlan(
+        productFacts,
+        state.comparableQueryPlan,
+      ),
     });
   },
   updateListFact: (key, value) => {
     const state = get();
     if (!state.productFacts) return;
-    set({ productFacts: updateProductListFact(state.productFacts, key, value), valuation: null });
+    set({
+      productFacts: updateProductListFact(state.productFacts, key, value),
+      valuation: null,
+      valuationScenarios: [],
+    });
   },
   updateAttribute: (key, value) => {
     const state = get();
     if (!state.productFacts) return;
-    set({ productFacts: updateProductAttribute(state.productFacts, key, value), valuation: null });
+    const productFacts = updateProductAttribute(state.productFacts, key, value);
+    set({
+      productFacts,
+      valuation: null,
+      valuationScenarios: [],
+      comparableQueryPlan: marketIntelligenceService.buildQueryPlan(
+        productFacts,
+        state.comparableQueryPlan,
+      ),
+    });
   },
   setTestedStatus: (value) => {
     const productFacts = get().productFacts;
     if (!productFacts) return;
-    set({ productFacts: updateTestedStatus(productFacts, value), valuation: null });
+    set({
+      productFacts: updateTestedStatus(productFacts, value),
+      valuation: null,
+      valuationScenarios: [],
+    });
   },
   setAuthenticityStatus: (value) => {
     const productFacts = get().productFacts;
     if (!productFacts) return;
-    set({ productFacts: updateAuthenticityStatus(productFacts, value), valuation: null });
+    set({
+      productFacts: updateAuthenticityStatus(productFacts, value),
+      valuation: null,
+      valuationScenarios: [],
+    });
   },
   setFactLocked: (key, locked) => {
     const productFacts = get().productFacts;
@@ -326,6 +408,26 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         error: error instanceof Error ? error.message : 'Failed to estimate value',
       });
       useWorkflowStore.getState().setStepError('price', 'Estimation failed.');
+    }
+  },
+  compareScenarios: async () => {
+    const state = get();
+    if (!state.productFacts) {
+      set({ error: 'Analyze item before comparing price scenarios.' });
+      return;
+    }
+    set({ loading: true, error: null });
+    try {
+      const valuationScenarios = await marketIntelligenceService.buildScenarios(
+        state.productFacts,
+        [...state.traderaComps, ...state.manualComps],
+      );
+      set({ valuationScenarios, loading: false });
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : 'Failed to compare price scenarios.',
+      });
     }
   },
   runPipeline: async () => {
@@ -395,6 +497,10 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       traderaComps: draft.traderaComps,
       manualComps: draft.manualComps,
       valuation: draft.valuation,
+      comparableQueryPlan:
+        draft.comparableQueryPlan ??
+        (draft.productFacts ? marketIntelligenceService.buildQueryPlan(draft.productFacts) : null),
+      valuationScenarios: [],
       error: null,
     });
   },
@@ -416,6 +522,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       traderaComps: state.traderaComps,
       manualComps: state.manualComps,
       valuation: state.valuation,
+      comparableQueryPlan: state.comparableQueryPlan ?? undefined,
       templates: useListingStore.getState().templates,
     };
   },

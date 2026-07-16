@@ -77,6 +77,26 @@ function isPhotoAssessment(value: unknown): boolean {
   );
 }
 
+function isComparableQueryPlan(value: unknown): boolean {
+  if (!isRecord(value) || value.version !== 1 || !Array.isArray(value.variants)) return false;
+  return (
+    typeof value.generatedAt === 'string' &&
+    Number.isFinite(Date.parse(value.generatedAt)) &&
+    value.variants.length <= 5 &&
+    value.variants.every(
+      (variant) =>
+        isRecord(variant) &&
+        typeof variant.id === 'string' &&
+        variant.id.length <= 100 &&
+        ['exact', 'broad'].includes(String(variant.type)) &&
+        typeof variant.query === 'string' &&
+        variant.query.length <= 160 &&
+        typeof variant.enabled === 'boolean' &&
+        typeof variant.userEdited === 'boolean',
+    )
+  );
+}
+
 function hasValidSmartIntake(value: Partial<ListingDraft>): boolean {
   return (
     (value.factCandidates === undefined ||
@@ -97,7 +117,8 @@ function hasValidSmartIntake(value: Partial<ListingDraft>): boolean {
     (value.photoAssessments === undefined ||
       (Array.isArray(value.photoAssessments) &&
         value.photoAssessments.length <= 6 &&
-        value.photoAssessments.every(isPhotoAssessment)))
+        value.photoAssessments.every(isPhotoAssessment))) &&
+    (value.comparableQueryPlan === undefined || isComparableQueryPlan(value.comparableQueryPlan))
   );
 }
 

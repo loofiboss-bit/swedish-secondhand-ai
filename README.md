@@ -25,6 +25,10 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
   without changing the original JPEG, PNG, or WebP.
 - Category profiles and source-labelled fact candidates make unknowns visible while preserving
   every user correction and lock across later analysis.
+- The market workspace builds editable exact/broad searches, deduplicates observations across
+  queries, and exposes match type, price kind, source, date, relevance, and cache age.
+- Active asking prices remain a separate context interval. Only user-approved realized prices
+  enter the three reproducible fast, balanced, and max-value scenarios.
 
 ## What's New in v1.0.0-beta.1
 

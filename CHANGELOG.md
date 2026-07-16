@@ -16,6 +16,12 @@
 - Extended Gemini, Ollama, and conservative offline analysis with source-labelled fact candidates,
   uncertainty, input references, explicit knowledge gaps, and persistence without overriding user
   locks.
+- Added editable exact/broad comparable query plans, bounded multi-query Tradera lookup,
+  normalization and deterministic cross-query deduplication with provenance and cache age.
+- Added source/price-kind comparison filters, explicit manual observation date and URL, a separate
+  asking-price context interval, and user-only approval for realized valuation evidence.
+- Added a three-column price workshop for fast sale, balanced, and max value with every
+  deterministic adjustment exposed per scenario.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
   App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
 - Distinguished asking, realized, and unknown comparable prices; only user-approved realized

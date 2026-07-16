@@ -49,7 +49,7 @@ Status: completed and validated on `feature/v2-smart-intake`.
 
 ## M3 — Market intelligence and pricing workshop
 
-Status: pending.
+Status: completed and validated on `feature/v2-market-workshop`.
 
 - Add editable exact/broad comparable query plans, normalization and deduplication.
 - Expose observation provenance, price kind, cache age and deterministic relevance.
@@ -84,7 +84,7 @@ Status: pending.
 - [x] G0 v1 stabilization prerequisite
 - [x] M1 Project library and schema 3 data
 - [x] M2 Deterministic seller coach and smart intake
-- [ ] M3 Market intelligence and pricing workshop
+- [x] M3 Market intelligence and pricing workshop
 - [ ] M4 Listing studio and sell plan
 - [ ] M5 Follow-up and local learning
 - [ ] M6 Public beta and stable v2

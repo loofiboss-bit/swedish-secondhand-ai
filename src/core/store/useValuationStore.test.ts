@@ -70,6 +70,7 @@ const comparables: ComparableRecord[] = [
     priceSek: 450,
     soldAt: '2026-02-11T00:00:00.000Z',
     priceKind: 'realized',
+    marketState: 'sold',
     conditionHint: 'good',
     url: 'https://example.test/item/1',
     similarityScore: 0.84,
@@ -150,7 +151,7 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
     expect(generateTemplatesMock).toHaveBeenCalledTimes(1);
     expect(useWorkflowStore.getState().currentStep).toBe('review');
@@ -196,7 +197,7 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).not.toHaveBeenCalled();
     expect(generateTemplatesMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toBe('Tradera timeout');
@@ -212,7 +213,7 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
     expect(generateTemplatesMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toBe('Estimator down');
@@ -229,10 +230,28 @@ describe('useValuationStore runPipeline', () => {
     await useValuationStore.getState().runPipeline();
 
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
-    expect(getComparablesMock).toHaveBeenCalledTimes(1);
+    expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
     expect(generateTemplatesMock).toHaveBeenCalledTimes(1);
     expect(useValuationStore.getState().error).toBe('Template engine crashed');
     expect(useWorkflowStore.getState().stepErrors.templates).toBe('Template generation failed.');
+  });
+
+  it('builds all three deterministic price scenarios from the same reviewed evidence', async () => {
+    useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
+    await useValuationStore.getState().analyzeItem();
+    estimateValueMock.mockClear();
+
+    await useValuationStore.getState().compareScenarios();
+
+    expect(estimateValueMock).toHaveBeenCalledTimes(3);
+    expect(estimateValueMock.mock.calls.map((call) => call[2])).toEqual([
+      'fast_sale',
+      'balanced',
+      'max_value',
+    ]);
+    expect(
+      useValuationStore.getState().valuationScenarios.map((scenario) => scenario.strategy),
+    ).toEqual(['fast_sale', 'balanced', 'max_value']);
   });
 });

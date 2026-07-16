@@ -58,16 +58,26 @@ Tips for better results:
 
 In **Comparables/Price**:
 
-1. Click **Fetch Tradera comparables** (if API key is configured).
-2. Add manual comparables from Blocket/Vinted when needed.
-3. Include or exclude every comparable and review its visible reason and weight. Excluded rows
+1. Review the generated exact and broad search variants. Edit, disable, or reset them from the
+   locked item facts, then click **Fetch Tradera comparables** (if credentials are configured).
+2. Add manual comparables from Blocket/Vinted when needed. Platform, price type, observation date,
+   and optional HTTP/HTTPS source URL are explicit; entering a price never marks an item sold.
+3. Filter by source or price type. Every row shows match type, source, date, relevance, cache age,
+   search provenance, and whether it can affect valuation.
+4. Explicitly include or exclude every realized comparable and review its visible reason and
+   weight. System relevance is a suggestion; only a user-approved realized price can enter the
+   numeric result. Excluded rows
    never affect the result.
-4. Choose pricing strategy:
+5. Choose pricing strategy:
    - `fast_sale`
    - `balanced`
    - `max_value`
-5. Click **Estimate value**. If fewer than two approved comparables remain, the app returns
+6. Click **Estimate value**. If fewer than two approved realized comparables remain, the app returns
    `insufficient-evidence` without a numeric price.
+7. Use **Compare price scenarios** to display fast sale, balanced, and max value together with the
+   exact deterministic adjustments in each scenario.
+
+Active asking prices are shown separately as a market-context range and never anchor the price.
 
 The sidebar shows current recommendation and confidence.
 

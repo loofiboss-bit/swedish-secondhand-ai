@@ -98,6 +98,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await expect(modelField.locator('input[type="checkbox"]')).toBeChecked();
 
   await page.getByRole('button', { name: /marknad & pris|market & price/i }).click();
+  await expect(page.getByRole('heading', { name: /sökplan|search plan/i })).toBeVisible();
   const form = page.locator('form.manual-comp');
   await form.getByLabel(/pristyp|price type/i).selectOption('realized');
   for (const [index, [title, price]] of [
@@ -110,7 +111,15 @@ test('preserves a locked correction and prices only reviewed comparables', async
     await expect(page.locator('.comparable-list > li')).toHaveCount(index + 1);
   }
 
+  for (const checkbox of await page.locator('.comparable-list input[type="checkbox"]').all()) {
+    await checkbox.check();
+  }
+
   await page.getByRole('button', { name: /beräkna värde|estimate value/i }).click();
   await expect(page.getByText(/low-confidence/)).toBeVisible();
   await expect(page.locator('.valuation-box strong')).toHaveText(/5000 SEK|5500 SEK/);
+
+  await page.getByRole('button', { name: /jämför prisscenarier|compare price scenarios/i }).click();
+  await expect(page.getByRole('heading', { name: /prisverkstad|pricing workshop/i })).toBeVisible();
+  await expect(page.locator('.scenario-grid article')).toHaveCount(3);
 });
