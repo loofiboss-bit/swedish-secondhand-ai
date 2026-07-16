@@ -3,7 +3,11 @@ import process from 'node:process';
 
 const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const version = packageJson.version;
-const expectedTag = process.env.RELEASE_TAG || process.env.GITHUB_REF_NAME || '';
+const githubTag =
+  process.env.GITHUB_REF_TYPE === 'tag' || process.env.GITHUB_REF?.startsWith('refs/tags/')
+    ? process.env.GITHUB_REF_NAME
+    : '';
+const expectedTag = process.env.RELEASE_TAG || githubTag || '';
 const errors = [];
 
 if (!/^(?:1\.0\.0|2\.0\.0)(?:-beta\.\d+)?$/.test(version)) {
