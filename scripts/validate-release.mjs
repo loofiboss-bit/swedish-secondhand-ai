@@ -43,6 +43,20 @@ for (const requiredTarget of ['nsis', 'portable', 'AppImage']) {
     errors.push(`missing package target ${requiredTarget}`);
 }
 
+try {
+  const rendererHtml = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
+  const rootRelativeAssets = [
+    ...rendererHtml.matchAll(/\b(?:src|href)=["'](\/assets\/[^"']+)["']/g),
+  ].map((match) => match[1]);
+  if (rootRelativeAssets.length > 0) {
+    errors.push(
+      `packaged renderer contains root-relative assets that fail under file://: ${rootRelativeAssets.join(', ')}`,
+    );
+  }
+} catch {
+  errors.push('dist/index.html is missing; build the renderer before release validation');
+}
+
 if (errors.length > 0) {
   errors.forEach((error) => console.error(`release validation: ${error}`));
   process.exitCode = 1;

@@ -8,20 +8,28 @@ The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
 - v0.5.0 — guided workflow, drafts, valuation calibration, marketplace checks, and productivity
 - v1.0.0-beta.1 — public Windows/Linux beta with protected provider boundary, evidence-gated
   valuation, versioned local data, onboarding, checksums, and SBOM (published 2026-07-15)
+- v2.0.0 — Smart Seller Coach with isolated item projects, schema 3 migration and recovery,
+  deterministic coaching, market and pricing workshops, editable listings, local follow-up, and
+  release checksums and SBOM (published 2026-07-16). A Linux blank-renderer defect was confirmed
+  after publication; the corrective AppImage hotfix is implemented locally but not yet published.
 
-The stable v1 gate opens no earlier than 2026-07-22 at 06:35:48 UTC and remains conditional on
-the blocker, security, upgrade, package, and artifact gates in the implementation authority.
+The maintainer explicitly replaced the former stable-v1-first and v2 beta/soak sequence on
+2026-07-16. The completed release state and gate evidence are recorded in the implementation
+authority; this product summary must not reintroduce those superseded prerequisites.
 
-## v2 development track
+## Current maintenance track
 
-After stable v1, the Smart Seller Coach is delivered as sequential v2 milestones:
+v2.0.x is the active maintenance line. Changes should preserve the v2 product boundary and data
+contracts while prioritizing, in order:
 
-1. project library and schema 3 data;
-2. deterministic seller coach and smart intake;
-3. market intelligence and pricing workshop;
-4. editable listing studio and sell plan;
-5. listing follow-up and local learning;
-6. public v2 beta followed by stable v2.0.0.
+1. P0/P1 startup, data-loss, migration, and security fixes;
+2. cross-platform packaging and upgrade reliability;
+3. accessibility and deterministic workflow defects;
+4. documentation and release-state consistency.
+
+New product milestones belong in `.ai/CODEX_ROADMAP.md` first. This file summarizes released
+product direction and must stay consistent with that authority; `npm run validate:roadmaps`
+enforces the current release-state contract.
 
 The v2 line remains local-first and manual-publishing only. Broader provider, cloud, mobile,
 payment, scraping, publishing, and automatic-update work remains out of scope.

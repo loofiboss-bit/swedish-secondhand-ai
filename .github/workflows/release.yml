@@ -57,14 +57,7 @@ jobs:
           sudo apt-get install -y libfuse2 xvfb
           artifact=$(find release -maxdepth 1 -name '*.AppImage' -print -quit)
           chmod +x "$artifact"
-          set +e
-          timeout 20s xvfb-run -a "$artifact" --no-sandbox --disable-gpu
-          code=$?
-          set -e
-          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
-            echo "AppImage startup failed with exit code $code"
-            exit "$code"
-          fi
+          timeout 40s xvfb-run -a npm run package:render-smoke -- "$artifact"
       - name: Verify v1 to v2 Linux profile upgrade
         shell: bash
         env:

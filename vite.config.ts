@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
 export default defineConfig({
+  // Packaged Electron windows load dist/index.html through file://. Relative asset URLs keep
+  // scripts, styles, and lazy chunks inside the app archive instead of resolving from /assets.
+  base: './',
   plugins: [react()],
   build: {
     rollupOptions: {
