@@ -17,7 +17,7 @@ describe('traderaAdapterService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      traderaBaseUrl: 'https://api.tradera.com/v3',
+      traderaAppId: 1234,
       secretStatus: {
         geminiConfigured: false,
         traderaConfigured: true,
@@ -43,6 +43,8 @@ describe('traderaAdapterService', () => {
             title: 'IKEA Poang Chair',
             finalPrice: 450,
             soldAt: '2026-02-01T00:00:00.000Z',
+            priceKind: 'realized',
+            marketState: 'sold',
             url: 'https://tradera/item/1',
           },
         ],
@@ -52,13 +54,16 @@ describe('traderaAdapterService', () => {
     const result = await traderaAdapterService.getComparables({ title: 'IKEA Poang' });
 
     expect(fetchComparablesMock).toHaveBeenCalledWith({
-      baseUrl: 'https://api.tradera.com/v3',
+      appId: 1234,
       query: 'IKEA Poang',
-      category: undefined,
       limit: 20,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({ priceSek: 450, source: 'tradera' });
+    expect(result[0]).toMatchObject({
+      priceSek: 450,
+      priceKind: 'realized',
+      source: 'tradera',
+    });
   });
 
   it('returns empty when the main process reports that Tradera is not configured', async () => {

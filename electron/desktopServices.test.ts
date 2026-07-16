@@ -47,20 +47,23 @@ describe('desktop services', () => {
     });
 
     const result = await services.fetchTraderaComparables({
-      baseUrl: 'https://api.tradera.com/v3',
+      appId: 1234,
       query: 'Chair',
       limit: 20,
     });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      'https://api.tradera.com/v3/search',
+      'https://api.tradera.com/v4/search?query=Chair&pageNumber=0',
       expect.objectContaining({
         redirect: 'error',
         signal: expect.any(AbortSignal),
-        headers: expect.objectContaining({ Authorization: 'Bearer tradera-secret' }),
+        headers: {
+          'X-App-Id': '1234',
+          'X-App-Key': 'tradera-secret',
+        },
       }),
     );
-    expect(result).toEqual({ configured: true, data: { items: [] } });
+    expect(result).toMatchObject({ configured: true, cached: false, data: { items: [] } });
     expect(JSON.stringify(result)).not.toContain('tradera-secret');
   });
 
@@ -74,7 +77,7 @@ describe('desktop services', () => {
         }),
       ),
     });
-    const request = { baseUrl: 'https://api.tradera.com/v3', query: 'Chair', limit: 20 };
+    const request = { appId: 1234, query: 'Chair', limit: 20 };
 
     await expect(oversized.fetchTraderaComparables(request)).rejects.toMatchObject({
       code: 'invalid_response',
@@ -118,7 +121,7 @@ describe('desktop services', () => {
     });
 
     const result = (await services.fetchTraderaComparables({
-      baseUrl: 'https://api.tradera.com/v3',
+      appId: 1234,
       query: 'Chair',
       limit: 2,
     })) as { configured: boolean; data: { items: Array<Record<string, unknown>> } };
@@ -129,6 +132,28 @@ describe('desktop services', () => {
     expect(JSON.stringify(result)).not.toContain('900000000');
   });
 
+  it('caches identical Tradera searches for 24 hours', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    const services = createDesktopServices({
+      vault: { read: vi.fn().mockResolvedValue('tradera-secret') },
+      fetchImpl,
+      nowImpl: () => Date.parse('2026-07-16T08:00:00.000Z'),
+    });
+    const request = { appId: 1234, query: 'Chair', limit: 20 };
+
+    const first = await services.fetchTraderaComparables(request);
+    const second = await services.fetchTraderaComparables(request);
+
+    expect(first).toMatchObject({ cached: false });
+    expect(second).toMatchObject({ cached: true });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
   it('maps an aborted Tradera request to a public timeout code', async () => {
     const services = createDesktopServices({
       vault: { read: vi.fn().mockResolvedValue('tradera-secret') },
@@ -137,7 +162,7 @@ describe('desktop services', () => {
 
     await expect(
       services.fetchTraderaComparables({
-        baseUrl: 'https://api.tradera.com/v3',
+        appId: 1234,
         query: 'Chair',
         limit: 20,
       }),

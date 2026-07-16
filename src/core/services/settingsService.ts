@@ -10,6 +10,7 @@ import { readVersionedDataset, writeVersionedDataset } from './persistenceServic
 interface LegacySecretFields {
   geminiApiKey?: string;
   traderaApiKey?: string;
+  traderaBaseUrl?: string;
   aiProvider?: 'gemini' | 'ollama';
 }
 
@@ -22,6 +23,10 @@ export function isPersistedSettings(value: unknown): value is PersistedSettings 
     (settings.language === undefined || settings.language === 'sv' || settings.language === 'en') &&
     (settings.currency === undefined || settings.currency === 'SEK') &&
     (settings.traderaBaseUrl === undefined || typeof settings.traderaBaseUrl === 'string') &&
+    (settings.traderaAppId === undefined ||
+      (typeof settings.traderaAppId === 'number' &&
+        Number.isSafeInteger(settings.traderaAppId) &&
+        settings.traderaAppId > 0)) &&
     (settings.aiProvider === undefined ||
       settings.aiProvider === 'gemini' ||
       settings.aiProvider === 'ollama') &&
@@ -58,7 +63,7 @@ const DEFAULT_SECRET_STATUS: AppSecretStatus = {
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   language: 'sv',
   currency: 'SEK',
-  traderaBaseUrl: 'https://api.tradera.com/v3',
+  traderaAppId: undefined,
   aiMode: 'offline',
   fallbackEnabled: false,
   onboardingCompleted: false,
@@ -98,10 +103,12 @@ function normalizePreferences(settings: PersistedSettings | undefined): AppSetti
   return {
     language: settings?.language === 'en' ? 'en' : 'sv',
     currency: 'SEK',
-    traderaBaseUrl: normalizeTrimmedValue(
-      settings?.traderaBaseUrl,
-      DEFAULT_APP_SETTINGS.traderaBaseUrl,
-    ),
+    traderaAppId:
+      typeof settings?.traderaAppId === 'number' &&
+      Number.isSafeInteger(settings.traderaAppId) &&
+      settings.traderaAppId > 0
+        ? settings.traderaAppId
+        : undefined,
     aiMode:
       settings?.aiMode === 'gemini' ||
       settings?.aiMode === 'ollama' ||
@@ -226,11 +233,13 @@ class SettingsService {
     const persisted = await readPersistedSettings();
     const current = normalizePreferences(persisted);
     const next = normalizePreferences({ ...persisted, ...current, ...partial });
+    const nextPersisted = { ...persisted };
+    delete nextPersisted.traderaBaseUrl;
     await writeVersionedDataset('settings', {
-      ...persisted,
+      ...nextPersisted,
       language: next.language,
       currency: next.currency,
-      traderaBaseUrl: next.traderaBaseUrl,
+      traderaAppId: next.traderaAppId,
       aiMode: next.aiMode,
       fallbackEnabled: next.fallbackEnabled,
       onboardingCompleted: next.onboardingCompleted,
@@ -270,6 +279,10 @@ class SettingsService {
 
   async setTraderaApiKey(apiKey: string): Promise<AppSettings> {
     return apiKey.trim() ? this.setSecret('tradera', apiKey) : this.deleteSecret('tradera');
+  }
+
+  async setTraderaAppId(traderaAppId: number | undefined): Promise<AppSettings> {
+    return this.updateSettings({ traderaAppId });
   }
 
   async testGeminiConnection(): Promise<boolean> {

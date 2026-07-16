@@ -69,6 +69,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
 
   await page.getByRole('button', { name: /jämförelser|comparables/i }).click();
   const form = page.locator('form.manual-comp');
+  await form.getByLabel(/pristyp|price type/i).selectOption('realized');
   for (const [index, [title, price]] of [
     ['Sony A6400 camera Electronics', '5000'],
     ['Sony A6400 mirrorless Electronics', '5500'],

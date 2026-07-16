@@ -39,7 +39,7 @@ describe('itemAnalysisService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      traderaBaseUrl: 'https://api.tradera.com/v3',
+      traderaAppId: 1234,
       aiMode: 'gemini',
       fallbackEnabled: false,
       onboardingCompleted: true,
@@ -81,7 +81,7 @@ describe('itemAnalysisService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      traderaBaseUrl: 'https://api.tradera.com/v3',
+      traderaAppId: 1234,
       aiMode: 'gemini',
       fallbackEnabled: false,
       onboardingCompleted: true,
@@ -115,7 +115,7 @@ describe('itemAnalysisService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      traderaBaseUrl: 'https://api.tradera.com/v3',
+      traderaAppId: 1234,
       aiMode: 'gemini',
       fallbackEnabled: true,
       onboardingCompleted: true,
@@ -148,7 +148,7 @@ describe('itemAnalysisService', () => {
     getSettingsMock.mockResolvedValue({
       language: 'sv',
       currency: 'SEK',
-      traderaBaseUrl: 'https://api.tradera.com/v3',
+      traderaAppId: 1234,
       aiMode: 'offline',
       fallbackEnabled: false,
       onboardingCompleted: true,

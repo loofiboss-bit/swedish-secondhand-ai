@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
+  App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
+- Distinguished asking, realized, and unknown comparable prices; only user-approved realized
+  prices can anchor the deterministic valuation.
+
 ## 1.0.0-beta.1 - 2026-07-15
 
 - Added first-run language, privacy, provider-status, and AI-mode onboarding with safe offline

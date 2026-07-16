@@ -21,6 +21,8 @@ interface TraderaApiItem {
   price?: number;
   url?: string;
   shippingIncluded?: boolean;
+  priceKind?: 'asking' | 'realized' | 'unknown';
+  marketState?: 'active' | 'sold' | 'unknown';
 }
 
 interface TraderaApiResponse {
@@ -58,12 +60,14 @@ class TraderaAdapterService implements MarketplaceAdapter {
 
   async getComparables(criteria: ComparableQuery): Promise<ComparableRecord[]> {
     const settings = await settingsService.getSettings();
+    if (!settings.traderaAppId) {
+      throw new Error('Configure a Tradera App ID before fetching comparables.');
+    }
 
     try {
       const response = await getDesktopBridge().marketplace.fetchTraderaComparables({
-        baseUrl: settings.traderaBaseUrl,
+        appId: settings.traderaAppId,
         query: criteria.title,
-        category: criteria.category,
         limit: criteria.limit ?? 20,
       });
       if (!response.configured || !isTraderaApiResponse(response.data)) return [];
@@ -83,6 +87,9 @@ class TraderaAdapterService implements MarketplaceAdapter {
             title,
             priceSek,
             soldAt,
+            priceKind: item.priceKind ?? 'unknown',
+            marketState: item.marketState ?? 'unknown',
+            observedAt: response.fetchedAt ?? new Date().toISOString(),
             conditionHint: 'Unknown',
             url: item.url ?? 'https://www.tradera.com/',
             similarityScore,

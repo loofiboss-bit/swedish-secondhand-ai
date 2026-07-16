@@ -97,7 +97,7 @@ describe('desktop IPC handlers', () => {
     expect(services.analyzeGemini).toHaveBeenCalledWith(payload);
   });
 
-  it('validates connection tests and Tradera destinations', async () => {
+  it('validates connection tests and Tradera app identifiers', async () => {
     services.testGeminiConnection.mockResolvedValue({ connected: true });
     const connection = await handlers.get(CHANNELS.testGeminiConnection)?.(trustedEvent(), {
       modelId: 'gemini-test',
@@ -105,7 +105,7 @@ describe('desktop IPC handlers', () => {
     expect(connection).toEqual({ ok: true, value: { connected: true } });
 
     const forbidden = await handlers.get(CHANNELS.traderaComparables)?.(trustedEvent(), {
-      baseUrl: 'https://attacker.example/v3',
+      appId: 0,
       query: 'Chair',
       limit: 20,
     });

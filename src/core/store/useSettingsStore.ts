@@ -20,6 +20,7 @@ interface SettingsState {
   setOllamaBaseUrl: (ollamaBaseUrl: string) => Promise<void>;
   setOllamaModel: (ollamaModel: string) => Promise<void>;
   setTraderaApiKey: (apiKey: string) => Promise<void>;
+  setTraderaAppId: (appId: number | undefined) => Promise<void>;
   testGeminiConnection: () => Promise<void>;
 }
 
@@ -68,6 +69,7 @@ export const useSettingsStore = create<SettingsState>((set) => {
       applyUpdate(() => settingsService.setOllamaBaseUrl(ollamaBaseUrl)),
     setOllamaModel: (ollamaModel) => applyUpdate(() => settingsService.setOllamaModel(ollamaModel)),
     setTraderaApiKey: (apiKey) => applyUpdate(() => settingsService.setTraderaApiKey(apiKey)),
+    setTraderaAppId: (appId) => applyUpdate(() => settingsService.setTraderaAppId(appId)),
     testGeminiConnection: async () => {
       set({ connectionState: 'testing', error: null });
       try {

@@ -51,6 +51,9 @@ function normalizeGeminiError(error) {
 const TRADERA_RESPONSE_MAX_BYTES = 1_000_000;
 const TRADERA_PRICE_MAX_SEK = 10_000_000;
 const TRADERA_TIMEOUT_MS = 15_000;
+const TRADERA_SEARCH_URL = 'https://api.tradera.com/v4/search';
+const TRADERA_CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
+const TRADERA_DAILY_REQUEST_LIMIT = 100;
 
 function invalidResponse(message = 'The marketplace returned an invalid response.') {
   return Object.assign(new Error(message), { code: 'invalid_response' });
@@ -91,6 +94,11 @@ function boundedString(value, maxLength) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : undefined;
 }
 
+function boundedIdentifier(value) {
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return String(value);
+  return boundedString(value, 160);
+}
+
 function boundedPrice(value) {
   return typeof value === 'number' &&
     Number.isFinite(value) &&
@@ -121,7 +129,7 @@ function safeTraderaUrl(value) {
 
 function normalizeTraderaResponse(value, limit) {
   if (typeof value !== 'object' || value === null) throw invalidResponse();
-  const rawItems = value.items ?? value.results ?? value.endedItems;
+  const rawItems = value.items ?? value.results ?? value.endedItems ?? value.searchItems;
   if (!Array.isArray(rawItems)) throw invalidResponse();
 
   const items = rawItems.slice(0, Math.min(limit, 50)).flatMap((raw) => {
@@ -129,19 +137,26 @@ function normalizeTraderaResponse(value, limit) {
     const finalPrice = boundedPrice(raw.finalPrice);
     const price = boundedPrice(raw.price);
     const buyNowPrice = boundedPrice(raw.buyNowPrice);
-    if (finalPrice === undefined && price === undefined && buyNowPrice === undefined) return [];
+    const maxBid = boundedPrice(raw.maxBid);
+    const nextBid = boundedPrice(raw.nextBid);
+    const openingBid = boundedPrice(raw.openingBid);
+    const normalizedPrice = finalPrice ?? price ?? buyNowPrice ?? maxBid ?? nextBid ?? openingBid;
+    if (normalizedPrice === undefined) return [];
+    const explicitlyRealized = finalPrice !== undefined || typeof raw.soldAt === 'string';
     return [
       {
-        itemId: boundedString(raw.itemId, 160),
-        id: boundedString(raw.id, 160),
-        title: boundedString(raw.title, 240),
-        description: boundedString(raw.description, 2_000),
+        itemId: boundedIdentifier(raw.itemId),
+        id: boundedIdentifier(raw.id),
+        title: boundedString(raw.title ?? raw.shortDescription, 240),
+        description: boundedString(raw.description ?? raw.longDescription, 2_000),
         endDate: boundedString(raw.endDate, 64),
         soldAt: boundedString(raw.soldAt, 64),
         finalPrice,
         buyNowPrice,
-        price,
-        url: safeTraderaUrl(raw.url),
+        price: normalizedPrice,
+        priceKind: explicitlyRealized ? 'realized' : 'asking',
+        marketState: explicitlyRealized ? 'sold' : 'active',
+        url: safeTraderaUrl(raw.url ?? raw.itemLink),
         shippingIncluded:
           typeof raw.shippingIncluded === 'boolean' ? raw.shippingIncluded : undefined,
       },
@@ -155,7 +170,11 @@ function createDesktopServices({
   vault,
   fetchImpl = globalThis.fetch,
   createGeminiClientImpl = createGeminiClient,
+  nowImpl = Date.now,
 }) {
+  const traderaCache = new Map();
+  let traderaRequestStarts = [];
+
   async function configuredGeminiClient() {
     const apiKey = await vault.read('gemini');
     if (!apiKey) {
@@ -205,31 +224,60 @@ function createDesktopServices({
     async fetchTraderaComparables(payload) {
       const apiKey = await vault.read('tradera');
       if (!apiKey) return { configured: false, data: null };
+      const now = nowImpl();
+      const cacheKey = `${payload.appId}:${payload.query.toLocaleLowerCase('sv-SE')}:${payload.limit}`;
+      const cached = traderaCache.get(cacheKey);
+      if (cached && cached.expiresAt > now) {
+        return {
+          configured: true,
+          data: cached.data,
+          cached: true,
+          fetchedAt: cached.fetchedAt,
+        };
+      }
+
+      traderaRequestStarts = traderaRequestStarts.filter(
+        (startedAt) => now - startedAt < 86_400_000,
+      );
+      if (traderaRequestStarts.length >= TRADERA_DAILY_REQUEST_LIMIT) {
+        throw Object.assign(new Error('Tradera daily request budget reached.'), {
+          code: 'rate_limit',
+        });
+      }
+      traderaRequestStarts.push(now);
       try {
-        const response = await fetchImpl(`${payload.baseUrl}/search`, {
-          method: 'POST',
+        const url = new URL(TRADERA_SEARCH_URL);
+        url.searchParams.set('query', payload.query);
+        url.searchParams.set('pageNumber', '0');
+        const response = await fetchImpl(url.toString(), {
+          method: 'GET',
           redirect: 'error',
           signal: AbortSignal.timeout(TRADERA_TIMEOUT_MS),
           headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            Authorization: `Bearer ${apiKey}`,
+            'X-App-Id': String(payload.appId),
+            'X-App-Key': apiKey,
           },
-          body: JSON.stringify({
-            query: payload.query,
-            category: payload.category,
-            limit: payload.limit,
-            status: 'ended',
-          }),
         });
         if (!response.ok) {
           const error = new Error('Tradera request failed.');
           error.code =
-            response.status === 401 || response.status === 403 ? 'authentication' : 'network';
+            response.status === 401 || response.status === 403
+              ? 'authentication'
+              : response.status === 429
+                ? 'rate_limit'
+                : response.status >= 500
+                  ? 'network'
+                  : 'invalid_configuration';
           throw error;
         }
         const data = normalizeTraderaResponse(await readBoundedJson(response), payload.limit);
-        return { configured: true, data };
+        const fetchedAt = new Date(now).toISOString();
+        traderaCache.set(cacheKey, {
+          data,
+          fetchedAt,
+          expiresAt: now + TRADERA_CACHE_TTL_MS,
+        });
+        return { configured: true, data, cached: false, fetchedAt };
       } catch (error) {
         if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
           throw Object.assign(new Error('Tradera request timed out.'), { code: 'timeout' });

@@ -27,6 +27,32 @@ describe('valuationService', () => {
     expect(result.pricingStrategy).toBe('balanced');
   });
 
+  it('never treats active asking prices as realized valuation evidence', async () => {
+    const asking = [4_000, 5_000, 6_000].map((priceSek, index) => ({
+      id: `asking-${index}`,
+      source: 'tradera' as const,
+      site: 'tradera' as const,
+      title: 'IKEA Poang Chair Furniture',
+      priceSek,
+      soldAt: '2026-07-01T00:00:00.000Z',
+      priceKind: 'asking' as const,
+      marketState: 'active' as const,
+      conditionHint: 'good',
+      url: '',
+      similarityScore: 0.9,
+      sourceQuality: 0.9,
+      decision: { included: true, reason: 'Active market context', decidedBy: 'user' as const },
+    }));
+
+    const result = await valuationService.estimateValue(factsFromFingerprint(fingerprint), asking);
+
+    expect(result).toMatchObject({
+      status: 'insufficient-evidence',
+      priceRecommendedSek: null,
+      compsUsed: [],
+    });
+  });
+
   it('computes range from comparables and supports strategies', async () => {
     const comps = [
       {
@@ -36,6 +62,7 @@ describe('valuationService', () => {
         title: 'IKEA Poang Chair',
         priceSek: 300,
         soldAt: '2026-01-01T00:00:00.000Z',
+        priceKind: 'realized' as const,
         conditionHint: 'good',
         url: '',
         similarityScore: 0.8,
@@ -48,6 +75,7 @@ describe('valuationService', () => {
         title: 'Poang armchair',
         priceSek: 500,
         soldAt: '2026-01-02T00:00:00.000Z',
+        priceKind: 'realized' as const,
         conditionHint: 'good',
         url: '',
         similarityScore: 0.6,
@@ -60,6 +88,7 @@ describe('valuationService', () => {
         title: 'IKEA chair',
         priceSek: 450,
         soldAt: '2026-01-03T00:00:00.000Z',
+        priceKind: 'realized' as const,
         conditionHint: 'good',
         url: '',
         similarityScore: 0.7,
@@ -96,6 +125,7 @@ describe('valuationService', () => {
       title: 'IKEA Poang Chair Furniture',
       priceSek,
       soldAt: '2026-07-01T00:00:00.000Z',
+      priceKind: 'realized' as const,
       conditionHint: 'good',
       url: '',
       similarityScore: 0.9,
@@ -126,6 +156,7 @@ describe('valuationService', () => {
       title: 'IKEA Poang Chair Furniture',
       priceSek,
       soldAt: '2026-07-01T00:00:00.000Z',
+      priceKind: 'realized' as const,
       conditionHint: 'unknown',
       url: '',
       similarityScore: 0.9,

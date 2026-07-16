@@ -66,15 +66,18 @@ export function rankComparables(
         1,
       );
       const weight = clamp(score * 0.7 + factors.sourceQuality * 0.3, 0.05, 1);
-      const systemIncluded = score >= MIN_RELEVANCE;
+      const isRealized = comparable.priceKind === 'realized';
+      const systemIncluded = isRealized && score >= MIN_RELEVANCE;
       const decision =
-        comparable.decision?.decidedBy === 'user'
+        isRealized && comparable.decision?.decidedBy === 'user'
           ? comparable.decision
           : {
               included: systemIncluded,
-              reason: systemIncluded
-                ? `Relevant match (${Math.round(score * 100)}%)`
-                : `Excluded: relevance ${Math.round(score * 100)}% is below ${Math.round(MIN_RELEVANCE * 100)}%`,
+              reason: !isRealized
+                ? 'Excluded: only verified realized prices can anchor the valuation'
+                : systemIncluded
+                  ? `Relevant match (${Math.round(score * 100)}%)`
+                  : `Excluded: relevance ${Math.round(score * 100)}% is below ${Math.round(MIN_RELEVANCE * 100)}%`,
               decidedBy: 'system' as const,
             };
 
@@ -248,6 +251,7 @@ class ValuationServiceImpl implements ValuationService {
     const approved = ranked.filter(
       (item) =>
         item.decision?.included &&
+        item.priceKind === 'realized' &&
         Number.isFinite(item.priceSek) &&
         item.priceSek > 0 &&
         item.priceSek <= 10_000_000,
@@ -279,7 +283,8 @@ class ValuationServiceImpl implements ValuationService {
         priceMaxSek: null,
         confidence,
         rationale: `Only ${approved.length} approved comparable is available; condition alone is not a price anchor.`,
-        action: 'Add or include at least two relevant sold comparables before pricing.',
+        action:
+          'Add or include at least two relevant comparables with verified realized prices before pricing.',
         pricingStrategy: strategy,
         confidenceBreakdown,
         compsUsed: approved,
