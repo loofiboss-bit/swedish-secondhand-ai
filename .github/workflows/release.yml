@@ -90,7 +90,7 @@ jobs:
               exit "$code"
             fi
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-linux
           path: release/*.AppImage
@@ -146,7 +146,7 @@ jobs:
             throw "Upgraded application exited with code $($app.ExitCode)"
           }
           if (-not $app.HasExited) { Stop-Process -Id $app.Id -Force }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: desktop-windows
           path: release/*.exe
