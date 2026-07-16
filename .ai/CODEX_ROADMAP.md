@@ -75,8 +75,10 @@ Status: completed and validated on `feature/v2-follow-up-learning`.
 
 ## M6 — Stable v2 release
 
-Status: direct stable release candidate in progress; beta and soak requirements were explicitly
-removed by the maintainer on 2026-07-16.
+Status: completed. Stable `v2.0.0` was published on 2026-07-16 from commit `47ead307` after
+migration, security, accessibility, E2E, Linux and Windows upgrade, package, checksum, SBOM and
+artifact-readback gates passed. Beta and soak requirements were explicitly removed by the
+maintainer.
 
 - Require migration, security, accessibility, E2E, package and release gates.
 - Publish stable `v2.0.0` only with no P0/P1, high-severity security, data-loss, platform-upgrade,
@@ -90,4 +92,4 @@ removed by the maintainer on 2026-07-16.
 - [x] M3 Market intelligence and pricing workshop
 - [x] M4 Listing studio and sell plan
 - [x] M5 Follow-up and local learning
-- [ ] M6 Stable v2 release
+- [x] M6 Stable v2 release

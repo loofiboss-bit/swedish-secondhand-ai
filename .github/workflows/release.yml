@@ -71,7 +71,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p release/upgrade-v1
-          gh release download v1.0.0-beta.1 --pattern '*.AppImage' --dir release/upgrade-v1
+          for attempt in 1 2 3; do
+            if gh release download v1.0.0-beta.1 --pattern '*.AppImage' \
+              --dir release/upgrade-v1 --clobber; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Unable to download the v1 Linux upgrade artifact after 3 attempts"
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
           previous=$(find release/upgrade-v1 -name '*.AppImage' -print -quit)
           current=$(find release -maxdepth 1 -name '*.AppImage' -print -quit)
           chmod +x "$previous" "$current"
@@ -112,7 +122,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           New-Item -ItemType Directory -Force release/upgrade-v1 | Out-Null
-          gh release download v1.0.0-beta.1 --pattern '*setup.exe' --dir release/upgrade-v1
+          $downloaded = $false
+          foreach ($attempt in 1..3) {
+            gh release download v1.0.0-beta.1 --pattern '*setup.exe' `
+              --dir release/upgrade-v1 --clobber
+            if ($LASTEXITCODE -eq 0) {
+              $downloaded = $true
+              break
+            }
+            if ($attempt -lt 3) { Start-Sleep -Seconds (5 * $attempt) }
+          }
+          if (-not $downloaded) {
+            throw 'Unable to download the v1 Windows upgrade artifact after 3 attempts'
+          }
           $previous = Get-ChildItem release/upgrade-v1 -Filter '*setup.exe' | Select-Object -First 1
           $current = Get-ChildItem release -Filter '*setup.exe' | Select-Object -First 1
           if (-not $previous -or -not $current) { throw 'Missing Windows upgrade installer' }
@@ -165,7 +187,7 @@ jobs:
             --verify-tag
             --draft
             --title "Swedish Secondhand AI ${TAG}"
-            --notes-file "docs/releases/${TAG#v}.md"
+            --notes-file "docs/releases/${TAG}.md"
           )
           if [[ "$TAG" == *-* ]]; then
             release_args+=(--prerelease)
