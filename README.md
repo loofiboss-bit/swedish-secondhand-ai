@@ -19,6 +19,12 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - Schema 3 migrates the active v1 draft and history without deleting the schema 2 rollback source.
 - Full backups include project images; compact backups explicitly omit images. Secrets remain
   excluded from both formats.
+- A deterministic seller coach orders the next actions by safety, missing facts, photos, market
+  evidence, price, listing, and follow-up; every action explains why it matters.
+- Local photo checks measure resolution, light, contrast, sharpness, duplicates, and crop risk
+  without changing the original JPEG, PNG, or WebP.
+- Category profiles and source-labelled fact candidates make unknowns visible while preserving
+  every user correction and lock across later analysis.
 
 ## What's New in v1.0.0-beta.1
 

@@ -486,6 +486,118 @@ select {
   gap: 0.5rem;
 }
 
+.coach-panel {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(18, 50, 32, 0.96), rgba(10, 27, 18, 0.96));
+}
+
+.coach-panel > header,
+.coach-action,
+.home-coach-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.coach-panel h3,
+.coach-panel p,
+.coach-action p {
+  margin: 0;
+}
+
+.coach-actions,
+.home-coach-list,
+.photo-requirements,
+.photo-issues,
+.fact-checklist,
+.fact-candidates ul,
+.knowledge-gaps ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.coach-action {
+  padding: 0.65rem;
+  border-left: 3px solid var(--accent);
+  background: rgba(5, 17, 10, 0.65);
+}
+
+.coach-action--blocking {
+  border-left-color: #f0b86e;
+}
+
+.coach-action div,
+.home-coach-list div,
+.photo-assessment,
+.fact-candidates li {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.home-coach-list li {
+  padding: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.home-coach-list span,
+.coach-action small,
+.photo-assessment small,
+.fact-candidates span,
+.fact-candidates small {
+  color: var(--text-muted);
+}
+
+.photo-coach,
+.category-profile,
+.fact-candidates,
+.knowledge-gaps {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(8, 20, 13, 0.55);
+}
+
+.photo-requirements,
+.fact-checklist {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.photo-requirements li,
+.fact-checklist li {
+  color: var(--text-muted);
+}
+
+.photo-requirements li.is-complete,
+.fact-checklist li.is-complete,
+.photo-ok {
+  color: #9ee6b9;
+}
+
+.photo-assessment select {
+  width: 100%;
+}
+
+.photo-issues {
+  color: #ffd39a;
+  font-size: 0.85rem;
+}
+
+.fact-candidates li {
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
 .manual-comp {
   display: grid;
   gap: 0.5rem;

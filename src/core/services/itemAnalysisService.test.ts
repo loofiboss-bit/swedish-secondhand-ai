@@ -73,8 +73,9 @@ describe('itemAnalysisService', () => {
 
   it('returns fallback for empty input', async () => {
     const result = await itemAnalysisService.analyzeInput('', []);
-    expect(result.title).toBe('Unspecified item');
-    expect(result.confidence).toBe(0.2);
+    expect(result.fingerprint.title).toBe('Unspecified item');
+    expect(result.fingerprint.confidence).toBe(0.2);
+    expect(result.mode).toBe('offline');
   });
 
   it('routes configured Gemini analysis through the registered adapter', async () => {
@@ -108,7 +109,11 @@ describe('itemAnalysisService', () => {
     const result = await itemAnalysisService.analyzeInput('IKEA stol i bra skick', []);
 
     expect(desktopAnalyzeMock).toHaveBeenCalledTimes(1);
-    expect(result).toMatchObject({ title: 'Gemini chair', model: 'POÄNG', confidence: 0.9 });
+    expect(result).toMatchObject({
+      mode: 'gemini',
+      fingerprint: { title: 'Gemini chair', model: 'POÄNG', confidence: 0.9 },
+    });
+    expect(result.candidates[0]).toMatchObject({ source: 'gemini' });
   });
 
   it('uses deterministic fallback for a transient configured-provider failure', async () => {
@@ -133,10 +138,13 @@ describe('itemAnalysisService', () => {
     const result = await itemAnalysisService.analyzeInput('IKEA stol i bra skick', []);
 
     expect(result).toMatchObject({
-      brand: 'IKEA',
-      conditionGrade: 'good',
-      detectedLanguage: 'sv',
-      confidence: 0.45,
+      mode: 'offline',
+      fingerprint: {
+        brand: 'IKEA',
+        conditionGrade: 'good',
+        detectedLanguage: 'sv',
+        confidence: 0.45,
+      },
     });
     expect(loggerWarnMock).toHaveBeenCalledWith(
       'AI analysis unavailable. Falling back to heuristic analysis.',
@@ -162,7 +170,11 @@ describe('itemAnalysisService', () => {
 
     const result = await itemAnalysisService.analyzeInput('Sony kamera i bra skick', []);
 
-    expect(result).toMatchObject({ brand: 'Sony', conditionGrade: 'good', confidence: 0.45 });
+    expect(result).toMatchObject({
+      mode: 'offline',
+      fingerprint: { brand: 'Sony', conditionGrade: 'good', confidence: 0.45 },
+    });
+    expect(result.knowledgeGaps.map((gap) => gap.key)).toContain('model');
     expect(desktopAnalyzeMock).not.toHaveBeenCalled();
   });
 

@@ -127,10 +127,13 @@ function isProjectRecord(value: unknown): value is ProjectRecord {
     return false;
   }
   const mediaIds = new Set((media as Array<{ id: string }>).map((asset) => asset.id));
+  const assessments = project.workspace.photoAssessments ?? [];
   return (
     mediaIds.size === media.length &&
     project.workspace.mediaIds.length === media.length &&
-    project.workspace.mediaIds.every((id) => mediaIds.has(id))
+    project.workspace.mediaIds.every((id) => mediaIds.has(id)) &&
+    new Set(assessments.map((assessment) => assessment.imageIndex)).size === assessments.length &&
+    assessments.every((assessment) => assessment.imageIndex < media.length)
   );
 }
 
@@ -148,21 +151,41 @@ export function isProjectBackupDataset(value: unknown): value is ProjectBackupDa
     if (!isRecord(entry) || !isRecord(entry.project) || !Array.isArray(entry.images)) return false;
     if (!isItemProject(entry.project)) return false;
     const project = entry.project;
+    const images = entry.images;
     const id = project.id;
     if (ids.has(id)) return false;
     ids.add(id);
     if (
-      !entry.images.every(
+      !images.every(
         (image) =>
           typeof image === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/i.test(image),
       )
     ) {
       return false;
     }
-    if (value.imagesIncluded && entry.images.length !== project.workspace.mediaIds.length) {
+    if (value.imagesIncluded && images.length !== project.workspace.mediaIds.length) {
       return false;
     }
-    if (!value.imagesIncluded && entry.images.length !== 0) return false;
+    const assessments = project.workspace.photoAssessments ?? [];
+    if (
+      value.imagesIncluded &&
+      (new Set(assessments.map((assessment) => assessment.imageIndex)).size !==
+        assessments.length ||
+        assessments.some((assessment) => assessment.imageIndex >= images.length))
+    ) {
+      return false;
+    }
+    if (
+      !value.imagesIncluded &&
+      (images.length !== 0 ||
+        project.workspace.mediaIds.length !== 0 ||
+        assessments.length !== 0 ||
+        (project.workspace.factCandidates ?? []).some((candidate) =>
+          candidate.references.some((reference) => reference.kind === 'image'),
+        ))
+    ) {
+      return false;
+    }
   }
   return value.activeProjectId === null || ids.has(value.activeProjectId);
 }
@@ -505,7 +528,17 @@ class ProjectRepository {
             ? record.project
             : {
                 ...record.project,
-                workspace: { ...record.project.workspace, mediaIds: [] },
+                workspace: {
+                  ...record.project.workspace,
+                  mediaIds: [],
+                  photoAssessments: [],
+                  factCandidates: record.project.workspace.factCandidates?.map((candidate) => ({
+                    ...candidate,
+                    references: candidate.references.filter(
+                      (reference) => reference.kind !== 'image',
+                    ),
+                  })),
+                },
               },
           images,
         };

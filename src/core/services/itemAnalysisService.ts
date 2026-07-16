@@ -1,5 +1,11 @@
 import { AiRouter, canUseHeuristicFallback, configureRuntimeAiProviders } from '@core/ai';
-import type { ConditionGrade, ItemFingerprint, SupportedLanguage } from '@core/types';
+import { buildFactCandidates, buildKnowledgeGaps } from '@core/ai/factCandidates';
+import type {
+  ConditionGrade,
+  ItemAnalysisResult,
+  ItemFingerprint,
+  SupportedLanguage,
+} from '@core/types';
 import { settingsService } from './settingsService';
 import { logger } from './loggerService';
 
@@ -48,17 +54,17 @@ class ItemAnalysisService {
     text: string,
     images: string[],
     signal?: AbortSignal,
-  ): Promise<ItemFingerprint> {
+  ): Promise<ItemAnalysisResult> {
     const contentText = text.trim();
     const hasImage = images.length > 0;
 
     if (!contentText && !hasImage) {
-      return this.fallbackFingerprint('');
+      return this.offlineResult('', images);
     }
 
     const settings = await settingsService.getSettings();
     if (signal?.aborted) throw new DOMException('Analysis cancelled.', 'AbortError');
-    if (settings.aiMode === 'offline') return this.fallbackFingerprint(contentText);
+    if (settings.aiMode === 'offline') return this.offlineResult(contentText, images);
 
     const providerId = settings.aiMode;
     try {
@@ -68,17 +74,36 @@ class ItemAnalysisService {
         language: inferLanguage(contentText),
         context: { signal },
       });
-      return response.fingerprint;
+      return {
+        fingerprint: response.fingerprint,
+        candidates: [...response.candidates],
+        knowledgeGaps: buildKnowledgeGaps(response.fingerprint),
+        mode: providerId,
+      };
     } catch (error) {
       if (settings.fallbackEnabled && canUseHeuristicFallback(error)) {
         logger.warn('AI analysis unavailable. Falling back to heuristic analysis.', {
           providerId,
           errorCode: error.code,
         });
-        return this.fallbackFingerprint(contentText);
+        return this.offlineResult(contentText, images);
       }
       throw error;
     }
+  }
+
+  private offlineResult(text: string, images: string[]): ItemAnalysisResult {
+    const fingerprint = this.fallbackFingerprint(text);
+    return {
+      fingerprint,
+      candidates: buildFactCandidates(
+        fingerprint,
+        { text, images: images.map((dataUrl) => ({ dataUrl })) },
+        'offline',
+      ),
+      knowledgeGaps: buildKnowledgeGaps(fingerprint),
+      mode: 'offline',
+    };
   }
 
   private fallbackFingerprint(text: string): ItemFingerprint {

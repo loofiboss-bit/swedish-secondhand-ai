@@ -17,6 +17,34 @@ test('loads project home and opens an item workspace', async ({ page }) => {
   await page.getByRole('button', { name: /ny vara|new item/i }).click();
   await expect(page.getByRole('heading', { name: /analysera|analyze/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /marknad & pris|market & price/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /nästa bästa|next best/i })).toBeVisible();
+});
+
+test('offline intake exposes conservative candidates and explicit knowledge gaps', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await finishOnboarding(page);
+  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await page.getByLabel(/ladda upp bilder|upload images/i).setInputFiles({
+    name: 'item.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await expect(page.getByRole('heading', { name: /bildcoach|photo coach/i })).toBeVisible();
+  await expect(page.getByText(/låg upplösning|low resolution/i)).toBeVisible();
+  await page.getByLabel(/beskriv varan|describe the item/i).fill('Sony kamera i bra skick');
+  await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();
+
+  await expect(
+    page.getByRole('heading', { name: /faktakandidater|fact candidates/i }),
+  ).toBeVisible();
+  await expect(page.getByText(/offline.*osäkerhet|offline.*uncertainty/i).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: /kunskapsluckor|knowledge gaps/i })).toBeVisible();
+  await expect(page.getByText(/modellen kunde inte|model could not/i)).toBeVisible();
 });
 
 test('preserves a locked correction and prices only reviewed comparables', async ({ page }) => {

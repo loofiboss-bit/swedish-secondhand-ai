@@ -14,6 +14,7 @@ import {
   type OllamaProviderConfig,
 } from './OllamaConfig';
 import { parseOllamaAnalysisResponse } from './OllamaResponseParser';
+import { buildFactCandidates } from '@core/ai/factCandidates';
 
 const SYSTEM_PROMPT = `You are a product analyzer for secondhand marketplace listings.
 Return only valid JSON with these exact keys:
@@ -248,8 +249,14 @@ export class OllamaProvider implements AiProvider {
       if (!response.ok) throw new OllamaHttpError(response.status);
       const rawContent = extractMessageContent(await response.json());
 
+      const fingerprint = parseOllamaAnalysisResponse(rawContent, this.createFallback(request));
       return {
-        fingerprint: parseOllamaAnalysisResponse(rawContent, this.createFallback(request)),
+        fingerprint,
+        candidates: buildFactCandidates(
+          fingerprint,
+          { ...request, images: request.images.slice(0, 3) },
+          'ollama',
+        ),
         metadata: {
           providerId: this.id,
           modelId: config.modelId,

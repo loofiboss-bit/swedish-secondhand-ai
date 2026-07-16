@@ -31,11 +31,26 @@ Review the detected facts before pricing. Correct title, category, brand, model,
 defects, accessories, and testing status, then keep important user values locked. A new AI
 analysis preserves locked values.
 
+The seller coach shows up to three next actions in priority order and opens the relevant field or
+project section. Each action includes its reason and expected impact. Home also surfaces the
+highest-priority projects.
+
+Uploaded JPEG, PNG, and WebP files are kept unchanged. The local photo coach checks resolution,
+light, contrast, possible blur, duplicates, and square-crop risk, then lets you assign each image
+as cover, angle, defect, label/model, or accessories. It never edits or improves a photo
+automatically. HEIC/HEIF is rejected with an explicit format message.
+
+Electronics, Fashion, Furniture, Collectibles, and General use different required and recommended
+fact/photo checklists. AI and offline analysis create source-labelled candidates with uncertainty
+and text/image references. These are suggestions only; explicit knowledge gaps are shown instead
+of offline guesses.
+
 Tips for better results:
 
 - Include exact model names if known.
 - Mention condition details (e.g., "small scratch on armrest").
 - Include included extras (charger, remote, box).
+- Photograph defects and labels directly, and keep at least one clear cover image.
 
 ![Analyze step](./docs/screenshots/02-analyze-detected-item.png)
 

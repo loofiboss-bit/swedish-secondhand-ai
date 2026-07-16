@@ -1,11 +1,15 @@
 import { create } from 'zustand';
 import type {
   ComparableRecord,
+  AnalysisKnowledgeGap,
+  FactCandidate,
   ItemFingerprint,
   ListingDraft,
   PricingStrategy,
   ProductFactKey,
   ProductListFactKey,
+  PhotoAssessment,
+  PhotoRole,
   ValuationResult,
   VerifiedProductFacts,
   WorkflowStep,
@@ -23,6 +27,7 @@ import {
   setProductFactLock,
   updateProductFact,
   updateProductListFact,
+  updateProductAttribute,
   updateTestedStatus,
   updateAuthenticityStatus,
 } from '@core/services/verifiedFactsService';
@@ -35,6 +40,9 @@ interface ValuationState {
   pricingStrategy: PricingStrategy;
   fingerprint: ItemFingerprint | null;
   productFacts: VerifiedProductFacts | null;
+  factCandidates: FactCandidate[];
+  knowledgeGaps: AnalysisKnowledgeGap[];
+  photoAssessments: PhotoAssessment[];
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
@@ -42,8 +50,9 @@ interface ValuationState {
   error: string | null;
   setInputText: (text: string) => void;
   setPricingStrategy: (strategy: PricingStrategy) => void;
-  addImage: (dataUrl: string) => void;
+  addImage: (dataUrl: string, assessment?: PhotoAssessment) => void;
   removeImage: (index: number) => void;
+  setPhotoRole: (index: number, role: PhotoRole) => void;
   analyzeItem: () => Promise<void>;
   cancelAnalysis: () => void;
   fetchTraderaComparables: () => Promise<void>;
@@ -56,6 +65,7 @@ interface ValuationState {
   setComparableIncluded: (id: string, included: boolean, reason?: string) => void;
   updateFact: (key: ProductFactKey, value: string) => void;
   updateListFact: (key: ProductListFactKey, value: string) => void;
+  updateAttribute: (key: string, value: string) => void;
   setTestedStatus: (value: VerifiedProductFacts['testedStatus']['value']) => void;
   setAuthenticityStatus: (value: VerifiedProductFacts['authenticityStatus']['value']) => void;
   setFactLocked: (key: ProductFactKey, locked: boolean) => void;
@@ -75,6 +85,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   pricingStrategy: 'balanced',
   fingerprint: null,
   productFacts: null,
+  factCandidates: [],
+  knowledgeGaps: [],
+  photoAssessments: [],
   traderaComps: [],
   manualComps: [],
   valuation: null,
@@ -82,9 +95,44 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   error: null,
   setInputText: (inputText) => set({ inputText }),
   setPricingStrategy: (pricingStrategy) => set({ pricingStrategy }),
-  addImage: (dataUrl) => set((state) => ({ images: [...state.images, dataUrl].slice(0, 6) })),
+  addImage: (dataUrl, assessment) =>
+    set((state) => {
+      if (state.images.length >= 6) return state;
+      const imageIndex = state.images.length;
+      return {
+        images: [...state.images, dataUrl],
+        photoAssessments: assessment
+          ? [...state.photoAssessments, { ...assessment, imageIndex }]
+          : state.photoAssessments,
+      };
+    }),
   removeImage: (index) =>
-    set((state) => ({ images: state.images.filter((_, currentIndex) => currentIndex !== index) })),
+    set((state) => ({
+      images: state.images.filter((_, currentIndex) => currentIndex !== index),
+      photoAssessments: state.photoAssessments
+        .filter((assessment) => assessment.imageIndex !== index)
+        .map((assessment) => ({
+          ...assessment,
+          imageIndex:
+            assessment.imageIndex > index ? assessment.imageIndex - 1 : assessment.imageIndex,
+          duplicateOfIndex:
+            assessment.duplicateOfIndex === undefined || assessment.duplicateOfIndex === index
+              ? undefined
+              : assessment.duplicateOfIndex > index
+                ? assessment.duplicateOfIndex - 1
+                : assessment.duplicateOfIndex,
+          issues:
+            assessment.duplicateOfIndex === index
+              ? assessment.issues.filter((issue) => issue !== 'duplicate')
+              : assessment.issues,
+        })),
+    })),
+  setPhotoRole: (index, role) =>
+    set((state) => ({
+      photoAssessments: state.photoAssessments.map((assessment) =>
+        assessment.imageIndex === index ? { ...assessment, role } : assessment,
+      ),
+    })),
   analyzeItem: async () => {
     activeAnalysis?.abort();
     activeAnalysis = new AbortController();
@@ -97,14 +145,20 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         return;
       }
 
-      const fingerprint = await valuationService.analyzeInput(
+      const analysis = await valuationService.analyzeInput(
         state.inputText,
         state.images,
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      const productFacts = mergeAnalyzedFacts(state.productFacts, fingerprint);
-      set({ fingerprint, productFacts, loading: false });
+      const productFacts = mergeAnalyzedFacts(state.productFacts, analysis.fingerprint);
+      set({
+        fingerprint: analysis.fingerprint,
+        productFacts,
+        factCandidates: analysis.candidates,
+        knowledgeGaps: analysis.knowledgeGaps,
+        loading: false,
+      });
       useWorkflowStore.getState().markStepComplete('analyze');
     } catch (error) {
       if (controller.signal.aborted) {
@@ -211,6 +265,11 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     const state = get();
     if (!state.productFacts) return;
     set({ productFacts: updateProductListFact(state.productFacts, key, value), valuation: null });
+  },
+  updateAttribute: (key, value) => {
+    const state = get();
+    if (!state.productFacts) return;
+    set({ productFacts: updateProductAttribute(state.productFacts, key, value), valuation: null });
   },
   setTestedStatus: (value) => {
     const productFacts = get().productFacts;
@@ -330,6 +389,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       fingerprint: draft.fingerprint,
       productFacts:
         draft.productFacts ?? (draft.fingerprint ? factsFromFingerprint(draft.fingerprint) : null),
+      factCandidates: draft.factCandidates ?? [],
+      knowledgeGaps: draft.knowledgeGaps ?? [],
+      photoAssessments: draft.photoAssessments ?? [],
       traderaComps: draft.traderaComps,
       manualComps: draft.manualComps,
       valuation: draft.valuation,
@@ -348,6 +410,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       images: state.images,
       fingerprint: state.fingerprint,
       productFacts: state.productFacts,
+      factCandidates: state.factCandidates,
+      knowledgeGaps: state.knowledgeGaps,
+      photoAssessments: state.photoAssessments,
       traderaComps: state.traderaComps,
       manualComps: state.manualComps,
       valuation: state.valuation,

@@ -32,6 +32,19 @@ export function ProjectDashboard({
     [projects],
   );
   const visible = mode === 'home' ? projects.slice(0, 5) : projects;
+  const prioritized = projects
+    .filter((project) => project.status !== 'sold')
+    .sort((left, right) => {
+      const priority: Record<ProjectStatus, number> = {
+        listed: 1,
+        draft: 2,
+        paused: 3,
+        ready: 4,
+        sold: 5,
+      };
+      return priority[left.status] - priority[right.status];
+    })
+    .slice(0, 3);
 
   return (
     <div className="project-dashboard">
@@ -57,6 +70,24 @@ export function ProjectDashboard({
             </div>
           ))}
         </div>
+      )}
+
+      {mode === 'home' && prioritized.length > 0 && (
+        <SectionCard title={t('highestPriorityActions')}>
+          <ul className="home-coach-list">
+            {prioritized.map((project) => (
+              <li key={project.id}>
+                <div>
+                  <strong>{project.title}</strong>
+                  <span>{t(`homeCoach_${project.status}`)}</span>
+                </div>
+                <button type="button" onClick={() => onOpen(project.id)}>
+                  {t('openCoachAction')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
       )}
 
       <SectionCard

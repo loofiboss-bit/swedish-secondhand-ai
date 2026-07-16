@@ -39,7 +39,7 @@ backup/import, reset, unit tests, E2E, and `npm run validate` pass.
 
 ## M2 — Deterministic seller coach and smart intake
 
-Status: pending.
+Status: completed and validated on `feature/v2-smart-intake`.
 
 - Add priority-ordered coach actions and evidence gaps.
 - Add local image quality checks and category-specific photo coverage.
@@ -83,7 +83,7 @@ Status: pending.
 
 - [x] G0 v1 stabilization prerequisite
 - [x] M1 Project library and schema 3 data
-- [ ] M2 Deterministic seller coach and smart intake
+- [x] M2 Deterministic seller coach and smart intake
 - [ ] M3 Market intelligence and pricing workshop
 - [ ] M4 Listing studio and sell plan
 - [ ] M5 Follow-up and local learning

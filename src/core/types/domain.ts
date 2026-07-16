@@ -20,6 +20,31 @@ export type MarketState = 'active' | 'sold' | 'unknown';
 
 export type FactSource = 'ai' | 'user' | 'heuristic';
 
+export type SellerCategory = 'Electronics' | 'Fashion' | 'Furniture' | 'Collectibles' | 'General';
+
+export type FactCandidateSource = 'gemini' | 'ollama' | 'offline';
+
+export interface EvidenceReference {
+  kind: 'text' | 'image';
+  index?: number;
+  excerpt?: string;
+}
+
+export interface FactCandidate {
+  id: string;
+  key: string;
+  value: string;
+  source: FactCandidateSource;
+  confidence: number;
+  uncertainty: 'low' | 'medium' | 'high';
+  references: EvidenceReference[];
+}
+
+export interface AnalysisKnowledgeGap {
+  key: string;
+  reasonKey: string;
+}
+
 export interface VerifiedFact<T> {
   value: T;
   source: FactSource;
@@ -54,6 +79,70 @@ export interface ItemFingerprint {
   attributes: Record<string, string>;
   detectedLanguage: SupportedLanguage;
   confidence: number;
+}
+
+export interface ItemAnalysisResult {
+  fingerprint: ItemFingerprint;
+  candidates: FactCandidate[];
+  knowledgeGaps: AnalysisKnowledgeGap[];
+  mode: FactCandidateSource;
+}
+
+export type PhotoRole = 'cover' | 'angle' | 'defect' | 'label_model' | 'accessories';
+
+export type PhotoIssue =
+  | 'low_resolution'
+  | 'too_dark'
+  | 'too_bright'
+  | 'low_contrast'
+  | 'blurry'
+  | 'duplicate'
+  | 'crop_risk';
+
+export interface PhotoAssessment {
+  version: 1;
+  imageIndex: number;
+  role: PhotoRole;
+  width: number;
+  height: number;
+  brightness: number;
+  contrast: number;
+  sharpness: number;
+  perceptualHash: string;
+  duplicateOfIndex?: number;
+  cropRisk: boolean;
+  issues: PhotoIssue[];
+  assessedAt: string;
+}
+
+export interface EvidenceGap {
+  id: string;
+  key: string;
+  severity: 'blocking' | 'recommended';
+  reason: string;
+  targetSection: ProjectSection;
+  targetId?: string;
+}
+
+export type CoachActionKind =
+  | 'safety'
+  | 'facts'
+  | 'photos'
+  | 'comparables'
+  | 'price'
+  | 'listing'
+  | 'follow-up';
+
+export interface CoachAction {
+  id: string;
+  kind: CoachActionKind;
+  priority: number;
+  severity: 'blocking' | 'improvement';
+  titleKey: string;
+  reasonKey: string;
+  impactKey: string;
+  targetSection: ProjectSection;
+  targetId?: string;
 }
 
 export interface ComparableRecord {
@@ -172,7 +261,7 @@ export interface MarketplaceAdapter {
 }
 
 export interface ValuationService {
-  analyzeInput(text: string, images: string[], signal?: AbortSignal): Promise<ItemFingerprint>;
+  analyzeInput(text: string, images: string[], signal?: AbortSignal): Promise<ItemAnalysisResult>;
   estimateValue(
     facts: VerifiedProductFacts,
     comps: ComparableRecord[],
@@ -223,6 +312,9 @@ export interface ListingDraft {
   images: string[];
   fingerprint: ItemFingerprint | null;
   productFacts?: VerifiedProductFacts | null;
+  factCandidates?: FactCandidate[];
+  knowledgeGaps?: AnalysisKnowledgeGap[];
+  photoAssessments?: PhotoAssessment[];
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;

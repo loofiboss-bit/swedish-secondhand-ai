@@ -94,6 +94,57 @@ describe('projectRepository', () => {
     expect((await projectRepository.open(second.project.id)).draft.inputText).toBe('Second item');
   });
 
+  it('persists local photo assessments and fact candidates with the project workspace', async () => {
+    await projectRepository.initialize();
+    const created = await projectRepository.create();
+    const enriched: ListingDraft = {
+      ...created.draft,
+      images: ['data:image/png;base64,AQID'],
+      factCandidates: [
+        {
+          id: 'offline:brand:ikea',
+          key: 'brand',
+          value: 'IKEA',
+          source: 'offline',
+          confidence: 0.45,
+          uncertainty: 'high',
+          references: [{ kind: 'text', excerpt: 'IKEA stol' }],
+        },
+      ],
+      knowledgeGaps: [{ key: 'model', reasonKey: 'knowledgeGap_model' }],
+      photoAssessments: [
+        {
+          version: 1,
+          imageIndex: 0,
+          role: 'cover',
+          width: 1200,
+          height: 1200,
+          brightness: 0.5,
+          contrast: 0.3,
+          sharpness: 0.4,
+          perceptualHash: 'aaaaaaaaaaaaaaaa',
+          cropRisk: false,
+          issues: [],
+          assessedAt: '2026-07-16T09:00:00.000Z',
+        },
+      ],
+    };
+
+    await projectRepository.save(created.project.id, enriched);
+    const reopened = await projectRepository.open(created.project.id);
+
+    expect(reopened.draft.factCandidates).toEqual(enriched.factCandidates);
+    expect(reopened.draft.photoAssessments).toEqual(enriched.photoAssessments);
+    expect(reopened.draft.images).toEqual(enriched.images);
+
+    const compact = await projectRepository.exportBackup(false);
+    expect(compact?.records[0].images).toEqual([]);
+    expect(compact?.records[0].project.workspace.photoAssessments).toEqual([]);
+    expect(compact?.records[0].project.workspace.factCandidates?.[0].references).toEqual([
+      { kind: 'text', excerpt: 'IKEA stol' },
+    ]);
+  });
+
   it('enters read-only recovery without committing a v3 index when legacy data is corrupt', async () => {
     await set(DATASET_KEYS['listing-draft'], createEnvelope('listing-draft', { version: 1 }));
 

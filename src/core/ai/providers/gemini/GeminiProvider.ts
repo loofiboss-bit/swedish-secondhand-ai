@@ -12,6 +12,7 @@ import {
   type GeminiProviderConfig,
 } from './GeminiConfig';
 import { parseGeminiAnalysisResponse } from './GeminiResponseParser';
+import { buildFactCandidates } from '@core/ai/factCandidates';
 
 type GeminiContentPart =
   | { readonly text: string }
@@ -239,8 +240,22 @@ export class GeminiProvider implements AiProvider {
         },
       });
 
+      const fingerprint = parseGeminiAnalysisResponse(
+        response.text ?? '',
+        this.createFallback(request),
+      );
       return {
-        fingerprint: parseGeminiAnalysisResponse(response.text ?? '', this.createFallback(request)),
+        fingerprint,
+        candidates: buildFactCandidates(
+          fingerprint,
+          {
+            ...request,
+            images: request.images
+              .slice(0, 2)
+              .filter((image) => /^data:image\/(?:jpeg|png|webp);base64,/i.test(image.dataUrl)),
+          },
+          'gemini',
+        ),
         metadata: {
           providerId: this.id,
           modelId: config.modelId,

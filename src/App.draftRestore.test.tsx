@@ -90,8 +90,12 @@ describe('App schema 3 project migration', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const projectTitle = await screen.findByText('Draft: IKEA Poang in very good condition');
-    await user.click(projectTitle.closest('button')!);
+    const projectButton = await screen.findByRole(
+      'button',
+      { name: /^Draft: IKEA Poang in very good condition/ },
+      { timeout: 5_000 },
+    );
+    await user.click(projectButton);
 
     await waitFor(() =>
       expect(useValuationStore.getState().inputText).toBe(draftFixture.inputText),

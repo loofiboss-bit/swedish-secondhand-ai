@@ -1,7 +1,7 @@
 import { clear, get, set } from 'idb-keyval';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ItemFingerprint } from '@core/types';
-import { listingDraftService } from './listingDraftService';
+import { isListingDraft, listingDraftService } from './listingDraftService';
 import { DATASET_KEYS } from './persistenceService';
 import { factsFromFingerprint } from './verifiedFactsService';
 
@@ -61,5 +61,45 @@ describe('listingDraftService migration', () => {
 
     await expect(listingDraftService.loadDraft()).resolves.toBeNull();
     expect(await get(DATASET_KEYS['listing-draft'])).toEqual(corrupt);
+  });
+
+  it('rejects unsafe imported photo metrics and oversized candidate values', () => {
+    expect(
+      isListingDraft({
+        ...baseDraft,
+        photoAssessments: [
+          {
+            version: 1,
+            imageIndex: 0,
+            role: 'cover',
+            width: 50_000,
+            height: 50_000,
+            brightness: 0.5,
+            contrast: 0.5,
+            sharpness: 0.5,
+            perceptualHash: 'aaaaaaaaaaaaaaaa',
+            cropRisk: false,
+            issues: [],
+            assessedAt: '2026-07-16T00:00:00Z',
+          },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      isListingDraft({
+        ...baseDraft,
+        factCandidates: [
+          {
+            id: 'candidate',
+            key: 'title',
+            value: 'x'.repeat(2_001),
+            source: 'offline',
+            confidence: 0.4,
+            uncertainty: 'high',
+            references: [],
+          },
+        ],
+      }),
+    ).toBe(false);
   });
 });

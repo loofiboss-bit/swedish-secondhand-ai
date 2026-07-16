@@ -45,7 +45,8 @@ describe('valuation pipeline integration', () => {
       Object.assign(new Error('network unavailable'), { code: 'network' }),
     );
 
-    const fingerprint = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
+    const analysis = await valuationService.analyzeInput('IKEA Poang stol i bra skick', []);
+    const fingerprint = analysis.fingerprint;
     const valuation = await valuationService.estimateValue(
       factsFromFingerprint(fingerprint),
       [

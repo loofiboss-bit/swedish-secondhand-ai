@@ -53,6 +53,9 @@ const WorkspaceTabs = lazy(() =>
     default: module.WorkspaceTabs,
   })),
 );
+const CoachPanel = lazy(() =>
+  import('@features/projects/CoachPanel').then((module) => ({ default: module.CoachPanel })),
+);
 const ProjectFollowUpPanel = lazy(() =>
   import('@features/projects/ProjectFollowUpPanel').then((module) => ({
     default: module.ProjectFollowUpPanel,
@@ -147,6 +150,9 @@ export function App() {
     valuationStore.images,
     valuationStore.fingerprint,
     valuationStore.productFacts,
+    valuationStore.factCandidates,
+    valuationStore.knowledgeGaps,
+    valuationStore.photoAssessments,
     valuationStore.traderaComps,
     valuationStore.manualComps,
     valuationStore.valuation,
@@ -175,6 +181,20 @@ export function App() {
   const changeSection = (section: ProjectSection) => {
     setWorkspaceSection(section);
     void setActiveSection(section);
+  };
+
+  const openCoachAction = (section: ProjectSection, targetId?: string) => {
+    changeSection(section);
+    if (targetId) {
+      window.setTimeout(() => {
+        const target = document.getElementById(targetId);
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusTarget = target?.matches('button, input, select, textarea, [tabindex]')
+          ? target
+          : target?.querySelector<HTMLElement>('button, input, select, textarea, [tabindex]');
+        focusTarget?.focus({ preventScroll: true });
+      });
+    }
   };
 
   useEffect(() => {
@@ -320,6 +340,7 @@ export function App() {
                   </button>
                 </header>
                 <WorkspaceTabs active={workspaceSection} onChange={changeSection} />
+                <CoachPanel projectStatus={activeProject.status} onNavigate={openCoachAction} />
                 <div className="workspace-layout">
                   <section className="workspace-main" tabIndex={-1}>
                     {workspaceSection === 'item' && <AnalyzePanel />}

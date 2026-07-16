@@ -193,6 +193,28 @@ export function updateProductListFact(
   };
 }
 
+export function updateProductAttribute(
+  facts: VerifiedProductFacts,
+  key: string,
+  value: string,
+): VerifiedProductFacts {
+  const normalizedKey = key.trim();
+  const normalizedValue = value.trim();
+  if (!normalizedKey || !normalizedValue) return facts;
+  return {
+    ...facts,
+    attributes: {
+      ...facts.attributes,
+      [normalizedKey]: {
+        value: normalizedValue,
+        source: 'user',
+        locked: true,
+        evidence: 'Confirmed by user',
+      },
+    },
+  };
+}
+
 export function updateTestedStatus(
   facts: VerifiedProductFacts,
   value: VerifiedProductFacts['testedStatus']['value'],

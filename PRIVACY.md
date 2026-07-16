@@ -7,7 +7,7 @@ use.
 
 ## Provider data
 
-- **Gemini:** when selected, item text and at most two prepared images are sent to Google. The key
+- **Gemini:** when selected, item text and at most two supported original images are sent to Google. The key
   remains in operating-system protected storage and is used only by the Electron main process.
 - **Ollama:** requests are restricted to HTTP loopback on port `11434`.
 - **Offline:** deterministic analysis does not send item content to an AI provider.
@@ -15,6 +15,10 @@ use.
   only when requested. The App key stays in the Electron main process. Results are cached locally
   for 24 hours to reduce external requests.
 - **Blocket and Vinted:** v1 creates copy-ready text only. It does not scrape or publish.
+
+Photo quality measurements, perceptual duplicate hashes, category checklists, coach actions, fact
+candidates, and knowledge gaps are computed or stored locally. Photo assessment does not alter an
+image. Ollama receives at most three images only when it is selected; offline mode receives none.
 
 ## Backups and diagnostics
 

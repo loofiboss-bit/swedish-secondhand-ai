@@ -128,7 +128,12 @@ describe('useValuationStore runPipeline', () => {
       error: null,
     });
 
-    analyzeInputMock.mockResolvedValue(fingerprint);
+    analyzeInputMock.mockResolvedValue({
+      fingerprint,
+      candidates: [],
+      knowledgeGaps: [],
+      mode: 'offline',
+    });
     getComparablesMock.mockResolvedValue(comparables);
     estimateValueMock.mockResolvedValue(valuation);
     recalculateConfidenceMock.mockResolvedValue({

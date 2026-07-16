@@ -7,6 +7,15 @@
 - Added atomic schema 3 project/media persistence with idempotent active-draft/history migration,
   read-only recovery, and retained schema 2 rollback data.
 - Added format-2 full project backup with images and explicit compact backup without images.
+- Added a deterministic next-action seller coach with safety/fact blockers, reasons, expected
+  impact, direct navigation, and prioritized projects on Home.
+- Added local photo assessment for resolution, brightness, contrast, blur, duplicates, and crop
+  risk plus category-aware shot lists; original images are never modified.
+- Added Electronics, Fashion, Furniture, Collectibles, and General fact profiles plus editable
+  category attributes.
+- Extended Gemini, Ollama, and conservative offline analysis with source-labelled fact candidates,
+  uncertainty, input references, explicit knowledge gaps, and persistence without overriding user
+  locks.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
   App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
 - Distinguished asking, realized, and unknown comparable prices; only user-approved realized

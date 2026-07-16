@@ -15,6 +15,7 @@ const response: ItemAnalysisResponse = {
     detectedLanguage: 'en',
     confidence: 0.8,
   },
+  candidates: [],
   metadata: { providerId: 'ollama', modelId: 'local-model' },
 };
 
