@@ -1,19 +1,19 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { setAppLanguage } from '@core/config/i18n';
+import type { HydratedProject } from '@core/services/projectRepository';
+import type { ProjectSection } from '@core/types';
+import { useListingStore } from '@core/store/useListingStore';
+import { useProjectStore } from '@core/store/useProjectStore';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
-import { useListingStore } from '@core/store/useListingStore';
-import { setAppLanguage } from '@core/config/i18n';
-import { listingDraftService } from '@core/services/listingDraftService';
-import type { ListingDraft } from '@core/types';
 import { CommandPalette } from '@shared/components/CommandPalette';
+
+type AppView = 'home' | 'projects' | 'workspace' | 'settings';
 
 const AnalyzePanel = lazy(() =>
   import('@features/analyze/AnalyzePanel').then((module) => ({ default: module.AnalyzePanel })),
-);
-const HistoryPanel = lazy(() =>
-  import('@features/history/HistoryPanel').then((module) => ({ default: module.HistoryPanel })),
 );
 const SettingsPanel = lazy(() =>
   import('@features/settings/SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
@@ -38,14 +38,24 @@ const SummarySidebar = lazy(() =>
     default: module.SummarySidebar,
   })),
 );
-const WorkflowStepper = lazy(() =>
-  import('@features/workflow/WorkflowStepper').then((module) => ({
-    default: module.WorkflowStepper,
-  })),
-);
 const OnboardingDialog = lazy(() =>
   import('@features/onboarding/OnboardingDialog').then((module) => ({
     default: module.OnboardingDialog,
+  })),
+);
+const ProjectDashboard = lazy(() =>
+  import('@features/projects/ProjectDashboard').then((module) => ({
+    default: module.ProjectDashboard,
+  })),
+);
+const WorkspaceTabs = lazy(() =>
+  import('@features/projects/WorkspaceTabs').then((module) => ({
+    default: module.WorkspaceTabs,
+  })),
+);
+const ProjectFollowUpPanel = lazy(() =>
+  import('@features/projects/ProjectFollowUpPanel').then((module) => ({
+    default: module.ProjectFollowUpPanel,
   })),
 );
 
@@ -55,17 +65,29 @@ export function App() {
   const valuationStore = useValuationStore();
   const listingStore = useListingStore();
   const workflowStore = useWorkflowStore();
+  const {
+    status: projectStatus,
+    projects,
+    activeProjectId,
+    activeProject,
+    error: projectError,
+    initialize: initializeProjects,
+    createProject: createProjectRecord,
+    openProject: openProjectRecord,
+    saveActive,
+    setActiveSection,
+    removeProject,
+  } = useProjectStore();
 
-  const [hasLoadedDraft, setHasLoadedDraft] = useState(false);
-  const [pendingDraft, setPendingDraft] = useState<ListingDraft | null>(null);
+  const [appView, setAppView] = useState<AppView>('home');
+  const [workspaceSection, setWorkspaceSection] = useState<ProjectSection>('item');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const [isSaveDraftBusy, setIsSaveDraftBusy] = useState(false);
-  const [restoreMode, setRestoreMode] = useState<'normal' | 'conflict'>('normal');
-  const workspaceMainRef = useRef<HTMLElement>(null);
+  const [isSaveBusy, setIsSaveBusy] = useState(false);
+  const [isSwitchingProject, setIsSwitchingProject] = useState(false);
 
   const {
-    error,
+    error: valuationError,
     loadManualComparables,
     runPipeline,
     estimateValue,
@@ -74,62 +96,50 @@ export function App() {
     hydrateFromDraft,
     buildDraft,
   } = valuationStore;
-
-  const {
-    currentStep,
-    completedSteps,
-    nextStep,
-    previousStep,
-    hydrateFromDraft: hydrateWorkflow,
-  } = workflowStore;
+  const { currentStep, completedSteps, hydrateFromDraft: hydrateWorkflow } = workflowStore;
 
   useEffect(() => {
     void load();
     void loadManualComparables();
-  }, [load, loadManualComparables]);
+    void initializeProjects();
+  }, [load, loadManualComparables, initializeProjects]);
 
   useEffect(() => {
     void setAppLanguage(settings.language);
   }, [settings.language]);
 
-  useEffect(() => {
-    if (hasLoadedDraft) return;
-    void listingDraftService.loadDraft().then((draft) => {
-      if (draft) {
-        setPendingDraft(draft);
-        const valuationState = useValuationStore.getState();
-        const listingState = useListingStore.getState();
-        const hasCurrentWork =
-          valuationState.inputText.trim().length > 0 ||
-          valuationState.images.length > 0 ||
-          valuationState.fingerprint !== null ||
-          listingState.templates.length > 0;
-        setRestoreMode(hasCurrentWork ? 'conflict' : 'normal');
-      }
-      setHasLoadedDraft(true);
-    });
-  }, [hasLoadedDraft]);
+  const hydrateProject = (hydrated: HydratedProject) => {
+    hydrateFromDraft(hydrated.draft);
+    listingStore.hydrateFromDraft(hydrated.draft.templates);
+    hydrateWorkflow(hydrated.draft.currentStep, hydrated.draft.completedSteps);
+    setWorkspaceSection(hydrated.project.currentSection);
+    setLastSavedAt(hydrated.draft.savedAt);
+    setAppView('workspace');
+  };
 
-  const saveDraftNow = async () => {
-    setIsSaveDraftBusy(true);
+  const saveActiveProject = async () => {
+    if (!activeProjectId || !activeProject) return;
+    setIsSaveBusy(true);
     const draft = buildDraft(currentStep, completedSteps);
-    await listingDraftService.saveDraft(draft);
+    await saveActive(draft);
     setLastSavedAt(draft.savedAt);
-    setIsSaveDraftBusy(false);
+    setIsSaveBusy(false);
   };
 
   useEffect(() => {
-    if (!hasLoadedDraft) return;
-
+    if (!activeProjectId || !activeProject || appView !== 'workspace' || isSwitchingProject) return;
     const timer = window.setTimeout(() => {
       const draft = buildDraft(currentStep, completedSteps);
-      void listingDraftService.saveDraft(draft);
+      void saveActive(draft);
       setLastSavedAt(draft.savedAt);
     }, 600);
-
     return () => window.clearTimeout(timer);
   }, [
-    hasLoadedDraft,
+    activeProjectId,
+    activeProject,
+    appView,
+    saveActive,
+    isSwitchingProject,
     buildDraft,
     currentStep,
     completedSteps,
@@ -144,62 +154,57 @@ export function App() {
     listingStore.templates,
   ]);
 
+  const openProject = async (id: string) => {
+    setIsSwitchingProject(true);
+    if (activeProjectId && activeProjectId !== id) {
+      await saveActiveProject();
+    }
+    const hydrated = await openProjectRecord(id);
+    if (hydrated) hydrateProject(hydrated);
+    setIsSwitchingProject(false);
+  };
+
+  const createProject = async () => {
+    setIsSwitchingProject(true);
+    if (activeProjectId) await saveActiveProject();
+    const hydrated = await createProjectRecord();
+    if (hydrated) hydrateProject(hydrated);
+    setIsSwitchingProject(false);
+  };
+
+  const changeSection = (section: ProjectSection) => {
+    setWorkspaceSection(section);
+    void setActiveSection(section);
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setIsCommandPaletteOpen(true);
       }
-
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
-        void runPipeline();
-      }
-
-      if (event.altKey && event.key === 'ArrowRight') {
-        event.preventDefault();
-        nextStep();
-      }
-
-      if (event.altKey && event.key === 'ArrowLeft') {
-        event.preventDefault();
-        previousStep();
+        if (activeProjectId) void runPipeline();
       }
     };
-
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [nextStep, previousStep, runPipeline]);
+  }, [activeProjectId, runPipeline]);
 
-  useEffect(() => {
-    if (completedSteps.length > 0) workspaceMainRef.current?.focus();
-  }, [currentStep, completedSteps.length]);
+  const commandActions = [
+    { id: 'home', label: t('navHome'), run: () => setAppView('home') },
+    { id: 'projects', label: t('navProjects'), run: () => setAppView('projects') },
+    { id: 'new-project', label: t('newProject'), run: () => createProject() },
+    { id: 'pipeline', label: t('cmdRunPipeline'), run: () => runPipeline() },
+    { id: 'estimate', label: t('cmdEstimate'), run: () => estimateValue() },
+    { id: 'templates', label: t('cmdGenerateTemplates'), run: () => generateTemplates() },
+    { id: 'history', label: t('cmdSaveHistory'), run: () => saveToHistory() },
+    { id: 'settings', label: t('settings'), run: () => setAppView('settings') },
+  ];
 
-  const commandActions = useMemo(
-    () => [
-      { id: 'pipeline', label: t('cmdRunPipeline'), run: () => runPipeline() },
-      { id: 'fetch-estimate', label: t('cmdEstimate'), run: () => estimateValue() },
-      { id: 'templates', label: t('cmdGenerateTemplates'), run: () => generateTemplates() },
-      { id: 'history', label: t('cmdSaveHistory'), run: () => saveToHistory() },
-      { id: 'next', label: t('cmdNextStep'), run: () => nextStep() },
-      { id: 'prev', label: t('cmdPreviousStep'), run: () => previousStep() },
-    ],
-    [t, runPipeline, estimateValue, generateTemplates, saveToHistory, nextStep, previousStep],
-  );
-
-  const resumeDraft = async () => {
-    if (!pendingDraft) return;
-    hydrateFromDraft(pendingDraft);
-    listingStore.hydrateFromDraft(pendingDraft.templates);
-    hydrateWorkflow(pendingDraft.currentStep, pendingDraft.completedSteps);
-    setLastSavedAt(pendingDraft.savedAt);
-    setPendingDraft(null);
-  };
-
-  const discardDraft = async () => {
-    await listingDraftService.clearDraft();
-    setPendingDraft(null);
-  };
+  const loading = settingsLoading || projectStatus === 'loading';
+  const error = valuationError || projectError;
 
   return (
     <div className="app-shell">
@@ -208,53 +213,50 @@ export function App() {
           <OnboardingDialog />
         </Suspense>
       )}
-      <header className="app-header">
-        <div>
-          <h1>{t('appTitle')}</h1>
-          <p>{t('subtitle')}</p>
-          {lastSavedAt && (
-            <p className="save-status">
-              {t('lastSaved')}: {new Date(lastSavedAt).toLocaleTimeString()}
-            </p>
-          )}
+
+      <header className="app-header app-header--v2">
+        <div className="brand-lockup">
+          <h1>
+            <button type="button" className="brand-button" onClick={() => setAppView('home')}>
+              {t('appTitle')}
+            </button>
+          </h1>
+          <p>{t('smartSellerCoach')}</p>
         </div>
+        <nav className="app-nav" aria-label={t('mainNavigation')}>
+          <button
+            type="button"
+            className={appView === 'home' ? 'is-active' : ''}
+            onClick={() => setAppView('home')}
+          >
+            {t('navHome')}
+          </button>
+          <button
+            type="button"
+            className={appView === 'projects' ? 'is-active' : ''}
+            onClick={() => setAppView('projects')}
+          >
+            {t('navProjects')}
+          </button>
+          <button
+            type="button"
+            className={appView === 'settings' ? 'is-active' : ''}
+            onClick={() => setAppView('settings')}
+          >
+            {t('settings')}
+          </button>
+        </nav>
         <div className="header-actions">
-          <button type="button" onClick={() => previousStep()}>
-            {t('prevStep')}
-          </button>
-          <button type="button" onClick={() => nextStep()}>
-            {t('nextStep')}
-          </button>
           <button type="button" onClick={() => setIsCommandPaletteOpen(true)}>
             {t('commandPalette')}
           </button>
-          <button type="button" onClick={() => void saveDraftNow()} disabled={isSaveDraftBusy}>
-            {isSaveDraftBusy ? t('savingDraft') : t('saveDraftNow')}
-          </button>
+          {appView === 'workspace' && activeProjectId && (
+            <button type="button" onClick={() => void saveActiveProject()} disabled={isSaveBusy}>
+              {isSaveBusy ? t('savingDraft') : t('saveProjectNow')}
+            </button>
+          )}
         </div>
       </header>
-
-      {pendingDraft && (
-        <div className="draft-banner">
-          <p>
-            {restoreMode === 'conflict' ? t('resumeDraftConflictPrompt') : t('resumeDraftPrompt')} (
-            {new Date(pendingDraft.savedAt).toLocaleString()})
-          </p>
-          <div className="inline-actions">
-            <button type="button" onClick={() => void resumeDraft()}>
-              {restoreMode === 'conflict' ? t('replaceWithDraft') : t('resumeDraft')}
-            </button>
-            {restoreMode === 'conflict' && (
-              <button type="button" onClick={() => setPendingDraft(null)}>
-                {t('keepCurrentSession')}
-              </button>
-            )}
-            <button type="button" onClick={() => void discardDraft()}>
-              {t('discardDraft')}
-            </button>
-          </div>
-        </div>
-      )}
 
       {error && (
         <p className="error-banner" role="alert" aria-live="assertive">
@@ -262,31 +264,76 @@ export function App() {
         </p>
       )}
 
-      <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
-        <WorkflowStepper />
-      </Suspense>
-
-      <main className="workspace-layout">
-        <section
-          className="workspace-main"
-          ref={workspaceMainRef}
-          tabIndex={-1}
-          aria-label={t(`step${currentStep[0].toUpperCase()}${currentStep.slice(1)}`)}
-        >
+      {loading ? (
+        <p className="loading-panel">{t('loadingProjects')}</p>
+      ) : projectStatus === 'recovery' ? (
+        <main className="recovery-layout">
+          <section className="recovery-message">
+            <h2>{t('projectRecoveryTitle')}</h2>
+            <p>{t('projectRecoveryIntro')}</p>
+          </section>
           <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
-            {(currentStep === 'analyze' || completedSteps.length === 0) && <AnalyzePanel />}
-            {(currentStep === 'comparables' || currentStep === 'price') && <ValuationPanel />}
-            {(currentStep === 'templates' || currentStep === 'review') && <TemplatesPanel />}
-            {currentStep === 'review' && <HistoryPanel />}
-            <SettingsPanel />
             <DataManagementPanel />
           </Suspense>
-        </section>
-
-        <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
-          <SummarySidebar />
-        </Suspense>
-      </main>
+        </main>
+      ) : (
+        <main className="app-content">
+          <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
+            {appView === 'home' && (
+              <ProjectDashboard
+                mode="home"
+                projects={projects}
+                onCreate={() => void createProject()}
+                onOpen={(id) => void openProject(id)}
+                onRemove={(id) => void removeProject(id)}
+              />
+            )}
+            {appView === 'projects' && (
+              <ProjectDashboard
+                mode="library"
+                projects={projects}
+                onCreate={() => void createProject()}
+                onOpen={(id) => void openProject(id)}
+                onRemove={(id) => void removeProject(id)}
+              />
+            )}
+            {appView === 'settings' && (
+              <div className="settings-view">
+                <SettingsPanel />
+                <DataManagementPanel />
+              </div>
+            )}
+            {appView === 'workspace' && activeProject && (
+              <div className="project-workspace">
+                <header className="project-workspace__header">
+                  <div>
+                    <p className="eyebrow">{t(`projectStatus_${activeProject.status}`)}</p>
+                    <h2>{activeProject.title}</h2>
+                    {lastSavedAt && (
+                      <p className="save-status">
+                        {t('lastSaved')}: {new Date(lastSavedAt).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                  <button type="button" onClick={() => setAppView('projects')}>
+                    {t('backToProjects')}
+                  </button>
+                </header>
+                <WorkspaceTabs active={workspaceSection} onChange={changeSection} />
+                <div className="workspace-layout">
+                  <section className="workspace-main" tabIndex={-1}>
+                    {workspaceSection === 'item' && <AnalyzePanel />}
+                    {workspaceSection === 'market' && <ValuationPanel />}
+                    {workspaceSection === 'listing' && <TemplatesPanel />}
+                    {workspaceSection === 'follow-up' && <ProjectFollowUpPanel />}
+                  </section>
+                  <SummarySidebar />
+                </div>
+              </div>
+            )}
+          </Suspense>
+        </main>
+      )}
 
       <CommandPalette
         open={isCommandPaletteOpen}

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added a local project library with draft, ready, listed, sold, and paused states plus separate
+  Home, Projects, item workspace, and Settings views.
+- Added atomic schema 3 project/media persistence with idempotent active-draft/history migration,
+  read-only recovery, and retained schema 2 rollback data.
+- Added format-2 full project backup with images and explicit compact backup without images.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
   App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
 - Distinguished asking, realized, and unknown comparable prices; only user-approved realized

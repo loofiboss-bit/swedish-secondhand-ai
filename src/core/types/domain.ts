@@ -10,6 +10,10 @@ export type WorkflowStep = 'analyze' | 'comparables' | 'price' | 'templates' | '
 
 export type SaleStatus = 'pending' | 'sold' | 'not_sold';
 
+export type ProjectStatus = 'draft' | 'ready' | 'listed' | 'sold' | 'paused';
+
+export type ProjectSection = 'item' | 'market' | 'listing' | 'follow-up';
+
 export type MarketPriceKind = 'asking' | 'realized' | 'unknown';
 
 export type MarketState = 'active' | 'sold' | 'unknown';
@@ -223,6 +227,49 @@ export interface ListingDraft {
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
   templates: ListingTemplate[];
+}
+
+export interface MediaAsset {
+  version: 1;
+  id: string;
+  projectId: string;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+  size: number;
+  createdAt: string;
+  contentHash: string;
+  blob: Blob;
+}
+
+export type ProjectWorkspace = Omit<ListingDraft, 'images'> & {
+  mediaIds: string[];
+};
+
+export interface ProjectOutcome {
+  saleStatus: SaleStatus;
+  soldPriceSek?: number;
+  soldAt?: string;
+}
+
+export interface ItemProject {
+  schemaVersion: 3;
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  currentSection: ProjectSection;
+  createdAt: string;
+  updatedAt: string;
+  workspace: ProjectWorkspace;
+  outcome?: ProjectOutcome;
+  migratedFrom?: 'listing-draft' | 'history';
+}
+
+export interface ProjectSummary {
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  updatedAt: string;
+  recommendedPriceSek: number | null;
+  thumbnailMediaId?: string;
 }
 
 export interface SiteConstraint {

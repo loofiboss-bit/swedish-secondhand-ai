@@ -8,14 +8,15 @@ async function finishOnboarding(page: import('@playwright/test').Page, mode = 'o
   await expect(dialog).toBeHidden();
 }
 
-test('loads guided workflow sections', async ({ page }) => {
+test('loads project home and opens an item workspace', async ({ page }) => {
   await page.goto('/');
   await finishOnboarding(page);
 
   await expect(page.getByRole('heading', { name: /swedish secondhand ai/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /analysera|analyze/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /jämförelser|comparables/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /inställningar|settings/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /från pryl|from item/i })).toBeVisible();
+  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await expect(page.getByRole('heading', { name: /analysera|analyze/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /marknad & pris|market & price/i })).toBeVisible();
 });
 
 test('preserves a locked correction and prices only reviewed comparables', async ({ page }) => {
@@ -53,6 +54,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   });
   await page.goto('/');
   await finishOnboarding(page, 'gemini');
+  await page.getByRole('button', { name: /ny vara|new item/i }).click();
 
   await page.getByLabel(/beskriv varan|describe the item/i).fill('Sony camera in good condition');
   await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();
@@ -67,7 +69,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await modelField.locator('input').first().blur();
   await expect(modelField.locator('input[type="checkbox"]')).toBeChecked();
 
-  await page.getByRole('button', { name: /jämförelser|comparables/i }).click();
+  await page.getByRole('button', { name: /marknad & pris|market & price/i }).click();
   const form = page.locator('form.manual-comp');
   await form.getByLabel(/pristyp|price type/i).selectOption('realized');
   for (const [index, [title, price]] of [

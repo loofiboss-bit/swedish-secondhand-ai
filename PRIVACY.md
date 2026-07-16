@@ -18,9 +18,10 @@ use.
 
 ## Backups and diagnostics
 
-Backup format 1 contains selected non-secret datasets, app version, and export time. It never
-contains API keys, protected values, or secret status. Imports are fully validated before an
-atomic replacement is committed.
+Backup format 2 contains selected non-secret datasets, app version, export time, and optionally
+project images. Compact exports explicitly omit images. It never contains API keys, protected
+values, or secret status. Legacy format-1 imports remain supported. Imports are fully validated
+before replacement is committed, with rollback of legacy datasets if project replacement fails.
 
 Diagnostics retain at most 100 local entries and sanitize credential-shaped values, sensitive
 keys, errors, large strings, and deep data. Diagnostics are not uploaded automatically.

@@ -3,7 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { backupService, type BackupDatasetId } from '@core/services/backupService';
 import { SectionCard } from '@shared/components/SectionCard';
 
-const DATASETS: BackupDatasetId[] = ['settings', 'listing-draft', 'history', 'manual-comparables'];
+const DATASETS: BackupDatasetId[] = [
+  'projects',
+  'settings',
+  'listing-draft',
+  'history',
+  'manual-comparables',
+];
 
 export function DataManagementPanel() {
   const { t } = useTranslation('common');
@@ -18,12 +24,12 @@ export function DataManagementPanel() {
     );
   };
 
-  const exportBackup = async () => {
-    const json = await backupService.exportJson();
+  const exportBackup = async (includeProjectImages: boolean) => {
+    const json = await backupService.exportJson(new Date(), includeProjectImages);
     const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `swedish-secondhand-ai-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `swedish-secondhand-ai-${includeProjectImages ? 'full' : 'compact'}-backup-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     setMessage(t('backupExported'));
@@ -67,8 +73,11 @@ export function DataManagementPanel() {
         ))}
       </fieldset>
       <div className="inline-actions">
-        <button type="button" onClick={() => void exportBackup()}>
+        <button type="button" onClick={() => void exportBackup(true)}>
           {t('exportBackup')}
+        </button>
+        <button type="button" onClick={() => void exportBackup(false)}>
+          {t('exportCompactBackup')}
         </button>
         <label className="button-like">
           {t('importSelected')}

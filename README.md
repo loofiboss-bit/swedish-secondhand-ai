@@ -10,6 +10,16 @@
 
 Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
+## v2 Smart Seller Coach development
+
+- A local project library keeps multiple items isolated as drafts, ready listings, published
+  items, sold items, or paused work.
+- Each item workspace is divided into Item, Market & price, Listing, and Follow-up; provider and
+  backup settings live in a separate Settings view.
+- Schema 3 migrates the active v1 draft and history without deleting the schema 2 rollback source.
+- Full backups include project images; compact backups explicitly omit images. Secrets remain
+  excluded from both formats.
+
 ## What's New in v1.0.0-beta.1
 
 - Safe-by-default offline first run, with optional Ollama or Gemini modes and explicit transient
@@ -47,13 +57,13 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - Local-first storage for settings, manual comps, drafts, and history.
 - Swedish-first UI with English fallback.
 
-## Guided Workflow
+## Item workspace
 
-1. Analyze item from text/images.
-2. Fetch Tradera comparables and add manual comps.
-3. Choose pricing strategy and estimate value.
-4. Generate site templates and quality checks.
-5. Review readiness, copy/export bundle, and save to history.
+1. Create or open an item project.
+2. Review the item from text/images.
+3. Fetch Tradera comparables, add manual evidence, and estimate value.
+4. Generate and review site listings.
+5. Copy/export manually and track the item in Follow-up.
 
 ## Keyboard Shortcuts
 

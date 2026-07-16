@@ -97,6 +97,203 @@ select {
   gap: var(--space-3);
 }
 
+.app-header--v2 {
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: rgba(8, 20, 13, 0.88);
+  box-shadow: var(--shadow-soft);
+}
+
+.brand-button {
+  border: 0;
+  background: transparent;
+  padding: 0.2rem;
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.brand-button:hover:not(:disabled) {
+  transform: none;
+}
+
+.brand-lockup h1,
+.brand-lockup p {
+  margin: 0;
+}
+
+.brand-lockup p {
+  padding-left: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.app-nav button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.app-nav button.is-active {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--accent-soft);
+}
+
+.app-content {
+  margin-top: var(--space-4);
+}
+
+.project-dashboard,
+.settings-view,
+.recovery-layout {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.project-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: clamp(1.2rem, 3vw, 2.4rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(115deg, rgba(78, 224, 143, 0.16), transparent 55%), var(--surface-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.project-hero h2,
+.project-workspace__header h2 {
+  margin: 0.2rem 0;
+}
+
+.project-hero p {
+  max-width: 62ch;
+  color: var(--text-secondary);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.project-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.project-stat {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.project-stat strong {
+  font-size: 1.45rem;
+}
+
+.project-stat span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.project-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.project-list__open {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  background: var(--surface-card-2);
+  text-align: left;
+}
+
+.project-list__open span:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.project-list__open small {
+  color: var(--text-muted);
+}
+
+.button-danger-quiet {
+  color: #ffc7c7;
+  background: var(--danger-soft);
+  border-color: #673535;
+}
+
+.empty-state,
+.recovery-message {
+  padding: 1.2rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.project-workspace {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.project-workspace__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.workspace-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-card-2);
+}
+
+.workspace-tabs button {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.workspace-tabs button.is-active {
+  color: var(--text-primary);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .app-header h1 {
   margin: 0;
   font-size: 1.58rem;
@@ -491,6 +688,31 @@ fieldset {
 
   .app-header {
     flex-direction: column;
+  }
+
+  .app-header--v2,
+  .app-nav {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .app-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .project-hero,
+  .project-workspace__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .project-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workspace-tabs {
+    grid-template-columns: 1fr 1fr;
   }
 
   .workflow-stepper {

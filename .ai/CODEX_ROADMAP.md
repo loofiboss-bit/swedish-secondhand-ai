@@ -1,127 +1,90 @@
-# Swedish Secondhand AI — direct v1.0.0 roadmap
+# Swedish Secondhand AI — v2.0.0 Smart Seller Coach roadmap
 
-Target: a stable public Windows and Linux desktop product. Baseline: released v0.5.0 with
-provider-neutral contracts, Gemini adapter, Ollama adapter, and explicit AI router already merged
-on `main`.
-
-All remaining work belongs to the v1 train. There are no intermediate v0.7-v0.9 releases.
-Each milestone is an independently tested branch/worktree merged sequentially to green `main`.
-Package metadata stays at the last public version until the beta cut.
+Target: a local-first, project-based Windows and Linux seller coach for Swedish private sellers.
+Stable v1 remains the release prerequisite; v2 milestone branches stay isolated until that gate is
+complete. Each milestone is independently tested and layered sequentially.
 
 ## Product boundary
 
-v1 includes Gemini, Ollama, a deterministic offline mode, Tradera comparables, and manual
-copy/export for Tradera, Blocket, and Vinted. OpenAI runtimes, compatible endpoints, generative
-listing copy, automatic updates, accounts, cloud sync, subscriptions/payments, mobile/web,
-scraping, browser automation, and automatic publishing are post-v1.
+v2 supports multiple local item projects, deterministic coaching, category-aware evidence,
+photo-quality guidance, transparent market observations and pricing scenarios, editable Tradera,
+Blocket and Vinted listing drafts, and manual listing follow-up. Gemini, Ollama and deterministic
+offline analysis remain the only AI modes.
 
-## G0 — Governance and green development baseline
+Accounts, cloud sync, scraping, browser automation, automatic marketplace publishing, payments,
+mobile/web clients, automatic updates, and new AI runtimes remain out of scope.
 
-Status: completed and validated.
+## G0 — v1 stabilization prerequisite
 
-- Add a concise repo-specific `AGENTS.md` and make this file the implementation authority.
-- Remove `AGENTS.md` from workspace config-drift scope.
-- Separate read-only regression E2E from explicit documentation screenshot generation.
-- Backfill the changelog for the already merged provider contracts/adapters/router.
-- Confirm `npm run validate` and read-only core E2E pass.
+Status: completed locally in merge `665af32`; public stable v1 remains time-gated.
 
-Acceptance: governance paths resolve, normal E2E never rewrites documentation, and the checkout
-is clean after validation.
+- Align Tradera with fixed REST v4 App ID/App key authentication.
+- Separate asking, realized and unknown price evidence.
+- Cache bounded searches and prevent non-realized prices from anchoring valuations.
+- Keep stable publication blocked until the original beta soak and live credential gates pass.
 
-## M1 — Secure Electron and provider boundary
+## M1 — Project library and schema 3 data
 
-Status: completed and validated in merge `1667407`. Relevant changes from `483c3fe` were ported
-without editor or screenshot noise, and superseded PR #5 was closed.
+Status: completed and validated on `feature/v2-project-library`.
 
-- Store Gemini and Tradera secrets with Electron `safeStorage`; never expose raw values.
-- Migrate legacy renderer secrets only after verified secure writes; preserve them on failure.
-- Execute Gemini and Tradera cloud calls in the main process through narrow typed IPC.
-- Validate sender, payload, destination, size, model, and secret identifiers.
-- Add CSP, deny unexpected navigation/windows, sanitize errors/logs, and keep secure defaults.
-- Expose provider status, connection checks, privacy guidance, and recoverable failure states.
+- Replace the global five-step shell with Home, Projects, item workspace, and separate Settings.
+- Support draft, ready, listed, sold and paused project states.
+- Store each project and its image media atomically in the schema 3 project database.
+- Migrate the active v1 draft and history idempotently while retaining all schema 2 source keys.
+- Enter read-only recovery when legacy data cannot be validated.
+- Add full and compact format-2 backup/import for projects and images.
 
-Acceptance: no raw secret is renderer-readable or exportable; migration rollback, unavailable
-Linux protected storage, IPC rejection, navigation, provider errors, and draft preservation are
-tested; validation and the security diff scan have no unresolved high-severity finding.
+Acceptance: multiple projects remain isolated across restart; migration, corrupt data, images,
+backup/import, reset, unit tests, E2E, and `npm run validate` pass.
 
-Rollback: keep legacy secrets until verified migration and revert the clean M1 merge if needed.
+## M2 — Deterministic seller coach and smart intake
 
-## M2 — Trustworthy deterministic valuation
+Status: pending.
 
-Status: completed and validated in merge `ff2e57b`.
+- Add priority-ordered coach actions and evidence gaps.
+- Add local image quality checks and category-specific photo coverage.
+- Add Electronics, Fashion, Furniture, Collectibles and General fact profiles.
+- Extend AI responses with candidates, uncertainty and evidence references without overriding
+  locked user facts.
 
-- Introduce versioned `VerifiedFact<T>` values with `ai`, `user`, and `heuristic` provenance and
-  user locks for all price-relevant facts.
-- Model defects, included/missing accessories, and tested/untested status explicitly.
-- Rank comparables using visible deterministic relevance factors and let users include/exclude
-  each comparable with a reason.
-- Replace the condition-only price fallback with `ready`, `low-confidence`, and
-  `insufficient-evidence`; insufficient evidence has no numeric price.
-- Calculate prices from approved comparables with visible weights, outliers, condition,
-  accessories, recency, shipping, source quality, and pricing strategy adjustments.
-- Add category benchmark fixtures for Electronics, Fashion, Furniture, Collectibles, and General.
+## M3 — Market intelligence and pricing workshop
 
-Acceptance: reanalysis cannot overwrite locked user facts; excluded comparables never affect
-price; condition alone never produces a price; all adjustments are inspectable; benchmarks,
-migrations, validation, and correction-flow E2E pass.
+Status: pending.
 
-## M3 — Versioned user data and verified listings
+- Add editable exact/broad comparable query plans, normalization and deduplication.
+- Expose observation provenance, price kind, cache age and deterministic relevance.
+- Compare all three pricing strategies without allowing AI or asking prices to set final prices.
 
-Status: completed and validated in merge `5605260`.
+## M4 — Listing studio and sell plan
 
-- Wrap settings, drafts, history, and manual comparables in versioned persisted envelopes;
-  interpret legacy bare payloads as schema 1 and migrate idempotently to schema 2.
-- Add validated, atomic backup/import and selective/full reset. Secrets are never included.
-- Generate marketplace templates only from verified facts and preserve defects, missing items,
-  authenticity/testing uncertainty, and deterministic marketplace rules.
-- Add sanitized diagnostics plus accurate privacy, security, support, migration, and recovery docs.
+Status: pending.
 
-Acceptance: v0.5/current-main fixtures migrate; corrupt/unsupported imports change nothing;
-backup round-trips non-secret data; provider/persistence failures preserve work; listings cannot
-invent or hide material facts; validation and data-flow E2E pass.
+- Make listing fields editable with per-field origin and user-edit preservation.
+- Add previews, character limits, image ordering, actionable policy issues and copy bundles.
+- Add transparent marketplace, format, price and shipping recommendations.
 
-## M4 — Public desktop beta
+## M5 — Follow-up and local learning
 
-Status: completed. Merge `feb7d58` was published as public prerelease `v1.0.0-beta.1` on
-2026-07-15 at 06:35:48 UTC. Release run `29394334330` passed validation, Linux AppImage startup,
-Windows package smoke, artifact upload, SBOM, and checksum generation.
+Status: pending.
 
-- Add first-run onboarding for language, privacy, AI mode, provider status, and offline use.
-- Use explicit `gemini`, `ollama`, and `offline` modes plus a user-controlled transient-fallback
-  setting. Never fall back for authentication, cancellation, or invalid configuration.
-- Complete keyboard/focus/accessibility states, bounded image inputs, cancellation, and recovery.
-- Add `validate:release`, tag/version/changelog checks, Windows NSIS/portable and Linux AppImage
-  CI, package smoke tests, SHA-256 checksums, CycloneDX SBOM, and draft GitHub releases.
-- Cut `v1.0.0-beta.1` from verified `main`; later beta tags contain blocker fixes only.
+- Track listing date, marketplace, URL, asking price, outcome and realized price.
+- Add local 3/7/14-day follow-up guidance.
+- Calibrate only from sufficient user-owned verified outcomes.
 
-Acceptance: a new user reaches an offline result without external docs; core flow is keyboard
-usable; v0.5 upgrade fixtures survive; Windows/Linux artifacts, checksum, and SBOM exist; all
-validation, E2E, security, migration, package, and release jobs pass.
+## M6 — Public beta and stable v2
 
-## M5 — Stable v1.0.0
+Status: pending.
 
-Status: time-gated until 2026-07-22 at 06:35:48 UTC at the earliest, then contingent on the
-remaining no-P0/P1, security, data-loss, upgrade, package, and artifact-readback gates.
-
-- Keep beta public for at least seven calendar days.
-- Fix reproducible P0/P1 and common core-flow P2 bugs only; do not expand product scope.
-- Use the fixed official Tradera REST v4 endpoint with public App ID plus protected App key;
-  distinguish asking-price context from verified realized-price valuation evidence.
-- Run a real read-only Tradera credential smoke test without logging credentials before stable.
-- Require no open P0/P1, high-severity security, raw-secret exposure, or data-loss issue.
-- Verify Linux AppImage and CI Windows packages, checksums, SBOM, release notes, privacy/security
-  docs, and v0.5 -> beta -> stable data compatibility.
-- Set canonical version and documentation to `1.0.0`, tag `v1.0.0`, and verify release assets by
-  remote readback. Windows artifacts remain unsigned until signing credentials exist.
-
-Rollback: retain the final beta tag and artifacts until stable installation and upgrade readback
-are verified.
+- Require migration, security, accessibility, E2E, package and release gates.
+- Publish `v2.0.0-beta.1`, soak for at least 14 days, then publish stable only with no P0/P1,
+  high-severity security, data-loss, upgrade or artifact-readback failure.
 
 ## Progress
 
-- [x] G0 Governance and baseline
-- [x] M1 Secure Electron and provider boundary
-- [x] M2 Trustworthy deterministic valuation
-- [x] M3 Versioned user data and verified listings
-- [x] M4 Public desktop beta
-- [ ] M5 Stable v1.0.0
+- [x] G0 v1 stabilization prerequisite
+- [x] M1 Project library and schema 3 data
+- [ ] M2 Deterministic seller coach and smart intake
+- [ ] M3 Market intelligence and pricing workshop
+- [ ] M4 Listing studio and sell plan
+- [ ] M5 Follow-up and local learning
+- [ ] M6 Public beta and stable v2

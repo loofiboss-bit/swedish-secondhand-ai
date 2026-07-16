@@ -12,16 +12,16 @@ The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
 The stable v1 gate opens no earlier than 2026-07-22 at 06:35:48 UTC and remains conditional on
 the blocker, security, upgrade, package, and artifact gates in the implementation authority.
 
-## Direct path to v1.0.0
+## v2 development track
 
-All remaining work is delivered as five sequential v1 milestones:
+After stable v1, the Smart Seller Coach is delivered as sequential v2 milestones:
 
-1. secure Electron/provider boundary;
-2. user-correctable facts and evidence-based deterministic valuation;
-3. versioned data, backup/import, verified listings, and privacy diagnostics;
-4. accessible Windows/Linux public beta and release pipeline;
-5. blocker-only stabilization followed by stable v1.0.0.
+1. project library and schema 3 data;
+2. deterministic seller coach and smart intake;
+3. market intelligence and pricing workshop;
+4. editable listing studio and sell plan;
+5. listing follow-up and local learning;
+6. public v2 beta followed by stable v2.0.0.
 
-There are no intermediate v0.7-v0.9 releases. The first stable release supports Gemini, Ollama,
-deterministic offline analysis, and manual listing copy/export. Broader provider, cloud, mobile,
-payment, scraping, publishing, and automatic-update work remains post-v1.
+The v2 line remains local-first and manual-publishing only. Broader provider, cloud, mobile,
+payment, scraping, publishing, and automatic-update work remains out of scope.

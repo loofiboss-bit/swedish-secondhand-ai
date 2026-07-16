@@ -1,16 +1,21 @@
-# Swedish Secondhand AI - User Guide
+# Swedish Secondhand AI — v2 development user guide
 
-This guide covers the complete workflow in Swedish Secondhand AI v0.5.0, with screenshots from the app.
+This guide covers the local project-based workflow. Existing screenshots show the v1 visual
+baseline and will be regenerated only through `npm run docs:screenshots` for the v2 beta.
 
-## 1. App Overview
+## 1. Home and projects
 
-The app is organized around a guided workflow:
+The app opens on **Home**, where recent items and counts for each project state are visible.
+**Projects** shows the complete local library. Create one project per item; projects can be:
 
-1. Analyze
-2. Comparables
-3. Price
-4. Templates
-5. Review
+- draft;
+- ready;
+- listed;
+- sold;
+- paused.
+
+Opening a project gives four focused sections: **Item**, **Market & price**, **Listing**, and
+**Follow-up**. Settings and backup tools are kept outside the item workflow.
 
 ![Overview](./docs/screenshots/01-overview.png)
 
@@ -96,13 +101,14 @@ Available shortcuts:
 
 ![Command palette](./docs/screenshots/06-command-palette.png)
 
-## 7. Drafts and Recovery
+## 7. Projects and recovery
 
-The app autosaves your draft session.
+The app autosaves the active project. Multiple projects remain isolated from one another.
 
-- On restart, you can resume or discard draft.
-- You can click **Save draft now** anytime.
-- If current session conflicts with a saved draft, you can choose which one to keep.
+- The former v1 active draft and history migrate to schema 3 projects once.
+- The original schema 2 records are retained as a rollback source throughout the 2.0 line.
+- If migration input is corrupt or unsupported, the app opens read-only recovery without
+  replacing the old data.
 
 ## 8. Settings
 
@@ -121,9 +127,9 @@ Without API keys, fallback logic still works, but with lower confidence and fewe
 
 ## 9. Backup, migration, and reset
 
-Settings includes **Backup and data recovery**. Select preferences, current draft, history,
-and/or manual comparables, then export or import those datasets. Backups never include API keys.
-Imports validate the complete file before replacing any selected dataset.
+Settings includes **Backup and data recovery**. A full format-2 backup contains projects and
+images; the compact option explicitly excludes images. Backups never include API keys. Imports
+validate the complete file before replacing any selected dataset.
 
 Legacy v0.5/current-main IndexedDB payloads migrate automatically to the schema 2 envelope on
 first successful read. Corrupt or unsupported payloads are left untouched. Export a backup before
