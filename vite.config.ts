@@ -7,9 +7,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-i18next', 'i18next'],
-          state: ['zustand', 'idb-keyval'],
+        manualChunks(id) {
+          if (/node_modules\/(?:react|react-dom|react-i18next|i18next)\//.test(id)) return 'react';
+          if (/node_modules\/(?:zustand|idb-keyval)\//.test(id)) return 'state';
         },
       },
     },

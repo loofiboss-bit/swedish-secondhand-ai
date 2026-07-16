@@ -1,8 +1,9 @@
 # Swedish Secondhand AI — v2.0.0 Smart Seller Coach roadmap
 
 Target: a local-first, project-based Windows and Linux seller coach for Swedish private sellers.
-Stable v1 remains the release prerequisite; v2 milestone branches stay isolated until that gate is
-complete. Each milestone is independently tested and layered sequentially.
+Each milestone is independently tested and layered sequentially. The maintainer explicitly removed
+the beta and soak prerequisites on 2026-07-16; v2 therefore proceeds through a direct stable release
+candidate while retaining migration, security, platform-upgrade, and artifact gates.
 
 ## Product boundary
 
@@ -14,14 +15,15 @@ offline analysis remain the only AI modes.
 Accounts, cloud sync, scraping, browser automation, automatic marketplace publishing, payments,
 mobile/web clients, automatic updates, and new AI runtimes remain out of scope.
 
-## G0 — v1 stabilization prerequisite
+## G0 — v1 contract stabilization
 
-Status: completed locally in merge `665af32`; public stable v1 remains time-gated.
+Status: completed in merge `665af32`.
 
 - Align Tradera with fixed REST v4 App ID/App key authentication.
 - Separate asking, realized and unknown price evidence.
 - Cache bounded searches and prevent non-realized prices from anchoring valuations.
-- Keep stable publication blocked until the original beta soak and live credential gates pass.
+- Keep the live credential smoke as an operational integration gate without coupling v2 to a v1
+  beta or soak.
 
 ## M1 — Project library and schema 3 data
 
@@ -71,20 +73,21 @@ Status: completed and validated on `feature/v2-follow-up-learning`.
 - Add local 3/7/14-day follow-up guidance.
 - Calibrate only from sufficient user-owned verified outcomes.
 
-## M6 — Public beta and stable v2
+## M6 — Stable v2 release
 
-Status: pending.
+Status: direct stable release candidate in progress; beta and soak requirements were explicitly
+removed by the maintainer on 2026-07-16.
 
 - Require migration, security, accessibility, E2E, package and release gates.
-- Publish `v2.0.0-beta.1`, soak for at least 14 days, then publish stable only with no P0/P1,
-  high-severity security, data-loss, upgrade or artifact-readback failure.
+- Publish stable `v2.0.0` only with no P0/P1, high-severity security, data-loss, platform-upgrade,
+  or artifact-readback failure.
 
 ## Progress
 
-- [x] G0 v1 stabilization prerequisite
+- [x] G0 v1 contract stabilization
 - [x] M1 Project library and schema 3 data
 - [x] M2 Deterministic seller coach and smart intake
 - [x] M3 Market intelligence and pricing workshop
 - [x] M4 Listing studio and sell plan
 - [x] M5 Follow-up and local learning
-- [ ] M6 Public beta and stable v2
+- [ ] M6 Stable v2 release

@@ -1,6 +1,10 @@
 import { ChangeEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { backupService, type BackupDatasetId } from '@core/services/backupService';
+import {
+  backupService,
+  MAX_BACKUP_BYTES,
+  type BackupDatasetId,
+} from '@core/services/backupService';
 import { SectionCard } from '@shared/components/SectionCard';
 
 const DATASETS: BackupDatasetId[] = [
@@ -40,6 +44,7 @@ export function DataManagementPanel() {
     event.target.value = '';
     if (!file || selected.length === 0 || !window.confirm(t('confirmImport'))) return;
     try {
+      if (file.size > MAX_BACKUP_BYTES) throw new Error('Backup is too large.');
       await backupService.importBackup(await file.text(), selected);
       setMessage(t('backupImported'));
     } catch {

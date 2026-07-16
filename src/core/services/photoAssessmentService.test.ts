@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assessPixels, measurePhoto } from './photoAssessmentService';
+import { assessPixels, inspectImageDataUrl, measurePhoto } from './photoAssessmentService';
 
 function pixels(width: number, height: number, value: (x: number, y: number) => number) {
   const data = new Uint8ClampedArray(width * height * 4);
@@ -14,6 +14,14 @@ function pixels(width: number, height: number, value: (x: number, y: number) => 
 }
 
 describe('photoAssessmentService', () => {
+  it('rejects oversized dimensions from the header before browser decoding', () => {
+    const bytes = Uint8Array.from([
+      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 78, 32, 0, 0, 78, 32,
+    ]);
+    const dataUrl = `data:image/png;base64,${btoa(String.fromCharCode(...bytes))}`;
+
+    expect(() => inspectImageDataUrl(dataUrl)).toThrow(/safety limit/i);
+  });
   it('measures brightness, contrast and local edge sharpness deterministically', () => {
     const checker = pixels(800, 800, (x, y) => ((x + y) % 2 === 0 ? 20 : 230));
     const metrics = measurePhoto(checker);

@@ -6,6 +6,10 @@ import type {
   ItemFingerprint,
 } from '@core/types';
 
+const MAX_CANDIDATES = 100;
+const MAX_CANDIDATE_KEY_LENGTH = 100;
+const MAX_CANDIDATE_VALUE_LENGTH = 2_000;
+
 function uncertainty(confidence: number): FactCandidate['uncertainty'] {
   if (confidence >= 0.8) return 'low';
   if (confidence >= 0.55) return 'medium';
@@ -13,7 +17,7 @@ function uncertainty(confidence: number): FactCandidate['uncertainty'] {
 }
 
 function normalizedCandidateValue(value: string): string | null {
-  const normalized = value.trim();
+  const normalized = value.trim().slice(0, MAX_CANDIDATE_VALUE_LENGTH);
   return normalized && !['unknown', 'unspecified item'].includes(normalized.toLowerCase())
     ? normalized
     : null;
@@ -42,7 +46,8 @@ export function buildFactCandidates(
   ];
   const allowedOfflineKeys = new Set(['title', 'category', 'brand', 'conditionGrade']);
 
-  return entries.flatMap(([key, rawValue]) => {
+  return entries.slice(0, MAX_CANDIDATES).flatMap(([rawKey, rawValue]) => {
+    const key = rawKey.slice(0, MAX_CANDIDATE_KEY_LENGTH);
     if (source === 'offline' && !allowedOfflineKeys.has(key)) return [];
     const value = normalizedCandidateValue(rawValue);
     if (!value) return [];
@@ -50,7 +55,10 @@ export function buildFactCandidates(
       source === 'offline' ? Math.min(fingerprint.confidence, 0.45) : fingerprint.confidence;
     return [
       {
-        id: `${source}:${key}:${value.toLowerCase().replaceAll(/[^a-z0-9åäö]+/giu, '-')}`,
+        id: `${source}:${key}:${value.toLowerCase().replaceAll(/[^a-z0-9åäö]+/giu, '-')}`.slice(
+          0,
+          300,
+        ),
         key,
         value,
         source,

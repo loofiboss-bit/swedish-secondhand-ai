@@ -166,6 +166,32 @@ describe('projectRepository', () => {
     ]);
   });
 
+  it('rejects a poisoned autosave before replacing the previous valid project record', async () => {
+    await projectRepository.initialize();
+    const created = await projectRepository.create();
+    await projectRepository.save(created.project.id, { ...created.draft, inputText: 'Safe draft' });
+    const candidates = Array.from({ length: 101 }, (_, index) => ({
+      id: `ollama:attribute-${index}`,
+      key: `attribute-${index}`,
+      value: 'value',
+      source: 'ollama' as const,
+      confidence: 0.7,
+      uncertainty: 'medium' as const,
+      references: [],
+    }));
+
+    await expect(
+      projectRepository.save(created.project.id, {
+        ...created.draft,
+        inputText: 'Poisoned draft',
+        factCandidates: candidates,
+      }),
+    ).rejects.toThrow(/invalid/i);
+    await expect(projectRepository.open(created.project.id)).resolves.toMatchObject({
+      draft: { inputText: 'Safe draft' },
+    });
+  });
+
   it('enters read-only recovery without committing a v3 index when legacy data is corrupt', async () => {
     await set(DATASET_KEYS['listing-draft'], createEnvelope('listing-draft', { version: 1 }));
 

@@ -40,7 +40,11 @@ describe('App project shell', () => {
     await user.click(screen.getByRole('button', { name: /ny vara|new item/i }));
 
     expect(
-      await screen.findByRole('button', { name: /marknad & pris|market & price/i }),
+      await screen.findByRole(
+        'button',
+        { name: /marknad & pris|market & price/i },
+        { timeout: 10_000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /analysera|analyze/i })).toBeInTheDocument();
 

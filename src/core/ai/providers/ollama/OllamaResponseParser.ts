@@ -11,13 +11,17 @@ const CONDITION_GRADES = new Set<ConditionGrade>([
   'unknown',
 ]);
 const SUPPORTED_LANGUAGES = new Set<SupportedLanguage>(['sv', 'en']);
+const MAX_STRING_LENGTH = 2_000;
+const MAX_ATTRIBUTES = 50;
+const MAX_ATTRIBUTE_KEY_LENGTH = 100;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function normalizeString(value: unknown, fallback: string): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+  const normalized = typeof value === 'string' && value.trim() ? value.trim() : fallback;
+  return normalized.slice(0, MAX_STRING_LENGTH);
 }
 
 function normalizeAttributes(
@@ -27,9 +31,14 @@ function normalizeAttributes(
   if (!isRecord(value)) return fallback;
 
   const attributes = Object.fromEntries(
-    Object.entries(value).filter(
-      (entry): entry is [string, string] => typeof entry[1] === 'string',
-    ),
+    Object.entries(value)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+      .slice(0, MAX_ATTRIBUTES)
+      .map(([key, entryValue]) => [
+        key.trim().slice(0, MAX_ATTRIBUTE_KEY_LENGTH),
+        entryValue.trim().slice(0, MAX_STRING_LENGTH),
+      ])
+      .filter(([key, entryValue]) => Boolean(key) && Boolean(entryValue)),
   );
   return Object.keys(attributes).length > 0 ? attributes : fallback;
 }

@@ -20,6 +20,10 @@ const PROJECT_STORE = createStore(PROJECT_DB, 'project-records');
 const INDEX_KEY = 'meta:project-index';
 const PROJECT_KEY_PREFIX = 'project:';
 const PROJECT_SCHEMA_VERSION = 3;
+const MAX_PROJECTS = 100;
+const MAX_IMAGES_PER_PROJECT = 6;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_ENCODED_IMAGE_LENGTH = Math.ceil(MAX_IMAGE_BYTES / 3) * 4;
 
 interface ProjectRecord {
   schemaVersion: 3;
@@ -78,7 +82,9 @@ function isProjectIndex(value: unknown): value is ProjectIndex {
     value.schemaVersion === PROJECT_SCHEMA_VERSION &&
     (typeof value.activeProjectId === 'string' || value.activeProjectId === null) &&
     Array.isArray(value.projectIds) &&
+    value.projectIds.length <= MAX_PROJECTS &&
     value.projectIds.every((id) => typeof id === 'string') &&
+    new Set(value.projectIds).size === value.projectIds.length &&
     typeof value.migrationCompletedAt === 'string'
   );
 }
@@ -129,7 +135,10 @@ function isItemProject(value: unknown): value is ItemProject {
   return (
     value.schemaVersion === PROJECT_SCHEMA_VERSION &&
     typeof value.id === 'string' &&
+    value.id.length > 0 &&
+    value.id.length <= 300 &&
     typeof value.title === 'string' &&
+    value.title.length <= 200 &&
     isProjectStatus(value.status) &&
     isProjectSection(value.currentSection) &&
     typeof value.createdAt === 'string' &&
@@ -138,14 +147,26 @@ function isItemProject(value: unknown): value is ItemProject {
     Number.isFinite(Date.parse(value.updatedAt)) &&
     validOutcome &&
     Array.isArray(workspace.mediaIds) &&
+    workspace.mediaIds.length <= MAX_IMAGES_PER_PROJECT &&
     workspace.mediaIds.every((id) => typeof id === 'string') &&
-    isListingDraft({ ...workspace, images: [] })
+    new Set(workspace.mediaIds).size === workspace.mediaIds.length &&
+    (value.migratedFrom === undefined ||
+      ['listing-draft', 'history'].includes(String(value.migratedFrom))) &&
+    isListingDraft({
+      ...workspace,
+      images: workspace.mediaIds.map(() => 'data:image/png;base64,AQID'),
+    })
   );
 }
 
 function isProjectRecord(value: unknown): value is ProjectRecord {
   if (!isRecord(value) || value.schemaVersion !== PROJECT_SCHEMA_VERSION) return false;
-  if (!isItemProject(value.project) || !Array.isArray(value.media)) return false;
+  if (
+    !isItemProject(value.project) ||
+    !Array.isArray(value.media) ||
+    value.media.length > MAX_IMAGES_PER_PROJECT
+  )
+    return false;
   const project = value.project;
   const media = value.media as unknown[];
   if (
@@ -159,10 +180,12 @@ function isProjectRecord(value: unknown): value is ProjectRecord {
         typeof asset.size === 'number' &&
         Number.isFinite(asset.size) &&
         asset.size >= 0 &&
-        asset.size <= 10 * 1024 * 1024 &&
+        asset.size <= MAX_IMAGE_BYTES &&
         typeof asset.contentHash === 'string' &&
-        typeof asset.blob === 'object' &&
-        asset.blob !== null,
+        asset.contentHash.length <= 100 &&
+        asset.blob instanceof Blob &&
+        asset.blob.size === asset.size &&
+        asset.blob.type === asset.mimeType,
     )
   ) {
     return false;
@@ -189,13 +212,20 @@ export function isProjectBackupDataset(value: unknown): value is ProjectBackupDa
   if (
     (typeof value.activeProjectId !== 'string' && value.activeProjectId !== null) ||
     typeof value.imagesIncluded !== 'boolean' ||
-    !Array.isArray(value.records)
+    !Array.isArray(value.records) ||
+    value.records.length > MAX_PROJECTS
   ) {
     return false;
   }
   const ids = new Set<string>();
   for (const entry of value.records) {
-    if (!isRecord(entry) || !isRecord(entry.project) || !Array.isArray(entry.images)) return false;
+    if (
+      !isRecord(entry) ||
+      !isRecord(entry.project) ||
+      !Array.isArray(entry.images) ||
+      entry.images.length > MAX_IMAGES_PER_PROJECT
+    )
+      return false;
     if (!isItemProject(entry.project)) return false;
     const project = entry.project;
     const images = entry.images;
@@ -205,7 +235,9 @@ export function isProjectBackupDataset(value: unknown): value is ProjectBackupDa
     if (
       !images.every(
         (image) =>
-          typeof image === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/i.test(image),
+          typeof image === 'string' &&
+          image.length <= MAX_ENCODED_IMAGE_LENGTH + 40 &&
+          /^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(image),
       )
     ) {
       return false;
@@ -319,8 +351,9 @@ function dataUrlToMedia(
 ): MediaAsset {
   const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s);
   if (!match) throw new Error('Unsupported project image data.');
+  if (match[2].length > MAX_ENCODED_IMAGE_LENGTH) throw new Error('Project image is too large.');
   const bytes = Uint8Array.from(atob(match[2]), (character) => character.charCodeAt(0));
-  if (bytes.byteLength > 10 * 1024 * 1024) throw new Error('Project image is too large.');
+  if (bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('Project image is too large.');
   const contentHash = hash(dataUrl);
   return {
     version: 1,
@@ -362,7 +395,8 @@ function recordFromDraft(
 ): ProjectRecord {
   const now = new Date().toISOString();
   const { images, ...workspace } = draft;
-  if (images.length > 6) throw new Error('A project can contain at most six images.');
+  if (images.length > MAX_IMAGES_PER_PROJECT)
+    throw new Error('A project can contain at most six images.');
   const media = images.map((image, index) => dataUrlToMedia(image, id, index, now));
   const project: ItemProject = {
     schemaVersion: 3,
@@ -447,6 +481,7 @@ class ProjectRepository {
           }),
         );
       }
+      if (!records.every(isProjectRecord)) throw new Error('Project migration validation failed.');
       const index: ProjectIndex = {
         schemaVersion: 3,
         activeProjectId: records[0]?.project.id ?? null,
@@ -510,6 +545,7 @@ class ProjectRepository {
     if (!index.projectIds.includes(id)) throw new Error('Project does not exist.');
     const current = await this.requireRecord(id);
     const record = recordFromDraft(id, draft, { current });
+    if (!isProjectRecord(record)) throw new Error('Project draft is invalid.');
     await setMany([[projectKey(id), record]], PROJECT_STORE);
     return summary(record);
   }
@@ -714,6 +750,9 @@ class ProjectRepository {
       projectIds: records.map((record) => record.project.id),
       migrationCompletedAt: new Date().toISOString(),
     };
+    if (!records.every(isProjectRecord) || !isProjectIndex(index)) {
+      throw new Error('Project backup replacement failed validation.');
+    }
     await setMany(
       [
         ...(current?.projectIds ?? []).map((id) => [projectKey(id), null] as [string, unknown]),

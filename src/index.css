@@ -74,6 +74,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
+:where(button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 input,
 textarea,
 select {
@@ -1099,5 +1104,16 @@ fieldset {
   .history-layout,
   .scenario-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

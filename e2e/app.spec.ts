@@ -20,6 +20,42 @@ test('loads project home and opens an item workspace', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /nästa bästa|next best/i })).toBeVisible();
 });
 
+test('supports keyboard focus, semantic navigation, zoom, and reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await finishOnboarding(page);
+
+  const mainNavigation = page.getByRole('navigation', { name: /huvudnavigering|main navigation/i });
+  await expect(mainNavigation).toBeVisible();
+  await page.keyboard.press('Tab');
+  await expect(page.locator(':focus')).toBeVisible();
+
+  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  const projectNavigation = page.getByRole('navigation', {
+    name: /arbetsyta för vara|item workspace/i,
+  });
+  await expect(projectNavigation).toBeVisible();
+  await expect(projectNavigation.getByRole('button').first()).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+
+  const transitionDuration = await page
+    .getByRole('button')
+    .first()
+    .evaluate((element) => getComputedStyle(element).transitionDuration);
+  expect(Number.parseFloat(transitionDuration)).toBeLessThanOrEqual(0.001);
+
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '200%';
+  });
+  await expect(projectNavigation).toBeVisible();
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
+});
+
 test('offline intake exposes conservative candidates and explicit knowledge gaps', async ({
   page,
 }) => {

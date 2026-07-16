@@ -50,6 +50,12 @@ const BACKUP_FIELD_BY_DATASET: Record<DatasetId, keyof BackupFileV1['datasets']>
 };
 
 const ALL_DATASETS = Object.keys(BACKUP_FIELD_BY_DATASET) as DatasetId[];
+export const MAX_BACKUP_BYTES = 512 * 1024 * 1024;
+
+export function isBackupTextWithinLimit(value: string, maxBytes = MAX_BACKUP_BYTES): boolean {
+  if (value.length > maxBytes) return false;
+  return new TextEncoder().encode(value).byteLength <= maxBytes;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -166,6 +172,9 @@ class BackupService {
     value: string | unknown,
     selectedDatasets: BackupDatasetId[] = [...ALL_DATASETS, 'projects'],
   ): Promise<void> {
+    if (typeof value === 'string' && !isBackupTextWithinLimit(value)) {
+      throw new Error('Backup exceeds the local import size limit.');
+    }
     const parsed = typeof value === 'string' ? JSON.parse(value) : value;
     const backup = validateBackup(parsed);
     const selected = new Set(selectedDatasets);

@@ -2,7 +2,7 @@ import { clear, get, set } from 'idb-keyval';
 import { Blob as NodeBlob } from 'node:buffer';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { HistoryEntry, ListingDraft } from '@core/types';
-import { backupService } from './backupService';
+import { backupService, isBackupTextWithinLimit } from './backupService';
 import { DATASET_KEYS, createEnvelope, type DataEnvelope } from './persistenceService';
 import { PROJECT_STORE, projectRepository } from './projectRepository';
 
@@ -41,7 +41,7 @@ describe('backupService', () => {
     const backup = await backupService.exportBackup(new Date('2026-07-15T12:00:00.000Z'));
     const stored = await get<DataEnvelope<unknown>>(DATASET_KEYS['listing-draft']);
 
-    expect(backup).toMatchObject({ formatVersion: 2, appVersion: '1.0.0-beta.1' });
+    expect(backup).toMatchObject({ formatVersion: 2, appVersion: '2.0.0' });
     expect(JSON.stringify(backup)).not.toContain('legacy-secret');
     expect(JSON.stringify(backup)).not.toMatch(/geminiApiKey|traderaApiKey/);
     expect(stored).toMatchObject({ schemaVersion: 2, dataset: 'listing-draft', data: draft });
@@ -127,6 +127,11 @@ describe('backupService', () => {
         datasets: { settings: { geminiApiKey: 'secret' } },
       }),
     ).rejects.toThrow(/invalid/i);
+  });
+
+  it('measures backup text bytes before parsing it', () => {
+    expect(isBackupTextWithinLimit('1234567890', 10)).toBe(true);
+    expect(isBackupTextWithinLimit('å'.repeat(6), 10)).toBe(false);
   });
 
   it('round-trips full project backups and makes compact image omission explicit', async () => {

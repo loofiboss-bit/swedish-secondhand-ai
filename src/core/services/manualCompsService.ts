@@ -1,30 +1,22 @@
 import type { ComparableRecord } from '@core/types';
 import { readVersionedDataset, writeVersionedDataset } from './persistenceService';
+import { isComparableRecord } from './listingDraftService';
 
 type ManualComparableInput = Omit<ComparableRecord, 'id' | 'source' | 'sourceQuality'> &
   Partial<Pick<ComparableRecord, 'sourceQuality' | 'location' | 'shippingIncluded'>>;
 
-function isComparableRecord(value: unknown): value is ComparableRecord {
-  if (typeof value !== 'object' || value === null) return false;
-  const item = value as Partial<ComparableRecord>;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isManualComparable(value: unknown): value is ComparableRecord {
   return (
-    typeof item.id === 'string' &&
-    item.source === 'manual' &&
-    typeof item.title === 'string' &&
-    typeof item.priceSek === 'number' &&
-    Number.isFinite(item.priceSek) &&
-    item.priceSek > 0 &&
-    item.priceSek <= 10_000_000 &&
-    typeof item.soldAt === 'string' &&
-    Number.isFinite(Date.parse(item.soldAt)) &&
-    ['tradera', 'blocket', 'vinted'].includes(String(item.site)) &&
-    (item.priceKind === undefined ||
-      ['asking', 'realized', 'unknown'].includes(String(item.priceKind))) &&
-    (item.marketState === undefined ||
-      ['active', 'sold', 'unknown'].includes(String(item.marketState))) &&
-    typeof item.url === 'string' &&
-    item.url.length <= 2_048 &&
-    (!item.url || /^https?:\/\//i.test(item.url))
+    isRecord(value) &&
+    value.source === 'manual' &&
+    isComparableRecord({
+      ...value,
+      sourceQuality: value.sourceQuality ?? 0.55,
+    })
   );
 }
 
@@ -34,13 +26,14 @@ function normalizeManualComparable(item: ComparableRecord): ComparableRecord {
     priceKind: item.priceKind ?? 'unknown',
     marketState: item.marketState ?? 'unknown',
     observedAt: item.observedAt ?? item.soldAt,
+    sourceQuality: item.sourceQuality ?? 0.55,
     hitType: 'manual',
     queryVariantIds: [],
   };
 }
 
 export function isManualComparableDataset(value: unknown): value is ComparableRecord[] {
-  return Array.isArray(value) && value.every(isComparableRecord);
+  return Array.isArray(value) && value.length <= 500 && value.every(isManualComparable);
 }
 
 class ManualCompsService {

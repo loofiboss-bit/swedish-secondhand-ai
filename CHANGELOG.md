@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.0 - 2026-07-16
+
 - Added a local project library with draft, ready, listed, sold, and paused states plus separate
   Home, Projects, item workspace, and Settings views.
 - Added atomic schema 3 project/media persistence with idempotent active-draft/history migration,

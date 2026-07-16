@@ -41,4 +41,21 @@ describe('factCandidates', () => {
       'attributes',
     ]);
   });
+
+  it('bounds provider-derived candidates to the persisted project contract', () => {
+    const attributes = Object.fromEntries(
+      Array.from({ length: 150 }, (_, index) => [`attribute-${index}`, 'x'.repeat(3_000)]),
+    );
+    const candidates = buildFactCandidates(
+      { ...fingerprint, attributes },
+      { text: '', images: [] },
+      'ollama',
+    );
+
+    expect(candidates.length).toBeLessThanOrEqual(100);
+    expect(candidates.length).toBeGreaterThan(50);
+    expect(candidates.every((candidate) => candidate.id.length <= 300)).toBe(true);
+    expect(candidates.every((candidate) => candidate.key.length <= 100)).toBe(true);
+    expect(candidates.every((candidate) => candidate.value.length <= 2_000)).toBe(true);
+  });
 });

@@ -10,7 +10,7 @@
 
 Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
-## v2 Smart Seller Coach development
+## What's New in v2.0.0
 
 - A local project library keeps multiple items isolated as drafts, ready listings, published
   items, sold items, or paused work.
@@ -108,6 +108,8 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - `npm run test:e2e`
 - `npm run validate`
 - `npm run validate:release`
+- `npm run validate:publication` (requires verified repository release-gate variables)
+- `npm run validate:security-deps`
 - `npm run dist`
 
 ## API Notes

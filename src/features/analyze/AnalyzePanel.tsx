@@ -87,10 +87,9 @@ export function AnalyzePanel() {
           );
           addImage(dataUrl, assessment);
         } catch {
-          addImage(dataUrl);
           setUploadError(t('imageAssessmentError'));
         }
-        acceptedCount += 1;
+        if (useValuationStore.getState().images.length > acceptedCount) acceptedCount += 1;
       } catch {
         setUploadError(t('imageProcessingError'));
       }
