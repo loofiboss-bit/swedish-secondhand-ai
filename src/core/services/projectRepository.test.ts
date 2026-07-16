@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { HistoryEntry, ListingDraft } from '@core/types';
 import { DATASET_KEYS, createEnvelope } from './persistenceService';
 import { listingDraftService } from './listingDraftService';
+import { listingTemplateService } from './listingTemplateService';
 import { PROJECT_STORE, projectRepository } from './projectRepository';
 
 const draft: ListingDraft = {
@@ -128,6 +129,21 @@ describe('projectRepository', () => {
           assessedAt: '2026-07-16T09:00:00.000Z',
         },
       ],
+      listingDrafts: [
+        {
+          ...listingTemplateService.draftFromLegacyTemplate({
+            site: 'blocket',
+            title: 'IKEA stol',
+            description: 'Beskrivning',
+            priceSuggestionSek: 500,
+            shippingSuggestion: 'Hämtning',
+            tags: ['IKEA', 'stol'],
+            disclaimer: 'Kontrollera fakta',
+          }),
+          imageOrder: [0],
+          coverImageIndex: 0,
+        },
+      ],
     };
 
     await projectRepository.save(created.project.id, enriched);
@@ -140,6 +156,10 @@ describe('projectRepository', () => {
     const compact = await projectRepository.exportBackup(false);
     expect(compact?.records[0].images).toEqual([]);
     expect(compact?.records[0].project.workspace.photoAssessments).toEqual([]);
+    expect(compact?.records[0].project.workspace.listingDrafts?.[0]).toMatchObject({
+      imageOrder: [],
+      coverImageIndex: null,
+    });
     expect(compact?.records[0].project.workspace.factCandidates?.[0].references).toEqual([
       { kind: 'text', excerpt: 'IKEA stol' },
     ]);

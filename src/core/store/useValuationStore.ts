@@ -22,6 +22,7 @@ import { manualCompsService } from '@core/services/manualCompsService';
 import { listingTemplateService } from '@core/services/listingTemplateService';
 import { historyService } from '@core/services/historyService';
 import { marketIntelligenceService } from '@core/services/marketIntelligenceService';
+import { sellPlanService } from '@core/services/sellPlanService';
 import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
 import {
   factsFromFingerprint,
@@ -80,7 +81,7 @@ interface ValuationState {
   estimateValue: () => Promise<void>;
   compareScenarios: () => Promise<void>;
   runPipeline: () => Promise<void>;
-  generateTemplates: () => void;
+  generateTemplates: (replaceUserEdits?: boolean) => void;
   saveToHistory: () => Promise<void>;
   hydrateFromDraft: (draft: ListingDraft) => void;
   buildDraft: (currentStep: WorkflowStep, completedSteps: WorkflowStep[]) => ListingDraft;
@@ -447,7 +448,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       useWorkflowStore.getState().setStepError('templates', 'Template generation failed.');
     }
   },
-  generateTemplates: () => {
+  generateTemplates: (replaceUserEdits = false) => {
     const state = get();
     if (!state.fingerprint || !state.productFacts || !state.valuation) {
       set({ error: 'Estimate value before generating templates.' });
@@ -457,8 +458,24 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       set({ error: state.valuation.action });
       return;
     }
-    const templates = listingTemplateService.generateTemplates(state.productFacts, state.valuation);
-    useListingStore.getState().setTemplates(templates);
+    const listingStore = useListingStore.getState();
+    const listingDrafts = listingTemplateService.generateListingDrafts(
+      state.productFacts,
+      state.valuation,
+      state.images.length,
+      listingStore.listingDrafts,
+      replaceUserEdits,
+    );
+    listingStore.setListingDrafts(listingDrafts);
+    listingStore.setSellPlan(
+      listingStore.sellerTimePreference,
+      sellPlanService.create({
+        facts: state.productFacts,
+        comparables: [...state.traderaComps, ...state.manualComps],
+        valuation: state.valuation,
+        timePreference: listingStore.sellerTimePreference,
+      }),
+    );
     useWorkflowStore.getState().markStepComplete('templates');
     useWorkflowStore.getState().setCurrentStep('review');
   },
@@ -523,6 +540,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       manualComps: state.manualComps,
       valuation: state.valuation,
       comparableQueryPlan: state.comparableQueryPlan ?? undefined,
+      listingDrafts: useListingStore.getState().listingDrafts,
+      sellerTimePreference: useListingStore.getState().sellerTimePreference,
+      sellPlan: useListingStore.getState().sellPlan ?? undefined,
       templates: useListingStore.getState().templates,
     };
   },

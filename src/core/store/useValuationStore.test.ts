@@ -11,13 +11,13 @@ const {
   estimateValueMock,
   getComparablesMock,
   recalculateConfidenceMock,
-  generateTemplatesMock,
+  generateListingDraftsMock,
 } = vi.hoisted(() => ({
   analyzeInputMock: vi.fn(),
   estimateValueMock: vi.fn(),
   getComparablesMock: vi.fn(),
   recalculateConfidenceMock: vi.fn(),
-  generateTemplatesMock: vi.fn(),
+  generateListingDraftsMock: vi.fn(),
 }));
 
 vi.mock('@core/services/valuationService', () => ({
@@ -42,7 +42,17 @@ vi.mock('@core/services/valuationCalibrationService', () => ({
 
 vi.mock('@core/services/listingTemplateService', () => ({
   listingTemplateService: {
-    generateTemplates: generateTemplatesMock,
+    generateListingDrafts: generateListingDraftsMock,
+    toTemplate: (draft: { site: string; fields: Record<string, { value: unknown }> }) => ({
+      site: draft.site,
+      title: draft.fields.title.value,
+      description: draft.fields.description.value,
+      priceSuggestionSek: draft.fields.priceSek.value,
+      shippingSuggestion: draft.fields.shippingPickup.value,
+      tags: draft.fields.tags.value,
+      disclaimer: draft.fields.disclosure.value,
+    }),
+    exportStructuredCopyPackage: vi.fn(),
   },
 }));
 
@@ -142,7 +152,29 @@ describe('useValuationStore runPipeline', () => {
       calibrationFactor: 1.03,
       summary: 'Calibration applied.',
     });
-    generateTemplatesMock.mockReturnValue(templates);
+    generateListingDraftsMock.mockReturnValue(
+      templates.map((template) => ({
+        version: 1,
+        site: template.site,
+        updatedAt: '2026-07-16T00:00:00Z',
+        fields: {
+          title: { value: template.title, origin: 'generated', userEdited: false },
+          description: { value: template.description, origin: 'generated', userEdited: false },
+          priceSek: { value: template.priceSuggestionSek, origin: 'generated', userEdited: false },
+          category: { value: 'Furniture', origin: 'generated', userEdited: false },
+          attributes: { value: [], origin: 'generated', userEdited: false },
+          shippingPickup: {
+            value: template.shippingSuggestion,
+            origin: 'generated',
+            userEdited: false,
+          },
+          tags: { value: template.tags, origin: 'generated', userEdited: false },
+          disclosure: { value: template.disclaimer, origin: 'generated', userEdited: false },
+        },
+        imageOrder: [],
+        coverImageIndex: null,
+      })),
+    );
   });
 
   it('runs full pipeline and advances workflow to review on success', async () => {
@@ -153,7 +185,7 @@ describe('useValuationStore runPipeline', () => {
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
-    expect(generateTemplatesMock).toHaveBeenCalledTimes(1);
+    expect(generateListingDraftsMock).toHaveBeenCalledTimes(1);
     expect(useWorkflowStore.getState().currentStep).toBe('review');
     expect(useWorkflowStore.getState().completedSteps).toEqual(
       expect.arrayContaining(['analyze', 'comparables', 'price', 'templates']),
@@ -168,7 +200,7 @@ describe('useValuationStore runPipeline', () => {
     expect(analyzeInputMock).not.toHaveBeenCalled();
     expect(getComparablesMock).not.toHaveBeenCalled();
     expect(estimateValueMock).not.toHaveBeenCalled();
-    expect(generateTemplatesMock).not.toHaveBeenCalled();
+    expect(generateListingDraftsMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toMatch(/add item text or at least one image/i);
     expect(useWorkflowStore.getState().currentStep).toBe('analyze');
   });
@@ -199,7 +231,7 @@ describe('useValuationStore runPipeline', () => {
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).not.toHaveBeenCalled();
-    expect(generateTemplatesMock).not.toHaveBeenCalled();
+    expect(generateListingDraftsMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toBe('Tradera timeout');
     expect(useWorkflowStore.getState().stepErrors.comparables).toBe(
       'Unable to fetch Tradera comparables.',
@@ -215,7 +247,7 @@ describe('useValuationStore runPipeline', () => {
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
-    expect(generateTemplatesMock).not.toHaveBeenCalled();
+    expect(generateListingDraftsMock).not.toHaveBeenCalled();
     expect(useValuationStore.getState().error).toBe('Estimator down');
     expect(useWorkflowStore.getState().stepErrors.price).toBe('Estimation failed.');
     expect(useWorkflowStore.getState().currentStep).toBe('price');
@@ -223,7 +255,7 @@ describe('useValuationStore runPipeline', () => {
 
   it('sets template step error when template generation throws', async () => {
     useValuationStore.getState().setInputText('IKEA Poang armchair in good condition');
-    generateTemplatesMock.mockImplementationOnce(() => {
+    generateListingDraftsMock.mockImplementationOnce(() => {
       throw new Error('Template engine crashed');
     });
 
@@ -232,7 +264,7 @@ describe('useValuationStore runPipeline', () => {
     expect(analyzeInputMock).toHaveBeenCalledTimes(1);
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
-    expect(generateTemplatesMock).toHaveBeenCalledTimes(1);
+    expect(generateListingDraftsMock).toHaveBeenCalledTimes(1);
     expect(useValuationStore.getState().error).toBe('Template engine crashed');
     expect(useWorkflowStore.getState().stepErrors.templates).toBe('Template generation failed.');
   });

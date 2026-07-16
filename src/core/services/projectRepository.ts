@@ -128,12 +128,18 @@ function isProjectRecord(value: unknown): value is ProjectRecord {
   }
   const mediaIds = new Set((media as Array<{ id: string }>).map((asset) => asset.id));
   const assessments = project.workspace.photoAssessments ?? [];
+  const listingDrafts = project.workspace.listingDrafts ?? [];
   return (
     mediaIds.size === media.length &&
     project.workspace.mediaIds.length === media.length &&
     project.workspace.mediaIds.every((id) => mediaIds.has(id)) &&
     new Set(assessments.map((assessment) => assessment.imageIndex)).size === assessments.length &&
-    assessments.every((assessment) => assessment.imageIndex < media.length)
+    assessments.every((assessment) => assessment.imageIndex < media.length) &&
+    listingDrafts.every(
+      (draft) =>
+        draft.imageOrder.every((imageIndex) => imageIndex < media.length) &&
+        (draft.coverImageIndex === null || draft.coverImageIndex < media.length),
+    )
   );
 }
 
@@ -167,11 +173,17 @@ export function isProjectBackupDataset(value: unknown): value is ProjectBackupDa
       return false;
     }
     const assessments = project.workspace.photoAssessments ?? [];
+    const listingDrafts = project.workspace.listingDrafts ?? [];
     if (
       value.imagesIncluded &&
       (new Set(assessments.map((assessment) => assessment.imageIndex)).size !==
         assessments.length ||
-        assessments.some((assessment) => assessment.imageIndex >= images.length))
+        assessments.some((assessment) => assessment.imageIndex >= images.length) ||
+        listingDrafts.some(
+          (draft) =>
+            draft.imageOrder.some((imageIndex) => imageIndex >= images.length) ||
+            (draft.coverImageIndex !== null && draft.coverImageIndex >= images.length),
+        ))
     ) {
       return false;
     }
@@ -180,6 +192,9 @@ export function isProjectBackupDataset(value: unknown): value is ProjectBackupDa
       (images.length !== 0 ||
         project.workspace.mediaIds.length !== 0 ||
         assessments.length !== 0 ||
+        listingDrafts.some(
+          (draft) => draft.imageOrder.length > 0 || draft.coverImageIndex !== null,
+        ) ||
         (project.workspace.factCandidates ?? []).some((candidate) =>
           candidate.references.some((reference) => reference.kind === 'image'),
         ))
@@ -537,6 +552,11 @@ class ProjectRepository {
                     references: candidate.references.filter(
                       (reference) => reference.kind !== 'image',
                     ),
+                  })),
+                  listingDrafts: record.project.workspace.listingDrafts?.map((draft) => ({
+                    ...draft,
+                    imageOrder: [],
+                    coverImageIndex: null,
                   })),
                 },
               },

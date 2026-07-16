@@ -57,7 +57,7 @@ Status: completed and validated on `feature/v2-market-workshop`.
 
 ## M4 — Listing studio and sell plan
 
-Status: pending.
+Status: completed and validated on `feature/v2-listing-studio`.
 
 - Make listing fields editable with per-field origin and user-edit preservation.
 - Add previews, character limits, image ordering, actionable policy issues and copy bundles.
@@ -85,6 +85,6 @@ Status: pending.
 - [x] M1 Project library and schema 3 data
 - [x] M2 Deterministic seller coach and smart intake
 - [x] M3 Market intelligence and pricing workshop
-- [ ] M4 Listing studio and sell plan
+- [x] M4 Listing studio and sell plan
 - [ ] M5 Follow-up and local learning
 - [ ] M6 Public beta and stable v2

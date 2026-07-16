@@ -29,6 +29,11 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
   queries, and exposes match type, price kind, source, date, relevance, and cache age.
 - Active asking prices remain a separate context interval. Only user-approved realized prices
   enter the three reproducible fast, balanced, and max-value scenarios.
+- The listing studio owns every Tradera, Blocket, and Vinted field independently, preserves user
+  edits during regeneration, previews copy and cover crops, and exports structured manual-copy
+  packages.
+- Readiness uses clickable blockers, warnings, and improvements instead of a generic score. A
+  transparent sell plan explains marketplace, sale format, price strategy, and fulfillment.
 
 ## What's New in v1.0.0-beta.1
 

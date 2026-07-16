@@ -97,6 +97,73 @@ function isComparableQueryPlan(value: unknown): boolean {
   );
 }
 
+function isOwnedField(value: unknown, kind: 'string' | 'number' | 'strings'): boolean {
+  if (!isRecord(value)) return false;
+  const fieldValue = value.value;
+  const validValue =
+    kind === 'string'
+      ? typeof fieldValue === 'string' && fieldValue.length <= 20_000
+      : kind === 'number'
+        ? typeof fieldValue === 'number' && Number.isFinite(fieldValue) && fieldValue >= 0
+        : Array.isArray(fieldValue) &&
+          fieldValue.length <= 100 &&
+          fieldValue.every((entry) => typeof entry === 'string' && entry.length <= 500);
+  return (
+    validValue &&
+    ['generated', 'user'].includes(String(value.origin)) &&
+    typeof value.userEdited === 'boolean'
+  );
+}
+
+function isMarketplaceListingDraft(value: unknown): boolean {
+  if (!isRecord(value) || !isRecord(value.fields) || !Array.isArray(value.imageOrder)) return false;
+  const fields = value.fields;
+  return (
+    value.version === 1 &&
+    ['tradera', 'blocket', 'vinted'].includes(String(value.site)) &&
+    typeof value.updatedAt === 'string' &&
+    Number.isFinite(Date.parse(value.updatedAt)) &&
+    isOwnedField(fields.title, 'string') &&
+    isOwnedField(fields.description, 'string') &&
+    isOwnedField(fields.priceSek, 'number') &&
+    isOwnedField(fields.category, 'string') &&
+    isOwnedField(fields.attributes, 'strings') &&
+    isOwnedField(fields.shippingPickup, 'string') &&
+    isOwnedField(fields.tags, 'strings') &&
+    isOwnedField(fields.disclosure, 'string') &&
+    value.imageOrder.length <= 6 &&
+    value.imageOrder.every((index) => Number.isInteger(index) && Number(index) >= 0) &&
+    new Set(value.imageOrder).size === value.imageOrder.length &&
+    (value.coverImageIndex === null ||
+      (Number.isInteger(value.coverImageIndex) && value.imageOrder.includes(value.coverImageIndex)))
+  );
+}
+
+function isSellPlan(value: unknown): boolean {
+  if (!isRecord(value) || !Array.isArray(value.rationale) || !Array.isArray(value.basis))
+    return false;
+  return (
+    value.version === 1 &&
+    typeof value.generatedAt === 'string' &&
+    Number.isFinite(Date.parse(value.generatedAt)) &&
+    ['tradera', 'blocket', 'vinted'].includes(String(value.marketplace)) &&
+    ['fixed-price', 'auction'].includes(String(value.saleFormat)) &&
+    ['fast_sale', 'balanced', 'max_value'].includes(String(value.pricingStrategy)) &&
+    ['shipping', 'pickup', 'shipping-or-pickup'].includes(String(value.fulfillment)) &&
+    value.rationale.length <= 20 &&
+    value.rationale.every(
+      (reason) =>
+        isRecord(reason) &&
+        typeof reason.key === 'string' &&
+        reason.key.length <= 200 &&
+        (reason.params === undefined || isRecord(reason.params)),
+    ) &&
+    value.basis.every((basis) =>
+      ['market-data', 'general-rule', 'own-history'].includes(String(basis)),
+    )
+  );
+}
+
 function hasValidSmartIntake(value: Partial<ListingDraft>): boolean {
   return (
     (value.factCandidates === undefined ||
@@ -118,7 +185,14 @@ function hasValidSmartIntake(value: Partial<ListingDraft>): boolean {
       (Array.isArray(value.photoAssessments) &&
         value.photoAssessments.length <= 6 &&
         value.photoAssessments.every(isPhotoAssessment))) &&
-    (value.comparableQueryPlan === undefined || isComparableQueryPlan(value.comparableQueryPlan))
+    (value.comparableQueryPlan === undefined || isComparableQueryPlan(value.comparableQueryPlan)) &&
+    (value.listingDrafts === undefined ||
+      (Array.isArray(value.listingDrafts) &&
+        value.listingDrafts.length <= 3 &&
+        value.listingDrafts.every(isMarketplaceListingDraft))) &&
+    (value.sellerTimePreference === undefined ||
+      ['fast', 'balanced', 'patient'].includes(String(value.sellerTimePreference))) &&
+    (value.sellPlan === undefined || isSellPlan(value.sellPlan))
   );
 }
 

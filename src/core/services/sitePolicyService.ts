@@ -1,5 +1,6 @@
 import type {
   MarketplaceSite,
+  MarketplacePolicyMetadata,
   PolicyCheckResult,
   SiteConstraint,
   ListingTemplate,
@@ -104,6 +105,27 @@ const CONSTRAINTS: SiteConstraint[] = [
   },
 ];
 
+const POLICY_METADATA: Record<MarketplaceSite, MarketplacePolicyMetadata> = {
+  tradera: {
+    site: 'tradera',
+    version: '2026-07-16',
+    sourceUrl: 'https://www.tradera.com/support/se/posts/annonsguide/',
+    checkedAt: '2026-07-16T00:00:00.000Z',
+  },
+  blocket: {
+    site: 'blocket',
+    version: '2026-07-16',
+    sourceUrl: 'https://www.blocket.se/villkor/villkor-privat/annonseringsregler',
+    checkedAt: '2026-07-16T00:00:00.000Z',
+  },
+  vinted: {
+    site: 'vinted',
+    version: '2026-07-16',
+    sourceUrl: 'https://www.vinted.se/help/392/551-information-till-saljare',
+    checkedAt: '2026-07-16T00:00:00.000Z',
+  },
+};
+
 class SitePolicyService {
   private static instance: SitePolicyService;
 
@@ -116,6 +138,10 @@ class SitePolicyService {
 
   listConstraints(site: MarketplaceSite): SiteConstraint[] {
     return CONSTRAINTS.filter((constraint) => constraint.site === site);
+  }
+
+  getMetadata(site: MarketplaceSite): MarketplacePolicyMetadata {
+    return POLICY_METADATA[site];
   }
 
   validate(site: MarketplaceSite, template: ListingTemplate): PolicyCheckResult {

@@ -275,6 +275,54 @@ export interface ListingTemplate {
   disclaimer: string;
 }
 
+export type ListingFieldOrigin = 'generated' | 'user';
+
+export interface ListingOwnedField<T> {
+  value: T;
+  origin: ListingFieldOrigin;
+  userEdited: boolean;
+}
+
+export interface MarketplaceListingDraft {
+  version: 1;
+  site: MarketplaceSite;
+  updatedAt: string;
+  fields: {
+    title: ListingOwnedField<string>;
+    description: ListingOwnedField<string>;
+    priceSek: ListingOwnedField<number>;
+    category: ListingOwnedField<string>;
+    attributes: ListingOwnedField<string[]>;
+    shippingPickup: ListingOwnedField<string>;
+    tags: ListingOwnedField<string[]>;
+    disclosure: ListingOwnedField<string>;
+  };
+  imageOrder: number[];
+  coverImageIndex: number | null;
+}
+
+export type ListingDraftFieldKey = keyof MarketplaceListingDraft['fields'];
+
+export interface ListingReadinessIssue {
+  id: string;
+  severity: 'blocker' | 'warning' | 'improvement';
+  field: ListingDraftFieldKey | 'images';
+  message: string;
+}
+
+export type SellerTimePreference = 'fast' | 'balanced' | 'patient';
+
+export interface SellPlan {
+  version: 1;
+  generatedAt: string;
+  marketplace: MarketplaceSite;
+  saleFormat: 'fixed-price' | 'auction';
+  pricingStrategy: PricingStrategy;
+  fulfillment: 'shipping' | 'pickup' | 'shipping-or-pickup';
+  rationale: Array<{ key: string; params?: Record<string, string | number> }>;
+  basis: Array<'market-data' | 'general-rule' | 'own-history'>;
+}
+
 export interface ComparableQuery {
   title: string;
   category?: string;
@@ -352,6 +400,9 @@ export interface ListingDraft {
   knowledgeGaps?: AnalysisKnowledgeGap[];
   photoAssessments?: PhotoAssessment[];
   comparableQueryPlan?: ComparableQueryPlan;
+  listingDrafts?: MarketplaceListingDraft[];
+  sellerTimePreference?: SellerTimePreference;
+  sellPlan?: SellPlan;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
   valuation: ValuationResult | null;
@@ -408,6 +459,13 @@ export interface SiteConstraint {
   severity: 'error' | 'warning';
   message: string;
   validate: (template: ListingTemplate) => boolean;
+}
+
+export interface MarketplacePolicyMetadata {
+  site: MarketplaceSite;
+  version: string;
+  sourceUrl: string;
+  checkedAt: string;
 }
 
 export interface PolicyIssue {

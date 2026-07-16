@@ -707,6 +707,135 @@ select {
   gap: 0.65rem;
 }
 
+.sell-plan,
+.listing-preview,
+.readiness-groups,
+.listing-images {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(8, 20, 13, 0.65);
+}
+
+.sell-plan > header,
+.sell-plan__result dl,
+.readiness-groups {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sell-plan h3,
+.sell-plan p,
+.sell-plan dl,
+.listing-images h4 {
+  margin: 0;
+}
+
+.sell-plan__result {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.sell-plan__result dl > div {
+  min-width: 130px;
+}
+
+.sell-plan__result dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.sell-plan__result dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.listing-editor {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.readiness-blocked,
+.readiness-ready {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.82rem;
+}
+
+.readiness-blocked {
+  color: #ffd39a;
+  background: rgba(119, 66, 22, 0.55);
+}
+
+.readiness-ready {
+  color: #9ee6b9;
+  background: rgba(20, 89, 50, 0.55);
+}
+
+.listing-images ol,
+.readiness-groups ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.listing-images li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.listing-images li img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.square-cover-preview {
+  width: min(260px, 100%);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.square-cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.readiness-groups > div {
+  flex: 1 1 190px;
+}
+
+.readiness-groups h4 {
+  margin: 0 0 0.4rem;
+}
+
+.readiness-groups button {
+  width: 100%;
+  text-align: left;
+  background: rgba(17, 37, 24, 0.8);
+}
+
+.listing-preview summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.policy-source {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
 .template-card header {
   display: flex;
   justify-content: space-between;

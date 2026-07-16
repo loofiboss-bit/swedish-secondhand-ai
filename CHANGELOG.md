@@ -22,6 +22,14 @@
   asking-price context interval, and user-only approval for realized valuation evidence.
 - Added a three-column price workshop for fast sale, balanced, and max value with every
   deterministic adjustment exposed per scenario.
+- Replaced static templates with field-owned Tradera, Blocket, and Vinted listing drafts that
+  preserve user edits during regeneration and require explicit confirmation before replacement.
+- Added editable category/attribute, fulfillment, tag, disclosure, image-order, cover-crop,
+  preview, character-count, and structured copy-package controls.
+- Replaced the generic 100-point listing display with clickable blockers, warnings, and
+  improvements, plus versioned official marketplace-policy sources and check dates.
+- Added a deterministic sell plan for marketplace, fixed price/auction, pricing strategy, and
+  fulfillment with explicit market-data/general-rule/history basis labels.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public
   App ID and OS-protected App key, bounded daily requests, and a 24-hour local query cache.
 - Distinguished asking, realized, and unknown comparable prices; only user-approved realized

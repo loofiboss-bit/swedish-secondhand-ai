@@ -113,7 +113,12 @@ export function App() {
 
   const hydrateProject = (hydrated: HydratedProject) => {
     hydrateFromDraft(hydrated.draft);
-    listingStore.hydrateFromDraft(hydrated.draft.templates);
+    listingStore.hydrateFromDraft(
+      hydrated.draft.templates,
+      hydrated.draft.listingDrafts,
+      hydrated.draft.sellerTimePreference,
+      hydrated.draft.sellPlan,
+    );
     hydrateWorkflow(hydrated.draft.currentStep, hydrated.draft.completedSteps);
     setWorkspaceSection(hydrated.project.currentSection);
     setLastSavedAt(hydrated.draft.savedAt);
@@ -159,6 +164,9 @@ export function App() {
     valuationStore.valuation,
     valuationStore.pricingStrategy,
     listingStore.templates,
+    listingStore.listingDrafts,
+    listingStore.sellerTimePreference,
+    listingStore.sellPlan,
   ]);
 
   const openProject = async (id: string) => {

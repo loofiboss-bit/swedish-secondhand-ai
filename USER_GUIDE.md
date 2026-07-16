@@ -83,17 +83,28 @@ The sidebar shows current recommendation and confidence.
 
 ![Valuation result](./docs/screenshots/03-valuation-result.png)
 
-## 4. Generate Templates and Quality Check
+## 4. Listing studio and sell plan
 
-In **Templates**:
+In **Listing**:
 
-1. Click **Generate templates**.
-2. Review templates for Tradera, Blocket, and Vinted.
-3. Check quality score and policy issues.
-4. Fix blocking issues before copying.
-5. Use:
-   - **Copy** (single listing text)
-   - **Copy bundle** (title + description + tags + pricing notes)
+1. Click **Update untouched fields** to create or refresh Tradera, Blocket, and Vinted drafts.
+2. Edit title, description, price, category/attribute checklist, shipping/pickup, tags, and
+   disclosure independently for each marketplace. Every field shows whether it is generated or
+   user-owned.
+3. Regeneration updates only untouched fields. **Replace my text too** requires an explicit
+   confirmation before any user-edited field is overwritten.
+4. Review character counts, preview the listing, arrange images, select a cover, and inspect the
+   square crop preview. Images are not edited.
+5. Open blockers, warnings, or improvements to jump to the affected field. Copy actions remain
+   disabled while blockers exist; the former generic 100-point score is no longer used.
+6. Choose your time preference and inspect the transparent sell plan. It states marketplace,
+   fixed price versus auction, pricing strategy, fulfillment, rationale, and whether it is based
+   on market data, a general rule, or sufficient own history.
+7. Use **Copy** for the basic text or **Copy structured package** for title, description, price,
+   category, attributes, fulfillment, tags, image order, cover, and disclosure. Publication stays
+   manual.
+
+Each draft shows the marketplace-policy version, official source URL, and last check date.
 
 ![Templates quality](./docs/screenshots/04-templates-quality.png)
 
@@ -172,10 +183,10 @@ Tradera search results are asking-price context unless the source explicitly pro
 price. When adding a manual comparable, select **Verified realized price** only when the sale price
 is known; unknown and asking prices do not determine the recommendation.
 
-### Template copy is disabled
+### Listing copy is disabled
 
-- Resolve blocking policy issues in template card.
-- Re-generate templates after fixing upstream data.
+- Open each blocker to focus the affected field.
+- Confirm category, positive price, title length, and shipping/pickup terms.
 
 ### Confidence is low
 

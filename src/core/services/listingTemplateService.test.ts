@@ -81,4 +81,44 @@ describe('listingTemplateService', () => {
     expect(template.description).toContain('Defekter: Inte fullständigt verifierat');
     expect(template.description).toContain('Äkthet: Äkthet inte verifierad');
   });
+
+  it('regenerates only untouched fields unless replacement is explicit', () => {
+    const generated = listingTemplateService.generateListingDrafts(
+      facts,
+      valuation,
+      2,
+      [],
+      false,
+      '2026-07-16T00:00:00Z',
+    );
+    const edited = generated.map((draft) =>
+      draft.site === 'blocket'
+        ? {
+            ...draft,
+            fields: {
+              ...draft.fields,
+              title: { value: 'Min egen rubrik', origin: 'user' as const, userEdited: true },
+            },
+          }
+        : draft,
+    );
+    const nextValuation = { ...valuation, priceRecommendedSek: 525 };
+
+    const preserved = listingTemplateService.generateListingDrafts(facts, nextValuation, 2, edited);
+    expect(preserved.find((draft) => draft.site === 'blocket')?.fields).toMatchObject({
+      title: { value: 'Min egen rubrik', userEdited: true },
+      priceSek: { value: 525, userEdited: false },
+    });
+
+    const replaced = listingTemplateService.generateListingDrafts(
+      facts,
+      nextValuation,
+      2,
+      edited,
+      true,
+    );
+    expect(replaced.find((draft) => draft.site === 'blocket')?.fields.title).toMatchObject({
+      userEdited: false,
+    });
+  });
 });

@@ -122,4 +122,26 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await page.getByRole('button', { name: /jämför prisscenarier|compare price scenarios/i }).click();
   await expect(page.getByRole('heading', { name: /prisverkstad|pricing workshop/i })).toBeVisible();
   await expect(page.locator('.scenario-grid article')).toHaveCount(3);
+
+  await page.getByRole('button', { name: /^annons$|^listing$/i }).click();
+  await page
+    .getByRole('button', { name: /uppdatera orörda fält|update untouched fields/i })
+    .click();
+  await expect(page.locator('.listing-editor')).toHaveCount(3);
+  await expect(
+    page.getByRole('heading', { name: /rekommenderad kanal|recommended channel/i }),
+  ).toBeVisible();
+
+  const traderaEditor = page.locator('.listing-editor').filter({ hasText: 'TRADERA' });
+  const titleInput = traderaEditor
+    .locator('label')
+    .filter({ hasText: /titel|title/i })
+    .locator('input');
+  await titleInput.fill('Min egen Sony A6400-rubrik');
+  await page
+    .getByRole('button', { name: /uppdatera orörda fält|update untouched fields/i })
+    .click();
+  await expect(titleInput).toHaveValue('Min egen Sony A6400-rubrik');
+  await expect(traderaEditor.getByText(/din redigering|your edit/i).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: /blockerare|blockers/i }).first()).toBeVisible();
 });
