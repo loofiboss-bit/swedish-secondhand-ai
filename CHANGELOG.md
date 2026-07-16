@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fixed the Linux AppImage blank window by emitting renderer asset and lazy-chunk URLs relative
+  to the packaged `file://` entry point.
+- Added release validation that rejects root-relative packaged renderer assets and a Linux smoke
+  test that requires visible content from the real Electron renderer.
+- Synchronized the product roadmap with the released v2.0.0 authority and added an automated
+  roadmap consistency gate.
+
 ## 2.0.0 - 2026-07-16
 
 - Added a local project library with draft, ready, listed, sold, and paused states plus separate

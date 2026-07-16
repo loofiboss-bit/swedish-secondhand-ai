@@ -84,6 +84,20 @@ maintainer.
 - Publish stable `v2.0.0` only with no P0/P1, high-severity security, data-loss, platform-upgrade,
   or artifact-readback failure.
 
+## Post-release maintenance
+
+Status: Linux AppImage startup hotfix implemented and locally validated on
+`fix/v2-appimage-blank-screen`; public hotfix publication is pending explicit authorization.
+
+- The v2.0.0 AppImage process started but rendered a blank window because Vite emitted
+  root-relative `/assets/...` URLs for an Electron `file://` entry point.
+- Renderer assets and lazy chunks now use relative paths.
+- Release validation rejects root-relative packaged assets.
+- Linux package smoke now inspects the real Electron renderer and requires visible app content;
+  process liveness alone is no longer accepted.
+- `.ai/ROADMAP.md` now reflects released v2 status and is checked against this authority by
+  `npm run validate:roadmaps`.
+
 ## Progress
 
 - [x] G0 v1 contract stabilization
