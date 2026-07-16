@@ -11,8 +11,9 @@ use.
   remains in operating-system protected storage and is used only by the Electron main process.
 - **Ollama:** requests are restricted to HTTP loopback on port `11434`.
 - **Offline:** deterministic analysis does not send item content to an AI provider.
-- **Tradera:** a bounded query is sent to the official API only when requested. Its key stays in
-  the Electron main process.
+- **Tradera:** a bounded query plus the non-secret App ID is sent to the fixed official REST v4 API
+  only when requested. The App key stays in the Electron main process. Results are cached locally
+  for 24 hours to reduce external requests.
 - **Blocket and Vinted:** v1 creates copy-ready text only. It does not scrape or publish.
 
 ## Backups and diagnostics

@@ -105,6 +105,9 @@ remaining no-P0/P1, security, data-loss, upgrade, package, and artifact-readback
 
 - Keep beta public for at least seven calendar days.
 - Fix reproducible P0/P1 and common core-flow P2 bugs only; do not expand product scope.
+- Use the fixed official Tradera REST v4 endpoint with public App ID plus protected App key;
+  distinguish asking-price context from verified realized-price valuation evidence.
+- Run a real read-only Tradera credential smoke test without logging credentials before stable.
 - Require no open P0/P1, high-severity security, raw-secret exposure, or data-loss issue.
 - Verify Linux AppImage and CI Windows packages, checksums, SBOM, release notes, privacy/security
   docs, and v0.5 -> beta -> stable data compatibility.

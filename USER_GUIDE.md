@@ -110,11 +110,12 @@ Configure in **Settings**:
 
 - Language: Swedish/English
 - Gemini API key
-- Tradera API key
+- Tradera App ID and App key
 
-Cloud API keys are encrypted through the operating system's protected credential storage. Saved
-values are never shown again; Settings displays only whether a key is configured. On Linux, unlock
-or configure the desktop keyring before saving a key.
+Cloud API keys and the Tradera App key are encrypted through the operating system's protected
+credential storage. The non-secret Tradera App ID is stored with preferences. Saved secret values
+are never shown again; Settings displays only whether a key is configured. On Linux, unlock or
+configure the desktop keyring before saving a key.
 
 Without API keys, fallback logic still works, but with lower confidence and fewer comparables.
 
@@ -132,9 +133,13 @@ using selective or full non-secret reset, and restart the app after import/reset
 
 ### No Tradera comparables returned
 
-- Verify Tradera API key.
-- Check API base URL in settings.
+- Verify both the Tradera App ID and App key from the Tradera Developer Center.
+- Wait for the 24-hour cache to expire if you need newly listed market context.
 - Add manual comparables so valuation can proceed.
+
+Tradera search results are asking-price context unless the source explicitly provides a realized
+price. When adding a manual comparable, select **Verified realized price** only when the sale price
+is known; unknown and asking prices do not determine the recommendation.
 
 ### Template copy is disabled
 

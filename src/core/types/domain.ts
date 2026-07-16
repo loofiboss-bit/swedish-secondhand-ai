@@ -10,6 +10,10 @@ export type WorkflowStep = 'analyze' | 'comparables' | 'price' | 'templates' | '
 
 export type SaleStatus = 'pending' | 'sold' | 'not_sold';
 
+export type MarketPriceKind = 'asking' | 'realized' | 'unknown';
+
+export type MarketState = 'active' | 'sold' | 'unknown';
+
 export type FactSource = 'ai' | 'user' | 'heuristic';
 
 export interface VerifiedFact<T> {
@@ -55,6 +59,9 @@ export interface ComparableRecord {
   title: string;
   priceSek: number;
   soldAt: string;
+  priceKind?: MarketPriceKind;
+  marketState?: MarketState;
+  observedAt?: string;
   conditionHint: string;
   url: string;
   similarityScore: number;
@@ -172,7 +179,7 @@ export interface ValuationService {
 export interface AppSettings {
   language: SupportedLanguage;
   currency: 'SEK';
-  traderaBaseUrl: string;
+  traderaAppId?: number;
   aiMode: 'gemini' | 'ollama' | 'offline';
   fallbackEnabled: boolean;
   onboardingCompleted: boolean;

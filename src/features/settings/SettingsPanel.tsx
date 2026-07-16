@@ -16,6 +16,7 @@ export function SettingsPanel() {
     setFallbackEnabled,
     setOllamaBaseUrl,
     setOllamaModel,
+    setTraderaAppId,
     setTraderaApiKey,
     testGeminiConnection,
   } = useSettingsStore();
@@ -24,6 +25,9 @@ export function SettingsPanel() {
   const [ollamaBaseUrlInput, setOllamaBaseUrlInput] = useState(settings.ollamaBaseUrl ?? '');
   const [ollamaModelInput, setOllamaModelInput] = useState(settings.ollamaModel ?? '');
   const [traderaKeyInput, setTraderaKeyInput] = useState('');
+  const [traderaAppIdInput, setTraderaAppIdInput] = useState(
+    settings.traderaAppId ? String(settings.traderaAppId) : '',
+  );
   const [syncedSettings, setSyncedSettings] = useState(settings);
 
   if (settings !== syncedSettings) {
@@ -32,6 +36,7 @@ export function SettingsPanel() {
     setOllamaBaseUrlInput(settings.ollamaBaseUrl ?? '');
     setOllamaModelInput(settings.ollamaModel ?? '');
     setTraderaKeyInput('');
+    setTraderaAppIdInput(settings.traderaAppId ? String(settings.traderaAppId) : '');
   }
 
   return (
@@ -167,6 +172,22 @@ export function SettingsPanel() {
               void setOllamaModel(ollamaModelInput);
             }}
             placeholder="llava"
+          />
+        </label>
+
+        <label className="field">
+          <span>{t('traderaAppId')}</span>
+          <input
+            type="number"
+            min={1}
+            step={1}
+            value={traderaAppIdInput}
+            onChange={(event) => setTraderaAppIdInput(event.target.value)}
+            onBlur={() => {
+              const parsed = Number(traderaAppIdInput);
+              void setTraderaAppId(Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined);
+            }}
+            placeholder="1234"
           />
         </label>
 

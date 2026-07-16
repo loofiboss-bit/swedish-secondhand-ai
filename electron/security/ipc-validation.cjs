@@ -1,7 +1,6 @@
 const MAX_TEXT_LENGTH = 20_000;
 const MAX_IMAGE_LENGTH = 14_000_000;
 const MAX_TOTAL_IMAGE_LENGTH = 30_000_000;
-const TRADERA_API_HOSTS = new Set(['api.tradera.com']);
 const { fileURLToPath } = require('node:url');
 
 function validationError(message) {
@@ -110,25 +109,8 @@ function validateConnectionRequest(value) {
 
 function validateComparableRequest(value) {
   const payload = assertRecord(value);
-  if (typeof payload.baseUrl !== 'string' || payload.baseUrl.length > 2048) {
-    throw validationError('Tradera base URL is invalid.');
-  }
-  let url;
-  try {
-    url = new URL(payload.baseUrl);
-  } catch {
-    throw validationError('Tradera base URL is invalid.');
-  }
-  if (url.protocol !== 'https:') throw validationError('Tradera base URL must use HTTPS.');
-  if (
-    !TRADERA_API_HOSTS.has(url.hostname) ||
-    (url.port && url.port !== '443') ||
-    url.username ||
-    url.password ||
-    url.search ||
-    url.hash
-  ) {
-    throw validationError('Tradera base URL is not allowed.');
+  if (!Number.isSafeInteger(payload.appId) || payload.appId <= 0) {
+    throw validationError('Tradera app ID is invalid.');
   }
   if (typeof payload.query !== 'string' || !payload.query.trim() || payload.query.length > 500) {
     throw validationError('Comparable query is invalid.');
@@ -136,9 +118,8 @@ function validateComparableRequest(value) {
   const limit = Number.isInteger(payload.limit) ? payload.limit : 20;
   if (limit < 1 || limit > 50) throw validationError('Comparable limit is invalid.');
   return {
-    baseUrl: url.toString().replace(/\/$/, ''),
+    appId: payload.appId,
     query: payload.query.trim(),
-    category: typeof payload.category === 'string' ? payload.category.slice(0, 200) : undefined,
     limit,
   };
 }

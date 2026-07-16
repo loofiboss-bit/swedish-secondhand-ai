@@ -12,7 +12,7 @@ vi.mock('@core/services/settingsService', () => ({
   DEFAULT_APP_SETTINGS: {
     language: 'sv',
     currency: 'SEK',
-    traderaBaseUrl: 'https://api.tradera.com/v3',
+    traderaAppId: 1234,
     aiMode: 'offline',
     fallbackEnabled: false,
     onboardingCompleted: false,
@@ -34,7 +34,7 @@ import { useSettingsStore } from '@core/store/useSettingsStore';
 const initialSettings: AppSettings = {
   language: 'sv',
   currency: 'SEK',
-  traderaBaseUrl: 'https://api.tradera.com/v3',
+  traderaAppId: 1234,
   aiMode: 'offline',
   fallbackEnabled: false,
   onboardingCompleted: false,

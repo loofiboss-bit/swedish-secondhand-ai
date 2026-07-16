@@ -37,6 +37,7 @@ function benchmark(
       title: `${brand} ${model} ${title} ${category}`,
       priceSek,
       soldAt: `2026-06-0${index + 1}T12:00:00.000Z`,
+      priceKind: 'realized',
       conditionHint: 'good',
       url: '',
       similarityScore: 0.9,

@@ -1,6 +1,6 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { MarketplaceSite, PricingStrategy } from '@core/types';
+import type { MarketplaceSite, MarketPriceKind, PricingStrategy } from '@core/types';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { SectionCard } from '@shared/components/SectionCard';
@@ -29,6 +29,7 @@ export function ValuationPanel() {
   const [manualTitle, setManualTitle] = useState('');
   const [manualPrice, setManualPrice] = useState('');
   const [manualSite, setManualSite] = useState<MarketplaceSite>(DEFAULT_SITE);
+  const [manualPriceKind, setManualPriceKind] = useState<MarketPriceKind>('unknown');
 
   const allComparables = useMemo(
     () => [...traderaComps, ...manualComps],
@@ -47,6 +48,9 @@ export function ValuationPanel() {
       title: manualTitle.trim(),
       priceSek: numericPrice,
       soldAt: new Date().toISOString(),
+      priceKind: manualPriceKind,
+      marketState: manualPriceKind === 'realized' ? 'sold' : 'unknown',
+      observedAt: new Date().toISOString(),
       conditionHint: 'User provided',
       url: '',
       similarityScore: 0.6,
@@ -111,6 +115,17 @@ export function ValuationPanel() {
           <option value="vinted">Vinted</option>
           <option value="tradera">Tradera</option>
         </select>
+        <label className="field">
+          <span>{t('priceKind')}</span>
+          <select
+            value={manualPriceKind}
+            onChange={(event) => setManualPriceKind(event.target.value as MarketPriceKind)}
+          >
+            <option value="unknown">{t('priceKindUnknown')}</option>
+            <option value="asking">{t('priceKindAsking')}</option>
+            <option value="realized">{t('priceKindRealized')}</option>
+          </select>
+        </label>
         <button type="submit">{t('addComp')}</button>
       </form>
 
@@ -120,12 +135,19 @@ export function ValuationPanel() {
             <label>
               <input
                 type="checkbox"
-                checked={comp.decision?.included ?? true}
+                checked={comp.priceKind === 'realized' && (comp.decision?.included ?? true)}
+                disabled={comp.priceKind !== 'realized'}
                 onChange={(event) => setComparableIncluded(comp.id, event.target.checked)}
               />{' '}
               [{comp.site}] {comp.title} - {Math.round(comp.priceSek)} SEK (
               {Math.round((comp.relevance?.score ?? comp.sourceQuality) * 100)}%)
             </label>
+            <small>
+              {t('priceKind')}:{' '}
+              {t(
+                `priceKind${(comp.priceKind ?? 'unknown')[0].toUpperCase()}${(comp.priceKind ?? 'unknown').slice(1)}`,
+              )}
+            </small>
             <small>
               {comp.decision?.reason ?? t('comparablePendingReview')} — {t('weight')}:{' '}
               {(comp.relevance?.weight ?? comp.sourceQuality).toFixed(2)}

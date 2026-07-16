@@ -176,6 +176,21 @@ describe('settingsService secret migration', () => {
     });
   });
 
+  it('replaces the legacy editable Tradera base URL with a public app ID', async () => {
+    await set(SETTINGS_KEY, {
+      traderaBaseUrl: 'https://api.tradera.com/v3',
+      traderaAppId: 1234,
+    });
+    installBridge();
+
+    const settings = await settingsService.updateSettings({ traderaAppId: 4321 });
+
+    expect(settings.traderaAppId).toBe(4321);
+    expect(settings).not.toHaveProperty('traderaBaseUrl');
+    expect(await persistedSettings()).toMatchObject({ traderaAppId: 4321 });
+    expect(await persistedSettings()).not.toHaveProperty('traderaBaseUrl');
+  });
+
   it('migrates the legacy provider preference to the v1 AI mode contract', async () => {
     await set(SETTINGS_KEY, { aiProvider: 'ollama' });
 

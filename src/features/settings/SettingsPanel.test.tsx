@@ -14,6 +14,7 @@ const {
   completeOnboardingMock,
   setOllamaBaseUrlMock,
   setOllamaModelMock,
+  setTraderaAppIdMock,
   setTraderaApiKeyMock,
   testGeminiConnectionMock,
 } = vi.hoisted(() => ({
@@ -26,6 +27,7 @@ const {
   completeOnboardingMock: vi.fn(),
   setOllamaBaseUrlMock: vi.fn(),
   setOllamaModelMock: vi.fn(),
+  setTraderaAppIdMock: vi.fn(),
   setTraderaApiKeyMock: vi.fn(),
   testGeminiConnectionMock: vi.fn(),
 }));
@@ -39,7 +41,7 @@ vi.mock('@core/services/settingsService', () => ({
   DEFAULT_APP_SETTINGS: {
     language: 'sv',
     currency: 'SEK',
-    traderaBaseUrl: 'https://api.tradera.com/v3',
+    traderaAppId: 1234,
     aiMode: 'offline',
     fallbackEnabled: false,
     onboardingCompleted: false,
@@ -61,6 +63,7 @@ vi.mock('@core/services/settingsService', () => ({
     completeOnboarding: completeOnboardingMock,
     setOllamaBaseUrl: setOllamaBaseUrlMock,
     setOllamaModel: setOllamaModelMock,
+    setTraderaAppId: setTraderaAppIdMock,
     setTraderaApiKey: setTraderaApiKeyMock,
     testGeminiConnection: testGeminiConnectionMock,
   },
@@ -72,7 +75,7 @@ import { useSettingsStore } from '@core/store/useSettingsStore';
 const baseSettings: AppSettings = {
   language: 'sv',
   currency: 'SEK',
-  traderaBaseUrl: 'https://api.tradera.com/v3',
+  traderaAppId: 1234,
   aiMode: 'gemini',
   fallbackEnabled: false,
   onboardingCompleted: true,
@@ -119,6 +122,10 @@ describe('SettingsPanel', () => {
       ...baseSettings,
       ollamaModel,
     }));
+    setTraderaAppIdMock.mockImplementation(async (traderaAppId: number) => ({
+      ...baseSettings,
+      traderaAppId,
+    }));
     setTraderaApiKeyMock.mockResolvedValue({
       ...baseSettings,
       secretStatus: { ...baseSettings.secretStatus, traderaConfigured: true },
@@ -161,6 +168,18 @@ describe('SettingsPanel', () => {
       expect(setOllamaBaseUrlMock).toHaveBeenCalledWith('http://localhost:11435/v1');
       expect(setOllamaModelMock).toHaveBeenCalledWith('llama3.2-vision');
     });
+  });
+
+  it('persists the public Tradera app ID separately from the protected app key', async () => {
+    const user = userEvent.setup();
+    render(<SettingsPanel />);
+
+    const appId = screen.getByRole('spinbutton', { name: /tradera app-id/i });
+    await user.clear(appId);
+    await user.type(appId, '4321');
+    await user.tab();
+
+    await waitFor(() => expect(setTraderaAppIdMock).toHaveBeenCalledWith(4321));
   });
 
   it('synchronizes non-secret inputs while keeping secret fields blank', () => {

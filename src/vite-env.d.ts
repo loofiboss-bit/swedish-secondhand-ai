@@ -25,12 +25,12 @@ interface DesktopBridge {
     testGeminiConnection(modelId: string): Promise<{ connected: boolean }>;
   };
   marketplace: {
-    fetchTraderaComparables(request: {
-      baseUrl: string;
-      query: string;
-      category?: string;
-      limit: number;
-    }): Promise<{ configured: boolean; data: unknown }>;
+    fetchTraderaComparables(request: { appId: number; query: string; limit: number }): Promise<{
+      configured: boolean;
+      data: unknown;
+      cached?: boolean;
+      fetchedAt?: string;
+    }>;
   };
 }
 

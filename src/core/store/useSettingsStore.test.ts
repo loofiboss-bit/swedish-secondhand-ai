@@ -10,6 +10,7 @@ const {
   completeOnboardingMock,
   setOllamaBaseUrlMock,
   setOllamaModelMock,
+  setTraderaAppIdMock,
   setTraderaApiKeyMock,
   testGeminiConnectionMock,
 } = vi.hoisted(() => ({
@@ -21,6 +22,7 @@ const {
   completeOnboardingMock: vi.fn(),
   setOllamaBaseUrlMock: vi.fn(),
   setOllamaModelMock: vi.fn(),
+  setTraderaAppIdMock: vi.fn(),
   setTraderaApiKeyMock: vi.fn(),
   testGeminiConnectionMock: vi.fn(),
 }));
@@ -28,7 +30,7 @@ const {
 const baseSettings: AppSettings = {
   language: 'sv',
   currency: 'SEK',
-  traderaBaseUrl: 'https://api.tradera.com/v3',
+  traderaAppId: 1234,
   aiMode: 'gemini',
   fallbackEnabled: false,
   onboardingCompleted: true,
@@ -47,7 +49,7 @@ vi.mock('@core/services/settingsService', () => ({
   DEFAULT_APP_SETTINGS: {
     language: 'sv',
     currency: 'SEK',
-    traderaBaseUrl: 'https://api.tradera.com/v3',
+    traderaAppId: 1234,
     aiMode: 'offline',
     fallbackEnabled: false,
     onboardingCompleted: false,
@@ -69,6 +71,7 @@ vi.mock('@core/services/settingsService', () => ({
     completeOnboarding: completeOnboardingMock,
     setOllamaBaseUrl: setOllamaBaseUrlMock,
     setOllamaModel: setOllamaModelMock,
+    setTraderaAppId: setTraderaAppIdMock,
     setTraderaApiKey: setTraderaApiKeyMock,
     testGeminiConnection: testGeminiConnectionMock,
   },
@@ -99,6 +102,7 @@ describe('useSettingsStore', () => {
       ollamaBaseUrl: 'http://localhost:11435/v1',
     });
     setOllamaModelMock.mockResolvedValue({ ...baseSettings, ollamaModel: 'llama3.2-vision' });
+    setTraderaAppIdMock.mockResolvedValue({ ...baseSettings, traderaAppId: 4321 });
     setTraderaApiKeyMock.mockResolvedValue({
       ...baseSettings,
       secretStatus: { ...baseSettings.secretStatus, traderaConfigured: true },
@@ -158,6 +162,12 @@ describe('useSettingsStore', () => {
     expect(setOllamaBaseUrlMock).toHaveBeenCalledWith('http://localhost:11435/v1');
     expect(setOllamaModelMock).toHaveBeenCalledWith('llama3.2-vision');
     expect(useSettingsStore.getState().settings.ollamaModel).toBe('llama3.2-vision');
+  });
+
+  it('updates the public Tradera app ID through service', async () => {
+    await useSettingsStore.getState().setTraderaAppId(4321);
+    expect(setTraderaAppIdMock).toHaveBeenCalledWith(4321);
+    expect(useSettingsStore.getState().settings.traderaAppId).toBe(4321);
   });
 
   it('passes a key directly to protected storage and retains only configured status', async () => {

@@ -69,6 +69,7 @@ const comparables: ComparableRecord[] = [
     title: 'IKEA Poang',
     priceSek: 450,
     soldAt: '2026-02-11T00:00:00.000Z',
+    priceKind: 'realized',
     conditionHint: 'good',
     url: 'https://example.test/item/1',
     similarityScore: 0.84,
