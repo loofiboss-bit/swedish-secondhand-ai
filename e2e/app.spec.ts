@@ -31,6 +31,30 @@ test('loads project home and opens an item workspace', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /nästa viktiga|next important/i })).toBeVisible();
 });
 
+test('creates a copy-ready offline listing with the seller own price', async ({ page }) => {
+  await page.goto('/');
+  await finishOnboarding(page);
+  await createProject(page, 'IKEA Poäng stol i bra skick');
+
+  await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();
+  await page.getByRole('button', { name: /^pris$|^price$/i }).click();
+  await page.getByLabel(/ditt pris|your price/i).fill('650');
+  await page.getByRole('button', { name: /använd mitt pris|use my price/i }).click();
+  await expect(page.getByText(/ditt pris: 650 SEK|your price: 650 SEK/i)).toBeVisible();
+
+  await page.getByRole('button', { name: /^annons$|^listing$/i }).click();
+  await page
+    .getByRole('button', { name: /uppdatera orörda fält|update untouched fields/i })
+    .click();
+
+  await expect(page.locator('.listing-editor')).toHaveCount(1);
+  await expect(page.locator('.listing-editor input[type="number"]')).toHaveValue('650');
+  await expect(
+    page.getByRole('button', { name: /kopiera strukturerat paket|copy structured package/i }),
+  ).toBeEnabled();
+  await expect(page.locator('.listing-editor')).not.toContainText(/confidence|konfidens|AI/i);
+});
+
 test('supports keyboard focus, semantic navigation, zoom, and reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
@@ -153,6 +177,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await expect(modelField.locator('input[type="checkbox"]')).toBeChecked();
 
   await page.getByRole('button', { name: /^pris$|^price$/i }).click();
+  await page.getByText(/evidensbaserad värdering|evidence-based valuation/i).click();
   await expect(page.getByRole('heading', { name: /sökplan|search plan/i })).toBeVisible();
   const form = page.locator('form.manual-comp');
   await form.getByLabel(/pristyp|price type/i).selectOption('realized');
@@ -173,6 +198,9 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await page.getByRole('button', { name: /beräkna värde|^estimate(?: value)?$/i }).click();
   await expect(page.getByText(/begränsat underlag|limited evidence/i)).toBeVisible();
   await expect(page.locator('.valuation-box strong')).toHaveText(/5000 SEK|5500 SEK/);
+  await page
+    .getByRole('button', { name: /använd evidensbaserat pris|use evidence-based price/i })
+    .click();
 
   await page.getByRole('button', { name: /jämför prisscenarier|compare price scenarios/i }).click();
   await expect(page.getByRole('heading', { name: /prisverkstad|pricing workshop/i })).toBeVisible();
@@ -182,11 +210,12 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await page
     .getByRole('button', { name: /uppdatera orörda fält|update untouched fields/i })
     .click();
-  await expect(page.locator('.listing-editor')).toHaveCount(3);
+  await expect(page.locator('.listing-editor')).toHaveCount(1);
   await expect(
     page.getByRole('heading', { name: /rekommenderad kanal|recommended channel/i }),
   ).toBeVisible();
 
+  await page.getByRole('tab', { name: /tradera/i }).click();
   const traderaEditor = page.locator('.listing-editor').filter({ hasText: 'TRADERA' });
   const titleInput = traderaEditor
     .locator('label')

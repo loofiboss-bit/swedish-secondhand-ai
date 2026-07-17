@@ -5,6 +5,7 @@ import { sellPlanService } from '@core/services/sellPlanService';
 import { sitePolicyService } from '@core/services/sitePolicyService';
 import { useListingStore } from '@core/store/useListingStore';
 import { useValuationStore } from '@core/store/useValuationStore';
+import { useProjectStore } from '@core/store/useProjectStore';
 import { SectionCard } from '@shared/components/SectionCard';
 
 const TITLE_LIMITS: Record<MarketplaceSite, number> = { tradera: 80, blocket: 70, vinted: 60 };
@@ -21,7 +22,10 @@ export function TemplatesPanel() {
     getReadiness,
     setSellPlan,
     exportCopyBundle,
+    selectedSite,
+    setSelectedSite,
   } = useListingStore();
+  const activeProject = useProjectStore((state) => state.activeProject);
   const {
     generateTemplates,
     images,
@@ -137,236 +141,267 @@ export function TemplatesPanel() {
         )}
       </section>
 
+      {listingDrafts.length > 0 && (
+        <div className="marketplace-tabs" role="tablist" aria-label={t('chooseMarketplace')}>
+          {listingDrafts.map((draft) => (
+            <button
+              key={draft.site}
+              type="button"
+              role="tab"
+              aria-selected={
+                (selectedSite === 'all' ? listingDrafts[0]?.site : selectedSite) === draft.site
+              }
+              onClick={() => setSelectedSite(draft.site)}
+            >
+              {t(`marketplace_${draft.site}`)}
+              {sellPlan?.marketplace === draft.site ? ` · ${t('recommendedMarketplace')}` : ''}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="templates-grid" id="listing-studio" tabIndex={-1}>
-        {listingDrafts.map((draft) => {
-          const issues = getReadiness(draft.site);
-          const policyMetadata = sitePolicyService.getMetadata(draft.site);
-          const blockers = issues.filter((issue) => issue.severity === 'blocker');
-          const warnings = issues.filter((issue) => issue.severity === 'warning');
-          const improvements = issues.filter((issue) => issue.severity === 'improvement');
-          const fieldId = (field: ListingDraftFieldKey | 'images') =>
-            `listing-${draft.site}-${field}`;
+        {listingDrafts
+          .filter(
+            (draft) =>
+              draft.site === (selectedSite === 'all' ? listingDrafts[0]?.site : selectedSite),
+          )
+          .map((draft) => {
+            const issues = getReadiness(draft.site);
+            const policyMetadata = sitePolicyService.getMetadata(draft.site);
+            const blockers = issues.filter((issue) => issue.severity === 'blocker');
+            const warnings = issues.filter((issue) => issue.severity === 'warning');
+            const improvements = issues.filter((issue) => issue.severity === 'improvement');
+            const fieldId = (field: ListingDraftFieldKey | 'images') =>
+              `listing-${draft.site}-${field}`;
 
-          return (
-            <article key={draft.site} className="template-card listing-editor">
-              <header>
-                <h3>{draft.site.toUpperCase()}</h3>
-                <span className={blockers.length > 0 ? 'readiness-blocked' : 'readiness-ready'}>
-                  {blockers.length > 0 ? t('listingBlocked') : t('listingReady')}
-                </span>
-              </header>
+            return (
+              <article key={draft.site} className="template-card listing-editor">
+                <header>
+                  <h3>{draft.site.toUpperCase()}</h3>
+                  <span className={blockers.length > 0 ? 'readiness-blocked' : 'readiness-ready'}>
+                    {blockers.length > 0 ? t('listingBlocked') : t('listingReady')}
+                  </span>
+                </header>
 
-              <label className="field" id={fieldId('title')}>
-                <span>
-                  {t('title')} · {draft.fields.title.value.length}/{TITLE_LIMITS[draft.site]} ·{' '}
-                  {t(`fieldOrigin_${draft.fields.title.origin}`)}
-                </span>
-                <input
-                  value={draft.fields.title.value}
-                  maxLength={TITLE_LIMITS[draft.site]}
-                  onChange={(event) => updateListingField(draft.site, 'title', event.target.value)}
-                />
-              </label>
-              <label className="field" id={fieldId('description')}>
-                <span>
-                  {t('description')} · {draft.fields.description.value.length} ·{' '}
-                  {t(`fieldOrigin_${draft.fields.description.origin}`)}
-                </span>
-                <textarea
-                  rows={10}
-                  value={draft.fields.description.value}
-                  onChange={(event) =>
-                    updateListingField(draft.site, 'description', event.target.value)
-                  }
-                />
-              </label>
-              <label className="field" id={fieldId('priceSek')}>
-                <span>
-                  {t('priceSek')} · {t(`fieldOrigin_${draft.fields.priceSek.origin}`)}
-                </span>
-                <input
-                  type="number"
-                  min={1}
-                  value={draft.fields.priceSek.value}
-                  onChange={(event) =>
-                    updateListingField(draft.site, 'priceSek', Number(event.target.value))
-                  }
-                />
-              </label>
-              <label className="field" id={fieldId('category')}>
-                <span>
-                  {t('marketplaceCategory')} · {t(`fieldOrigin_${draft.fields.category.origin}`)}
-                </span>
-                <input
-                  value={draft.fields.category.value}
-                  onChange={(event) =>
-                    updateListingField(draft.site, 'category', event.target.value)
-                  }
-                />
-              </label>
-              <label className="field" id={fieldId('attributes')}>
-                <span>
-                  {t('marketplaceAttributes')} ·{' '}
-                  {t(`fieldOrigin_${draft.fields.attributes.origin}`)}
-                </span>
-                <textarea
-                  rows={3}
-                  value={draft.fields.attributes.value.join('\n')}
-                  onChange={(event) =>
-                    updateListingField(
-                      draft.site,
-                      'attributes',
-                      event.target.value
-                        .split('\n')
-                        .map((value) => value.trim())
-                        .filter(Boolean),
-                    )
-                  }
-                />
-              </label>
-              <label className="field" id={fieldId('shippingPickup')}>
-                <span>
-                  {t('shippingPickup')} · {t(`fieldOrigin_${draft.fields.shippingPickup.origin}`)}
-                </span>
-                <input
-                  value={draft.fields.shippingPickup.value}
-                  onChange={(event) =>
-                    updateListingField(draft.site, 'shippingPickup', event.target.value)
-                  }
-                />
-              </label>
-              <label className="field" id={fieldId('tags')}>
-                <span>
-                  {t('tags')} · {t(`fieldOrigin_${draft.fields.tags.origin}`)}
-                </span>
-                <input
-                  value={draft.fields.tags.value.join(', ')}
-                  onChange={(event) =>
-                    updateListingField(
-                      draft.site,
-                      'tags',
-                      event.target.value
-                        .split(',')
-                        .map((value) => value.trim())
-                        .filter(Boolean),
-                    )
-                  }
-                />
-              </label>
-              <label className="field" id={fieldId('disclosure')}>
-                <span>
-                  {t('disclosure')} · {t(`fieldOrigin_${draft.fields.disclosure.origin}`)}
-                </span>
-                <textarea
-                  rows={2}
-                  value={draft.fields.disclosure.value}
-                  onChange={(event) =>
-                    updateListingField(draft.site, 'disclosure', event.target.value)
-                  }
-                />
-              </label>
+                <label className="field" id={fieldId('title')}>
+                  <span>
+                    {t('title')} · {draft.fields.title.value.length}/{TITLE_LIMITS[draft.site]} ·{' '}
+                    {t(`fieldOrigin_${draft.fields.title.origin}`)}
+                  </span>
+                  <input
+                    value={draft.fields.title.value}
+                    maxLength={TITLE_LIMITS[draft.site]}
+                    onChange={(event) =>
+                      updateListingField(draft.site, 'title', event.target.value)
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('description')}>
+                  <span>
+                    {t('description')} · {draft.fields.description.value.length} ·{' '}
+                    {t(`fieldOrigin_${draft.fields.description.origin}`)}
+                  </span>
+                  <textarea
+                    rows={10}
+                    value={draft.fields.description.value}
+                    onChange={(event) =>
+                      updateListingField(draft.site, 'description', event.target.value)
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('priceSek')}>
+                  <span>
+                    {activeProject?.priceDecision.kind === 'user_entered'
+                      ? t('yourPrice')
+                      : t('priceSek')}{' '}
+                    · {t(`fieldOrigin_${draft.fields.priceSek.origin}`)}
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={draft.fields.priceSek.value}
+                    onChange={(event) =>
+                      updateListingField(draft.site, 'priceSek', Number(event.target.value))
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('category')}>
+                  <span>
+                    {t('marketplaceCategory')} · {t(`fieldOrigin_${draft.fields.category.origin}`)}
+                  </span>
+                  <input
+                    value={draft.fields.category.value}
+                    onChange={(event) =>
+                      updateListingField(draft.site, 'category', event.target.value)
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('attributes')}>
+                  <span>
+                    {t('marketplaceAttributes')} ·{' '}
+                    {t(`fieldOrigin_${draft.fields.attributes.origin}`)}
+                  </span>
+                  <textarea
+                    rows={3}
+                    value={draft.fields.attributes.value.join('\n')}
+                    onChange={(event) =>
+                      updateListingField(
+                        draft.site,
+                        'attributes',
+                        event.target.value
+                          .split('\n')
+                          .map((value) => value.trim())
+                          .filter(Boolean),
+                      )
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('shippingPickup')}>
+                  <span>
+                    {t('shippingPickup')} · {t(`fieldOrigin_${draft.fields.shippingPickup.origin}`)}
+                  </span>
+                  <input
+                    value={draft.fields.shippingPickup.value}
+                    onChange={(event) =>
+                      updateListingField(draft.site, 'shippingPickup', event.target.value)
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('tags')}>
+                  <span>
+                    {t('tags')} · {t(`fieldOrigin_${draft.fields.tags.origin}`)}
+                  </span>
+                  <input
+                    value={draft.fields.tags.value.join(', ')}
+                    onChange={(event) =>
+                      updateListingField(
+                        draft.site,
+                        'tags',
+                        event.target.value
+                          .split(',')
+                          .map((value) => value.trim())
+                          .filter(Boolean),
+                      )
+                    }
+                  />
+                </label>
+                <label className="field" id={fieldId('disclosure')}>
+                  <span>
+                    {t('disclosure')} · {t(`fieldOrigin_${draft.fields.disclosure.origin}`)}
+                  </span>
+                  <textarea
+                    rows={2}
+                    value={draft.fields.disclosure.value}
+                    onChange={(event) =>
+                      updateListingField(draft.site, 'disclosure', event.target.value)
+                    }
+                  />
+                </label>
 
-              <section className="listing-images" id={fieldId('images')} tabIndex={-1}>
-                <h4>{t('imageOrderAndCover')}</h4>
-                {draft.coverImageIndex !== null && images[draft.coverImageIndex] && (
-                  <div className="square-cover-preview">
-                    <img src={images[draft.coverImageIndex]} alt={t('squareCoverPreview')} />
-                  </div>
-                )}
-                <ol>
-                  {draft.imageOrder.map((imageIndex, position) => (
-                    <li key={imageIndex}>
-                      <img
-                        src={images[imageIndex]}
-                        alt={`${t('imageReference', { count: imageIndex + 1 })}`}
-                      />
-                      <span>{position + 1}</span>
-                      <button
-                        type="button"
-                        disabled={position === 0}
-                        onClick={() => moveImage(draft.site, imageIndex, -1)}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        disabled={position === draft.imageOrder.length - 1}
-                        onClick={() => moveImage(draft.site, imageIndex, 1)}
-                      >
-                        ↓
-                      </button>
-                      <button type="button" onClick={() => setCoverImage(draft.site, imageIndex)}>
-                        {draft.coverImageIndex === imageIndex
-                          ? t('selectedCover')
-                          : t('useAsCover')}
-                      </button>
-                    </li>
+                <section className="listing-images" id={fieldId('images')} tabIndex={-1}>
+                  <h4>{t('imageOrderAndCover')}</h4>
+                  {draft.coverImageIndex !== null && images[draft.coverImageIndex] && (
+                    <div className="square-cover-preview">
+                      <img src={images[draft.coverImageIndex]} alt={t('squareCoverPreview')} />
+                    </div>
+                  )}
+                  <ol>
+                    {draft.imageOrder.map((imageIndex, position) => (
+                      <li key={imageIndex}>
+                        <img
+                          src={images[imageIndex]}
+                          alt={`${t('imageReference', { count: imageIndex + 1 })}`}
+                        />
+                        <span>{position + 1}</span>
+                        <button
+                          type="button"
+                          disabled={position === 0}
+                          onClick={() => moveImage(draft.site, imageIndex, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          disabled={position === draft.imageOrder.length - 1}
+                          onClick={() => moveImage(draft.site, imageIndex, 1)}
+                        >
+                          ↓
+                        </button>
+                        <button type="button" onClick={() => setCoverImage(draft.site, imageIndex)}>
+                          {draft.coverImageIndex === imageIndex
+                            ? t('selectedCover')
+                            : t('useAsCover')}
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+
+                <details className="listing-preview">
+                  <summary>{t('preview')}</summary>
+                  <h4>{draft.fields.title.value}</h4>
+                  <p>{draft.fields.description.value}</p>
+                  <strong>{draft.fields.priceSek.value} SEK</strong>
+                </details>
+
+                <section className="readiness-groups">
+                  {(
+                    [
+                      ['blocker', blockers],
+                      ['warning', warnings],
+                      ['improvement', improvements],
+                    ] as const
+                  ).map(([severity, group]) => (
+                    <div key={severity}>
+                      <h4>
+                        {t(`readiness_${severity}`)} ({group.length})
+                      </h4>
+                      <ul>
+                        {group.map((issue) => (
+                          <li key={issue.id}>
+                            <button
+                              type="button"
+                              onClick={() => openField(draft.site, issue.field)}
+                            >
+                              {issue.message}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
-                </ol>
-              </section>
+                </section>
 
-              <details className="listing-preview">
-                <summary>{t('preview')}</summary>
-                <h4>{draft.fields.title.value}</h4>
-                <p>{draft.fields.description.value}</p>
-                <strong>{draft.fields.priceSek.value} SEK</strong>
-              </details>
+                <small className="policy-source">
+                  {t('policyVersion')}: {policyMetadata.version} · {t('policyChecked')}:{' '}
+                  {new Date(policyMetadata.checkedAt).toLocaleDateString()} ·{' '}
+                  {policyMetadata.sourceUrl}
+                </small>
 
-              <section className="readiness-groups">
-                {(
-                  [
-                    ['blocker', blockers],
-                    ['warning', warnings],
-                    ['improvement', improvements],
-                  ] as const
-                ).map(([severity, group]) => (
-                  <div key={severity}>
-                    <h4>
-                      {t(`readiness_${severity}`)} ({group.length})
-                    </h4>
-                    <ul>
-                      {group.map((issue) => (
-                        <li key={issue.id}>
-                          <button type="button" onClick={() => openField(draft.site, issue.field)}>
-                            {issue.message}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </section>
-
-              <small className="policy-source">
-                {t('policyVersion')}: {policyMetadata.version} · {t('policyChecked')}:{' '}
-                {new Date(policyMetadata.checkedAt).toLocaleDateString()} ·{' '}
-                {policyMetadata.sourceUrl}
-              </small>
-
-              <div className="template-actions">
-                <button
-                  type="button"
-                  disabled={blockers.length > 0}
-                  onClick={() =>
-                    void handleCopy(
-                      draft.site,
-                      `${draft.fields.title.value}\n\n${draft.fields.description.value}`,
-                    )
-                  }
-                >
-                  {copiedSite === draft.site ? t('copied') : t('copy')}
-                </button>
-                <button
-                  type="button"
-                  disabled={blockers.length > 0}
-                  onClick={() => void handleCopy(draft.site, exportCopyBundle(draft.site))}
-                >
-                  {t('copyStructuredPackage')}
-                </button>
-              </div>
-            </article>
-          );
-        })}
+                <div className="template-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void handleCopy(
+                        draft.site,
+                        `${draft.fields.title.value}\n\n${draft.fields.description.value}`,
+                      )
+                    }
+                  >
+                    {copiedSite === draft.site ? t('copied') : t('copy')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={blockers.length > 0}
+                    onClick={() => void handleCopy(draft.site, exportCopyBundle(draft.site))}
+                  >
+                    {t('copyStructuredPackage')}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
       </div>
     </SectionCard>
   );

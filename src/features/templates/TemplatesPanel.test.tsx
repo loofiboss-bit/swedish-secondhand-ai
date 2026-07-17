@@ -10,7 +10,7 @@ describe('TemplatesPanel', () => {
     useListingStore.getState().clear();
   });
 
-  it('replaces a generic score with actionable groups and blocks copy on critical fields', () => {
+  it('allows copying listing text but blocks the complete package on critical fields', () => {
     useListingStore.getState().setTemplates([
       {
         site: 'tradera',
@@ -30,7 +30,8 @@ describe('TemplatesPanel', () => {
       ...document.querySelectorAll<HTMLButtonElement>('.template-actions button'),
     ];
     expect(copyButtons).toHaveLength(2);
-    copyButtons.forEach((button) => expect(button).toBeDisabled());
+    expect(copyButtons[0]).toBeEnabled();
+    expect(copyButtons[1]).toBeDisabled();
     expect(screen.queryByText('/100')).not.toBeInTheDocument();
   });
 });

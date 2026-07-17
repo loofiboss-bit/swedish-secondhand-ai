@@ -1232,3 +1232,47 @@ fieldset {
     animation-iteration-count: 1 !important;
   }
 }
+
+.price-decision {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-card-2);
+}
+
+.price-paths,
+.marketplace-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.price-paths button.is-selected,
+.marketplace-tabs button[aria-selected='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.own-price-form {
+  display: flex;
+  align-items: end;
+  gap: 0.7rem;
+}
+
+.own-price-form .field {
+  flex: 1;
+}
+
+.own-price-badge {
+  width: fit-content;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.advanced-pricing {
+  margin-top: 1rem;
+}

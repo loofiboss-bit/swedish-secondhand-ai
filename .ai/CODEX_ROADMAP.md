@@ -40,7 +40,7 @@ Status: completed in merge `17053e3` after local, E2E and GitHub validation.
 
 ## M3 — Guided workflow and progressive detail
 
-Status: in progress on `feature/v3-guided-workflow`.
+Status: completed in merge `c4d1890` after local, E2E and GitHub validation.
 
 - Use Item → Price → Listing → Done with one primary next action.
 - Show only the coach's most important task; move provenance and advanced tools into details.
@@ -49,7 +49,7 @@ Status: in progress on `feature/v3-guided-workflow`.
 
 ## M4 — Flexible pricing and simpler listing studio
 
-Status: planned.
+Status: in progress on `feature/v3-flexible-price`.
 
 - Support evidence-based price, clearly labelled user price or no price yet.
 - Generate listing text without valuation; require a price only for the complete copy bundle.
@@ -77,7 +77,7 @@ Status: planned.
 - [x] G0 Safe v2.0.1 maintenance release
 - [x] M1 Schema 4 and simplified core contracts
 - [x] M2 Immediate offline start and clear configuration
-- [ ] M3 Guided workflow and progressive detail
+- [x] M3 Guided workflow and progressive detail
 - [ ] M4 Flexible pricing and simpler listing studio
 - [ ] M5 Safe project management and support
 - [ ] M6 v3 release candidate and stable gate

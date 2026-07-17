@@ -120,7 +120,8 @@ export const useListingStore = create<ListingState>((set, get) => ({
     const draft = get().listingDrafts.find((candidate) => candidate.site === site);
     return draft ? listingReadinessService.assess(draft) : [];
   },
-  setSellPlan: (sellerTimePreference, sellPlan) => set({ sellerTimePreference, sellPlan }),
+  setSellPlan: (sellerTimePreference, sellPlan) =>
+    set({ sellerTimePreference, sellPlan, selectedSite: sellPlan.marketplace }),
   setSelectedSite: (selectedSite) => set({ selectedSite }),
   exportCopyBundle: (site) => {
     const draft = get().listingDrafts.find((item) => item.site === site);

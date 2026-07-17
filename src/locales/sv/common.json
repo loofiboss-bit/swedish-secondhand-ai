@@ -493,5 +493,16 @@
   "keepCurrentSession": "Behåll nuvarande session",
   "fixPriceStep": "Åtgärda prissteg",
   "fixTemplateStep": "Åtgärda mallsteg",
+  "priceStep": "Steg 2 av 4 · Pris",
+  "choosePricePath": "Hur vill du sätta priset?",
+  "choosePricePathIntro": "Ditt eget pris är snabbast. Evidensbaserat pris är frivilligt och kräver minst två godkända slutpriser.",
+  "useOwnPrice": "Använd eget pris",
+  "useEvidencePrice": "Använd evidensbaserat pris",
+  "decidePriceLater": "Bestäm senare",
+  "yourPrice": "Ditt pris",
+  "confirmOwnPrice": "Använd mitt pris",
+  "evidencePriceAdvanced": "Evidensbaserad värdering och marknadsdata",
+  "chooseMarketplace": "Välj marknadsplats",
+  "recommendedMarketplace": "Rekommenderad",
   "discardDraft": "Förkasta"
 }

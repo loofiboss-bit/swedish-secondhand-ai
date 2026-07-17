@@ -38,6 +38,7 @@ import {
   updateAuthenticityStatus,
 } from '@core/services/verifiedFactsService';
 import { useListingStore } from './useListingStore';
+import { useProjectStore } from './useProjectStore';
 import { useWorkflowStore } from './useWorkflowStore';
 
 interface ValuationState {
@@ -473,18 +474,17 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   },
   generateTemplates: (replaceUserEdits = false) => {
     const state = get();
-    if (!state.fingerprint || !state.productFacts || !state.valuation) {
-      set({ error: 'listing_price_required' });
+    if (!state.fingerprint || !state.productFacts) {
+      set({ error: 'analysis_required' });
       return;
     }
-    if (state.valuation.status === 'insufficient-evidence') {
-      set({ error: 'listing_price_required' });
-      return;
-    }
+    const priceDecision = useProjectStore.getState().activeProject?.priceDecision ?? {
+      kind: 'unset' as const,
+    };
     const listingStore = useListingStore.getState();
     const listingDrafts = listingTemplateService.generateListingDrafts(
       state.productFacts,
-      state.valuation,
+      priceDecision,
       state.images.length,
       listingStore.listingDrafts,
       replaceUserEdits,
