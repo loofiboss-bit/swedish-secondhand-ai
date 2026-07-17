@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { WorkflowStep } from '@core/types';
+import type { AppErrorCode, WorkflowStep } from '@core/types';
 
 const STEP_ORDER: WorkflowStep[] = ['analyze', 'comparables', 'price', 'templates', 'review'];
 
@@ -21,10 +21,10 @@ function sanitizeCompletedSteps(
 interface WorkflowState {
   currentStep: WorkflowStep;
   completedSteps: WorkflowStep[];
-  stepErrors: Partial<Record<WorkflowStep, string>>;
+  stepErrors: Partial<Record<WorkflowStep, AppErrorCode>>;
   setCurrentStep: (step: WorkflowStep) => void;
   markStepComplete: (step: WorkflowStep) => void;
-  setStepError: (step: WorkflowStep, error: string | null) => void;
+  setStepError: (step: WorkflowStep, error: AppErrorCode | null) => void;
   nextStep: () => void;
   previousStep: () => void;
   resetWorkflow: () => void;

@@ -1,5 +1,26 @@
 export type SupportedLanguage = 'sv' | 'en';
 
+export type AppErrorCode =
+  | 'analysis_input_required'
+  | 'analysis_cancelled'
+  | 'analysis_failed'
+  | 'analysis_required'
+  | 'comparables_failed'
+  | 'comparable_data_invalid'
+  | 'valuation_failed'
+  | 'scenario_failed'
+  | 'listing_failed'
+  | 'listing_price_required'
+  | 'history_listing_required'
+  | 'history_blocked'
+  | 'project_operation_failed'
+  | 'settings_operation_failed'
+  | 'provider_authentication'
+  | 'provider_unavailable'
+  | 'provider_model_missing'
+  | 'provider_configuration_invalid'
+  | 'save_failed';
+
 export type MarketplaceSite = 'tradera' | 'blocket' | 'vinted';
 
 export type ConditionGrade = 'new' | 'like_new' | 'good' | 'fair' | 'poor' | 'unknown';

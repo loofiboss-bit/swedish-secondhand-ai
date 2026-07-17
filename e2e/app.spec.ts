@@ -27,8 +27,8 @@ test('loads project home and opens an item workspace', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /från pryl|from item/i })).toBeVisible();
   await createProject(page, 'IKEA chair in good condition');
   await expect(page.getByRole('heading', { name: /analysera|analyze/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /marknad & pris|market & price/i })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /nästa bästa|next best/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^pris$|^price$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /nästa viktiga|next important/i })).toBeVisible();
 });
 
 test('supports keyboard focus, semantic navigation, zoom, and reduced motion', async ({ page }) => {
@@ -87,6 +87,10 @@ test('offline intake exposes conservative candidates and explicit knowledge gaps
     .getByLabel(/beskriv varan|item description|describe the item/i)
     .fill('Sony kamera i bra skick');
   await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();
+  await page
+    .getByText(/varför detta förslag|why this suggestion/i)
+    .last()
+    .click();
 
   await expect(
     page.getByRole('heading', { name: /faktakandidater|fact candidates/i }),
@@ -148,7 +152,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await modelField.locator('input').first().blur();
   await expect(modelField.locator('input[type="checkbox"]')).toBeChecked();
 
-  await page.getByRole('button', { name: /marknad & pris|market & price/i }).click();
+  await page.getByRole('button', { name: /^pris$|^price$/i }).click();
   await expect(page.getByRole('heading', { name: /sökplan|search plan/i })).toBeVisible();
   const form = page.locator('form.manual-comp');
   await form.getByLabel(/pristyp|price type/i).selectOption('realized');
@@ -167,7 +171,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   }
 
   await page.getByRole('button', { name: /beräkna värde|^estimate(?: value)?$/i }).click();
-  await expect(page.getByText(/low-confidence/)).toBeVisible();
+  await expect(page.getByText(/begränsat underlag|limited evidence/i)).toBeVisible();
   await expect(page.locator('.valuation-box strong')).toHaveText(/5000 SEK|5500 SEK/);
 
   await page.getByRole('button', { name: /jämför prisscenarier|compare price scenarios/i }).click();
@@ -196,7 +200,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
   await expect(traderaEditor.getByText(/din redigering|your edit/i).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: /blockerare|blockers/i }).first()).toBeVisible();
 
-  await page.getByRole('button', { name: /uppföljning|follow-up/i }).click();
+  await page.getByRole('button', { name: /^klart$|^done$/i }).click();
   await page.getByLabel(/annons-url|listing url/i).fill('https://www.blocket.se/annons/test');
   await page.getByLabel(/faktiskt utgångspris|actual starting price/i).fill('5500');
   await page.getByRole('button', { name: /markera som publicerad|mark as listed/i }).click();

@@ -36,7 +36,7 @@ export function CoachPanel({ projectStatus, onNavigate }: CoachPanelProps) {
       <header>
         <div>
           <p className="eyebrow">{t('sellerCoach')}</p>
-          <h3 id="coach-title">{t('nextBestActions')}</h3>
+          <h3 id="coach-title">{t('nextBestAction')}</h3>
         </div>
         <span>{t('coachActionCount', { count: result.actions.length })}</span>
       </header>
@@ -44,7 +44,7 @@ export function CoachPanel({ projectStatus, onNavigate }: CoachPanelProps) {
         <p>{t('coachAllClear')}</p>
       ) : (
         <ol className="coach-actions">
-          {result.actions.slice(0, 3).map((coachAction) => (
+          {result.actions.slice(0, 1).map((coachAction) => (
             <li
               key={coachAction.id}
               className={`coach-action coach-action--${coachAction.severity}`}
@@ -65,6 +65,23 @@ export function CoachPanel({ projectStatus, onNavigate }: CoachPanelProps) {
             </li>
           ))}
         </ol>
+      )}
+      {result.actions.length > 1 && (
+        <details className="coach-all-actions">
+          <summary>{t('showAllCoachActions', { count: result.actions.length })}</summary>
+          <ol>
+            {result.actions.slice(1).map((coachAction) => (
+              <li key={coachAction.id}>
+                <button
+                  type="button"
+                  onClick={() => onNavigate(coachAction.targetSection, coachAction.targetId)}
+                >
+                  {t(coachAction.titleKey)}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </details>
       )}
     </section>
   );

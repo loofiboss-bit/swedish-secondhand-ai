@@ -5,11 +5,12 @@ import { askingPriceRange } from '@core/services/marketIntelligenceService';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { SectionCard } from '@shared/components/SectionCard';
+import { ContextualError } from '@shared/components/ContextualError';
 
 const DEFAULT_SITE: MarketplaceSite = 'blocket';
 
 export function ValuationPanel() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const {
     loading,
     error,
@@ -92,11 +93,7 @@ export function ValuationPanel() {
 
   return (
     <SectionCard title={t('estimate')}>
-      {(error || stepErrors.comparables || stepErrors.price) && (
-        <p className="inline-warning" role="alert">
-          {stepErrors.comparables || stepErrors.price || error}
-        </p>
-      )}
+      <ContextualError code={stepErrors.comparables || stepErrors.price || error} />
 
       <label className="field">
         <span>{t('pricingStrategy')}</span>
@@ -265,7 +262,7 @@ export function ValuationPanel() {
                   disabled={comp.priceKind !== 'realized'}
                   onChange={(event) => setComparableIncluded(comp.id, event.target.checked)}
                 />{' '}
-                [{comp.site}] {comp.title} - {Math.round(comp.priceSek)} SEK (
+                [{t(`marketplace_${comp.site}`)}] {comp.title} - {Math.round(comp.priceSek)} SEK (
                 {Math.round((comp.relevance?.score ?? comp.sourceQuality) * 100)}%)
               </label>
               <small>
@@ -275,8 +272,11 @@ export function ValuationPanel() {
                 )}
               </small>
               <small>
-                {t('observedAt')}: {new Date(comp.observedAt ?? comp.soldAt).toLocaleDateString()} ·{' '}
-                {t('source')}: {comp.source}
+                {t('observedAt')}:{' '}
+                {new Intl.DateTimeFormat(i18n.resolvedLanguage).format(
+                  new Date(comp.observedAt ?? comp.soldAt),
+                )}{' '}
+                · {t('source')}: {t(`comparableSource_${comp.source}`)}
                 {comp.cacheAgeMs !== undefined &&
                   ` · ${t('cacheAge')}: ${Math.max(0, Math.round(comp.cacheAgeMs / 60_000))} min`}
               </small>
@@ -332,7 +332,7 @@ export function ValuationPanel() {
                 ) : (
                   <strong>{scenario.result.priceRecommendedSek} SEK</strong>
                 )}
-                <p>{scenario.result.status}</p>
+                <p>{t(`valuationStatus_${scenario.result.status}`)}</p>
                 <ul>
                   {scenario.result.adjustments.map((adjustment) => (
                     <li key={adjustment.id}>
@@ -356,10 +356,10 @@ export function ValuationPanel() {
         >
           <h3>{t('valuationResult')}</h3>
           <p>
-            {t('valuationStatus')}: {valuation.status}
+            {t('valuationStatus')}: {t(`valuationStatus_${valuation.status}`)}
           </p>
           {valuation.status === 'insufficient-evidence' ? (
-            <p role="status">{valuation.action}</p>
+            <p role="status">{t('valuationAction_insufficient')}</p>
           ) : (
             <>
               <p>
@@ -368,7 +368,9 @@ export function ValuationPanel() {
               <p>
                 {t('recommended')}: <strong>{valuation.priceRecommendedSek} SEK</strong>
               </p>
-              {valuation.status === 'low-confidence' && <p role="status">{valuation.action}</p>}
+              {valuation.status === 'low-confidence' && (
+                <p role="status">{t('valuationAction_lowConfidence')}</p>
+              )}
             </>
           )}
           <p>

@@ -40,7 +40,7 @@ export function ProjectDashboard({
   onOpen,
   onRemove,
 }: ProjectDashboardProps) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const [showQuickStart, setShowQuickStart] = useState(projects.length === 0);
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
@@ -219,7 +219,10 @@ export function ProjectDashboard({
                     <strong>{project.title}</strong>
                     <small>
                       {t(`projectStatus_${project.status}`)} ·{' '}
-                      {new Date(project.updatedAt).toLocaleString()}
+                      {new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }).format(new Date(project.updatedAt))}
                     </small>
                   </span>
                   <span>

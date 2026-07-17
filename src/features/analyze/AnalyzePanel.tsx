@@ -6,6 +6,7 @@ import { photoAssessmentService } from '@core/services/photoAssessmentService';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { SectionCard } from '@shared/components/SectionCard';
+import { ContextualError } from '@shared/components/ContextualError';
 
 async function fileToDataUrl(file: File): Promise<string> {
   return await new Promise((resolve, reject) => {
@@ -117,11 +118,7 @@ export function AnalyzePanel() {
         </div>
       }
     >
-      {(error || stepErrors.analyze) && (
-        <p className="inline-warning" role="alert">
-          {stepErrors.analyze || error}
-        </p>
-      )}
+      <ContextualError code={stepErrors.analyze || error} />
       {uploadError && (
         <p className="inline-warning" role="alert">
           {uploadError}
@@ -231,51 +228,59 @@ export function AnalyzePanel() {
             const fact = productFacts[key];
             return (
               <label className="field" key={key} id={`fact-${key}`}>
-                <span>
-                  {label} — {t('factSource')}: {fact.source}
-                </span>
+                <span>{label}</span>
                 <input
                   key={`${key}-${fact.value}`}
                   defaultValue={String(fact.value)}
                   onBlur={(event) => updateFact(key, event.target.value)}
                 />
-                <span>
-                  <input
-                    type="checkbox"
-                    checked={fact.locked}
-                    onChange={(event) => setFactLocked(key, event.target.checked)}
-                  />{' '}
-                  {t('lockFact')}
-                </span>
+                <details className="fact-explanation">
+                  <summary>{t('whyThisSuggestion')}</summary>
+                  <p>
+                    {t('factSource')}: {t(`factSource_${fact.source}`)}
+                  </p>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={fact.locked}
+                      onChange={(event) => setFactLocked(key, event.target.checked)}
+                    />{' '}
+                    {t('lockFact')}
+                  </label>
+                </details>
               </label>
             );
           })}
           <label className="field" id="fact-conditionGrade">
-            <span>
-              {t('condition')} — {t('factSource')}: {productFacts.conditionGrade.source}
-            </span>
+            <span>{t('condition')}</span>
             <select
               value={productFacts.conditionGrade.value}
               onChange={(event) => updateFact('conditionGrade', event.target.value)}
             >
               {['new', 'like_new', 'good', 'fair', 'poor', 'unknown'].map((condition) => (
                 <option key={condition} value={condition}>
-                  {condition}
+                  {t(`condition_${condition}`)}
                 </option>
               ))}
             </select>
-            <span>
-              <input
-                type="checkbox"
-                checked={productFacts.conditionGrade.locked}
-                onChange={(event) => setFactLocked('conditionGrade', event.target.checked)}
-              />{' '}
-              {t('lockFact')}
-            </span>
+            <details className="fact-explanation">
+              <summary>{t('whyThisSuggestion')}</summary>
+              <p>
+                {t('factSource')}: {t(`factSource_${productFacts.conditionGrade.source}`)}
+              </p>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={productFacts.conditionGrade.locked}
+                  onChange={(event) => setFactLocked('conditionGrade', event.target.checked)}
+                />{' '}
+                {t('lockFact')}
+              </label>
+            </details>
           </label>
           <section className="category-profile" aria-labelledby="category-profile-title">
             <h3 id="category-profile-title">
-              {t('categoryProfileTitle')}: {categoryProfile.id}
+              {t('categoryProfileTitle')}: {t(`category_${categoryProfile.id}`)}
             </h3>
             <ul className="fact-checklist">
               {categoryProfile.facts.map((requirement) => (
@@ -315,43 +320,48 @@ export function AnalyzePanel() {
                 );
               })}
           </section>
-          {factCandidates.length > 0 && (
-            <section className="fact-candidates" aria-labelledby="fact-candidates-title">
-              <h3 id="fact-candidates-title">{t('factCandidatesTitle')}</h3>
-              <p>{t('factCandidatesIntro')}</p>
-              <ul>
-                {factCandidates.map((candidate) => (
-                  <li key={candidate.id}>
-                    <strong>
-                      {candidate.key}: {candidate.value}
-                    </strong>
-                    <span>
-                      {t('factSource')}: {candidate.source} · {t('uncertainty')}:{' '}
-                      {t(`uncertainty_${candidate.uncertainty}`)}
-                    </span>
-                    <small>
-                      {candidate.references
-                        .map((reference) =>
-                          reference.kind === 'image'
-                            ? t('imageReference', { count: Number(reference.index) + 1 })
-                            : t('textReference'),
-                        )
-                        .join(', ')}
-                    </small>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {knowledgeGaps.length > 0 && (
-            <section className="knowledge-gaps">
-              <h3>{t('knowledgeGapsTitle')}</h3>
-              <ul>
-                {knowledgeGaps.map((gap) => (
-                  <li key={gap.key}>{t(gap.reasonKey)}</li>
-                ))}
-              </ul>
-            </section>
+          {(factCandidates.length > 0 || knowledgeGaps.length > 0) && (
+            <details className="analysis-explanation">
+              <summary>{t('whyThisSuggestion')}</summary>
+              {factCandidates.length > 0 && (
+                <section className="fact-candidates" aria-labelledby="fact-candidates-title">
+                  <h3 id="fact-candidates-title">{t('factCandidatesTitle')}</h3>
+                  <p>{t('factCandidatesIntro')}</p>
+                  <ul>
+                    {factCandidates.map((candidate) => (
+                      <li key={candidate.id}>
+                        <strong>
+                          {candidate.key}: {candidate.value}
+                        </strong>
+                        <span>
+                          {t('factSource')}: {t(`candidateSource_${candidate.source}`)} ·{' '}
+                          {t('uncertainty')}: {t(`uncertainty_${candidate.uncertainty}`)}
+                        </span>
+                        <small>
+                          {candidate.references
+                            .map((reference) =>
+                              reference.kind === 'image'
+                                ? t('imageReference', { count: Number(reference.index) + 1 })
+                                : t('textReference'),
+                            )
+                            .join(', ')}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {knowledgeGaps.length > 0 && (
+                <section className="knowledge-gaps">
+                  <h3>{t('knowledgeGapsTitle')}</h3>
+                  <ul>
+                    {knowledgeGaps.map((gap) => (
+                      <li key={gap.key}>{t(gap.reasonKey)}</li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </details>
           )}
           <label className="field" id="fact-authenticityStatus">
             <span>{t('authenticityStatus')}</span>

@@ -193,7 +193,7 @@ describe('useSettingsStore', () => {
     await useSettingsStore.getState().setGeminiApiKey('super-secret');
 
     expect(useSettingsStore.getState().settings).toEqual(baseSettings);
-    expect(useSettingsStore.getState().error).toBe('Protected OS storage is unavailable.');
+    expect(useSettingsStore.getState().error).toBe('settings_operation_failed');
     expect(JSON.stringify(useSettingsStore.getState())).not.toContain('super-secret');
   });
 

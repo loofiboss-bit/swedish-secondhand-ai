@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { DEFAULT_APP_SETTINGS, settingsService } from '@core/services/settingsService';
-import type { AppSettings, SupportedLanguage } from '@core/types';
+import { normalizeAppError } from '@core/services/appErrorService';
+import type { AppErrorCode, AppSettings, SupportedLanguage } from '@core/types';
 
 interface SettingsState {
   settings: AppSettings;
   isLoading: boolean;
-  error: string | null;
+  error: AppErrorCode | null;
   connectionState: 'idle' | 'testing' | 'connected' | 'failed';
   ollamaConnectionState: 'idle' | 'testing' | 'connected' | 'failed';
   traderaConnectionState: 'idle' | 'testing' | 'connected' | 'failed';
@@ -40,7 +41,7 @@ export const useSettingsStore = create<SettingsState>((set) => {
       set({ settings });
     } catch (error) {
       settingsMutationRevision += 1;
-      set({ error: error instanceof Error ? error.message : 'Settings update failed' });
+      set({ error: normalizeAppError(error, 'settings_operation_failed') });
     }
   };
 
@@ -61,7 +62,7 @@ export const useSettingsStore = create<SettingsState>((set) => {
       } catch (error) {
         set({
           isLoading: false,
-          error: error instanceof Error ? error.message : 'Failed to load settings',
+          error: normalizeAppError(error, 'settings_operation_failed'),
         });
       }
     },
@@ -84,7 +85,7 @@ export const useSettingsStore = create<SettingsState>((set) => {
       } catch (error) {
         set({
           connectionState: 'failed',
-          error: error instanceof Error ? error.message : 'Connection test failed',
+          error: normalizeAppError(error, 'provider_unavailable'),
         });
       }
     },

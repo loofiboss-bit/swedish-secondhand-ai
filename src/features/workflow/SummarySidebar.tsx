@@ -27,7 +27,7 @@ export function SummarySidebar() {
         <h4>{t('pipelineStatus')}</h4>
         <ul>
           <li>
-            {t('pricingStrategy')}: {pricingStrategy}
+            {t('pricingStrategy')}: {t(`strategy_${pricingStrategy}`)}
           </li>
           <li>
             {t('comparablesCount')}: {totalComps}
@@ -55,8 +55,8 @@ export function SummarySidebar() {
             const blocking = siteValidation[item.site]?.blockingIssues ?? 0;
             return (
               <li key={item.site}>
-                {item.site.toUpperCase()}: {item.score}/100{' '}
-                {blocking > 0 ? `(${blocking} blockers)` : ''}
+                {t(`marketplace_${item.site}`)}: {item.score}/100{' '}
+                {blocking > 0 ? `(${t('blockingIssueCount', { count: blocking })})` : ''}
               </li>
             );
           })}
