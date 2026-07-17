@@ -15,16 +15,14 @@ if (expectedTag && expectedTag !== `v${version}`) {
   errors.push(`tag ${expectedTag} does not match package version v${version}`);
 }
 
-if (version === '2.0.0') {
-  for (const gate of [
-    'V2_NO_OPEN_P0_P1',
-    'V2_NO_HIGH_SECURITY_FINDINGS',
-    'V2_MIGRATION_VERIFIED',
-    'V2_WINDOWS_UPGRADE_VERIFIED',
-    'V2_LINUX_UPGRADE_VERIFIED',
-  ]) {
-    isTrue(gate);
-  }
+for (const gate of [
+  'RELEASE_NO_OPEN_P0_P1',
+  'RELEASE_NO_HIGH_SECURITY_FINDINGS',
+  'RELEASE_MIGRATION_VERIFIED',
+  'RELEASE_WINDOWS_UPGRADE_VERIFIED',
+  'RELEASE_LINUX_UPGRADE_VERIFIED',
+]) {
+  isTrue(gate);
 }
 
 if (errors.length > 0) {
