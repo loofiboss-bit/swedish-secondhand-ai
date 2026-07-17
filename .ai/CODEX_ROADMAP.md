@@ -58,7 +58,7 @@ Status: completed in merge `012a7f6` after local, E2E and GitHub validation.
 
 ## M5 — Safe project management and support
 
-Status: in progress on `feature/v3-project-support`.
+Status: completed in merge `6e2f0dd` after local, E2E, documentation and GitHub validation.
 
 - Add search, status filters, rename, archive, trash/undo and explicit empty-trash confirmation.
 - Export privacy-safe diagnostics without user text, images, URLs or secrets.
@@ -66,7 +66,7 @@ Status: in progress on `feature/v3-project-support`.
 
 ## M6 — v3 release candidate and stable gate
 
-Status: planned.
+Status: in progress on `release/v3.0.0-rc.1`.
 
 - Publish `v3.0.0-rc.1` only after full local and cross-platform release validation.
 - Stable v3.0.0 requires a seven-day RC period, verified clean installs and v2.0.1 upgrades on
@@ -79,5 +79,5 @@ Status: planned.
 - [x] M2 Immediate offline start and clear configuration
 - [x] M3 Guided workflow and progressive detail
 - [x] M4 Flexible pricing and simpler listing studio
-- [ ] M5 Safe project management and support
+- [x] M5 Safe project management and support
 - [ ] M6 v3 release candidate and stable gate
