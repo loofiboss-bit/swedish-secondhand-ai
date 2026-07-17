@@ -7,6 +7,8 @@ interface SettingsState {
   isLoading: boolean;
   error: string | null;
   connectionState: 'idle' | 'testing' | 'connected' | 'failed';
+  ollamaConnectionState: 'idle' | 'testing' | 'connected' | 'failed';
+  traderaConnectionState: 'idle' | 'testing' | 'connected' | 'failed';
   load: () => Promise<void>;
   setLanguage: (language: SupportedLanguage) => Promise<void>;
   setGeminiApiKey: (apiKey: string) => Promise<void>;
@@ -22,6 +24,8 @@ interface SettingsState {
   setTraderaApiKey: (apiKey: string) => Promise<void>;
   setTraderaAppId: (appId: number | undefined) => Promise<void>;
   testGeminiConnection: () => Promise<void>;
+  testOllamaConnection: () => Promise<void>;
+  testTraderaConnection: () => Promise<void>;
 }
 
 let settingsMutationRevision = 0;
@@ -45,6 +49,8 @@ export const useSettingsStore = create<SettingsState>((set) => {
     isLoading: true,
     error: null,
     connectionState: 'idle',
+    ollamaConnectionState: 'idle',
+    traderaConnectionState: 'idle',
     load: async () => {
       const loadRevision = settingsMutationRevision;
       set({ isLoading: true, error: null });
@@ -80,6 +86,24 @@ export const useSettingsStore = create<SettingsState>((set) => {
           connectionState: 'failed',
           error: error instanceof Error ? error.message : 'Connection test failed',
         });
+      }
+    },
+    testOllamaConnection: async () => {
+      set({ ollamaConnectionState: 'testing', error: null });
+      try {
+        const connected = await settingsService.testOllamaConnection();
+        set({ ollamaConnectionState: connected ? 'connected' : 'failed' });
+      } catch {
+        set({ ollamaConnectionState: 'failed' });
+      }
+    },
+    testTraderaConnection: async () => {
+      set({ traderaConnectionState: 'testing', error: null });
+      try {
+        const connected = await settingsService.testTraderaConnection();
+        set({ traderaConnectionState: connected ? 'connected' : 'failed' });
+      } catch {
+        set({ traderaConnectionState: 'failed' });
       }
     },
   };

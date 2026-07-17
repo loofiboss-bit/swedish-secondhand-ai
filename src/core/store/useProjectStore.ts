@@ -17,7 +17,7 @@ interface ProjectState {
   activeProject: ItemProject | null;
   error: string | null;
   initialize: () => Promise<void>;
-  createProject: () => Promise<HydratedProject | null>;
+  createProject: (displayName?: string) => Promise<HydratedProject | null>;
   openProject: (id: string) => Promise<HydratedProject | null>;
   saveActive: (draft: ListingDraft) => Promise<void>;
   setActiveStatus: (status: ProjectStatus) => Promise<void>;
@@ -52,9 +52,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const state = await projectRepository.initialize();
     set({ ...applyRepositoryState(state), activeProject: null });
   },
-  createProject: async () => {
+  createProject: async (displayName) => {
     try {
-      const hydrated = await projectRepository.create();
+      const hydrated = await projectRepository.create(displayName);
       const projects = await projectRepository.list();
       set({
         status: 'ready',

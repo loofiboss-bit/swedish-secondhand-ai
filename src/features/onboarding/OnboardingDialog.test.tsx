@@ -54,15 +54,27 @@ describe('OnboardingDialog', () => {
 
   afterEach(cleanup);
 
-  it('defaults to offline and persists an explicit provider and fallback choice', async () => {
+  it('starts offline immediately without requiring provider configuration', async () => {
     const user = userEvent.setup();
-    render(<OnboardingDialog />);
+    const onStarted = vi.fn();
+    render(<OnboardingDialog onStarted={onStarted} />);
 
-    expect(screen.getByRole('radio', { name: /offline/i })).toBeChecked();
-    await user.click(screen.getByRole('radio', { name: /gemini/i }));
-    await user.click(screen.getByRole('checkbox', { name: /offlineanalys|offline analysis/i }));
-    await user.click(screen.getByRole('button', { name: /spara och börja|save and start/i }));
+    expect(screen.getByText(/ingen inloggning|no sign-in/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /börja offline|start offline/i }));
 
-    await waitFor(() => expect(completeOnboardingMock).toHaveBeenCalledWith('sv', 'gemini', true));
+    await waitFor(() =>
+      expect(completeOnboardingMock).toHaveBeenCalledWith('sv', 'offline', false),
+    );
+    expect(onStarted).toHaveBeenCalledWith(false);
+  });
+
+  it('creates the optional example only after completing local onboarding', async () => {
+    const user = userEvent.setup();
+    const onStarted = vi.fn();
+    render(<OnboardingDialog onStarted={onStarted} />);
+
+    await user.click(screen.getByRole('button', { name: /prova med exempel|try an example/i }));
+
+    await waitFor(() => expect(onStarted).toHaveBeenCalledWith(true));
   });
 });

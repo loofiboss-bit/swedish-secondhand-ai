@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProjectStatus, ProjectSummary } from '@core/types';
 import { SectionCard } from '@shared/components/SectionCard';
@@ -6,9 +6,29 @@ import { SectionCard } from '@shared/components/SectionCard';
 interface ProjectDashboardProps {
   mode: 'home' | 'library';
   projects: ProjectSummary[];
-  onCreate: () => void;
+  onCreate: (input?: ProjectQuickStartInput) => void;
   onOpen: (id: string) => void;
   onRemove: (id: string) => void;
+}
+
+export interface ProjectQuickStartInput {
+  displayName: string;
+  description: string;
+  images: string[];
+}
+
+async function filesToDataUrls(files: File[]): Promise<string[]> {
+  return Promise.all(
+    files.slice(0, 6).map(
+      (file) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error ?? new Error('Image could not be read.'));
+          reader.readAsDataURL(file);
+        }),
+    ),
+  );
 }
 
 const STATUS_ORDER: ProjectStatus[] = ['draft', 'ready', 'listed', 'sold', 'paused'];
@@ -21,6 +41,19 @@ export function ProjectDashboard({
   onRemove,
 }: ProjectDashboardProps) {
   const { t } = useTranslation('common');
+  const [showQuickStart, setShowQuickStart] = useState(projects.length === 0);
+  const [displayName, setDisplayName] = useState('');
+  const [description, setDescription] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const [creating, setCreating] = useState(false);
+
+  const createFromQuickStart = async () => {
+    if (!displayName.trim() || !description.trim()) return;
+    setCreating(true);
+    const images = await filesToDataUrls(files);
+    onCreate({ displayName: displayName.trim(), description: description.trim(), images });
+    setCreating(false);
+  };
   const counts = useMemo(
     () =>
       Object.fromEntries(
@@ -55,10 +88,73 @@ export function ProjectDashboard({
             <h2>{t('projectHomeTitle')}</h2>
             <p>{t('projectHomeIntro')}</p>
           </div>
-          <button type="button" onClick={onCreate}>
+          <button type="button" onClick={() => setShowQuickStart(true)}>
             {t('newProject')}
           </button>
         </section>
+      )}
+
+      {showQuickStart && (
+        <SectionCard title={t('quickStartTitle')}>
+          <form
+            className="quick-start-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void createFromQuickStart();
+            }}
+          >
+            <label className="field">
+              <span>{t('projectName')}</span>
+              <input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                maxLength={200}
+                required
+                autoFocus
+              />
+            </label>
+            <label className="field">
+              <span>{t('itemDescription')}</span>
+              <textarea
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                required
+                rows={4}
+              />
+            </label>
+            <label
+              className="quick-start-dropzone"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                setFiles(Array.from(event.dataTransfer.files).slice(0, 6));
+              }}
+            >
+              <span>{t('quickStartImages')}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, 6))}
+              />
+              <small>{t('quickStartImageCount', { count: files.length })}</small>
+            </label>
+            <div className="quick-start-actions">
+              <button type="submit" disabled={creating}>
+                {creating ? t('creatingProject') : t('createAndContinue')}
+              </button>
+              {projects.length > 0 && (
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => setShowQuickStart(false)}
+                >
+                  {t('cancel')}
+                </button>
+              )}
+            </div>
+          </form>
+        </SectionCard>
       )}
 
       {mode === 'home' && (
@@ -94,7 +190,7 @@ export function ProjectDashboard({
         title={mode === 'home' ? t('recentProjects') : t('allProjects')}
         action={
           mode === 'library' ? (
-            <button type="button" onClick={onCreate}>
+            <button type="button" onClick={() => setShowQuickStart(true)}>
               {t('newProject')}
             </button>
           ) : undefined
@@ -104,9 +200,11 @@ export function ProjectDashboard({
           <div className="empty-state">
             <h3>{t('noProjects')}</h3>
             <p>{t('noProjectsHint')}</p>
-            <button type="button" onClick={onCreate}>
-              {t('createFirstProject')}
-            </button>
+            {!showQuickStart && (
+              <button type="button" onClick={() => setShowQuickStart(true)}>
+                {t('createFirstProject')}
+              </button>
+            )}
           </div>
         ) : (
           <ul className="project-list">
