@@ -66,11 +66,15 @@ Status: completed in merge `6e2f0dd` after local, E2E, documentation and GitHub 
 
 ## M6 — v3 release candidate and stable gate
 
-Status: in progress on `release/v3.0.0-rc.1`.
+Status: `v3.0.0-rc.1` published 2026-07-17 from merge `0c3e418`; stable remains gated.
 
 - Publish `v3.0.0-rc.1` only after full local and cross-platform release validation.
 - Stable v3.0.0 requires a seven-day RC period, verified clean installs and v2.0.1 upgrades on
   Windows/Linux, no open P0/P1 or high security findings, and artifact/checksum/SBOM readback.
+
+RC readback: Windows installer/portable and Linux AppImage passed package smoke and v2.0.1
+upgrade checks; the AppImage passed visible-render smoke under Xvfb. All public artifacts,
+SHA-256 checksums and the CycloneDX 1.6 SBOM were downloaded and verified after publication.
 
 ## Progress
 
@@ -80,4 +84,4 @@ Status: in progress on `release/v3.0.0-rc.1`.
 - [x] M3 Guided workflow and progressive detail
 - [x] M4 Flexible pricing and simpler listing studio
 - [x] M5 Safe project management and support
-- [ ] M6 v3 release candidate and stable gate
+- [ ] M6 Stable v3 gate (`v3.0.0-rc.1` is published; seven-day soak is active)

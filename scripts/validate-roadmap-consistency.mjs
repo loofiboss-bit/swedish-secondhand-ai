@@ -21,7 +21,7 @@ for (const requiredText of [
   'The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).',
   'v2.0.1 — verified Windows/Linux maintenance release',
   '## Current product track',
-  'v3.0.0 Guided Selling is active',
+  'v3.0.0 Guided Selling is in its required RC observation period',
 ]) {
   if (!product.includes(requiredText)) {
     errors.push(`.ai/ROADMAP.md is missing current product state: ${requiredText}`);
