@@ -6,11 +6,11 @@ const product = await readFile(new URL('../.ai/ROADMAP.md', import.meta.url), 'u
 const errors = [];
 
 for (const requiredText of [
-  '# Swedish Secondhand AI — v2.0.0 Smart Seller Coach roadmap',
-  '## M6 — Stable v2 release',
-  '## Post-release maintenance',
-  'Status: completed.',
-  '- [x] M6 Stable v2 release',
+  '# Swedish Secondhand AI — v3.0.0 Guided Selling roadmap',
+  '## G0 — Safe v2.0.1 maintenance release',
+  '## M1 — Schema 4 and simplified core contracts',
+  '## M6 — v3 release candidate and stable gate',
+  '- [x] G0 Safe v2.0.1 maintenance release',
 ]) {
   if (!implementation.includes(requiredText)) {
     errors.push(`.ai/CODEX_ROADMAP.md is missing current release state: ${requiredText}`);
@@ -19,8 +19,9 @@ for (const requiredText of [
 
 for (const requiredText of [
   'The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).',
-  'v2.0.0 — Smart Seller Coach',
-  '## Current maintenance track',
+  'v2.0.1 — verified Windows/Linux maintenance release',
+  '## Current product track',
+  'v3.0.0 Guided Selling is active',
 ]) {
   if (!product.includes(requiredText)) {
     errors.push(`.ai/ROADMAP.md is missing current product state: ${requiredText}`);

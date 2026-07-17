@@ -1,4 +1,4 @@
-import { clear, set } from 'idb-keyval';
+import { clear, get, set } from 'idb-keyval';
 import { Blob as NodeBlob } from 'node:buffer';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { HistoryEntry, ListingDraft } from '@core/types';
@@ -62,7 +62,7 @@ describe('projectRepository', () => {
     await clear(PROJECT_STORE);
   });
 
-  it('atomically migrates the active draft, media, and history into schema 3 projects', async () => {
+  it('atomically migrates the active draft, media, and history into schema 4 projects', async () => {
     await listingDraftService.saveDraft(draft);
     await set(DATASET_KEYS.history, createEnvelope('history', [historyEntry]));
 
@@ -78,9 +78,57 @@ describe('projectRepository', () => {
     });
 
     const hydrated = await projectRepository.open('migrated-active-draft');
-    expect(hydrated.project).toMatchObject({ schemaVersion: 3, migratedFrom: 'listing-draft' });
+    expect(hydrated.project).toMatchObject({
+      schemaVersion: 4,
+      displayName: 'IKEA Poang fåtölj',
+      priceDecision: { kind: 'unset' },
+      migratedFrom: 'listing-draft',
+    });
     expect(hydrated.draft.images).toEqual(draft.images);
     expect(hydrated.project.workspace.mediaIds).toHaveLength(1);
+  });
+
+  it('migrates schema 3 records idempotently and retains the verified rollback source', async () => {
+    const workspace = { ...draft, valuation: historyEntry.valuation };
+    Reflect.deleteProperty(workspace, 'images');
+    const legacyRecord = {
+      schemaVersion: 3,
+      project: {
+        schemaVersion: 3,
+        id: 'legacy-project',
+        title: 'Äldre projekt',
+        status: 'ready',
+        currentSection: 'market',
+        createdAt: '2026-07-15T08:00:00.000Z',
+        updatedAt: '2026-07-16T08:00:00.000Z',
+        workspace: { ...workspace, mediaIds: [] },
+      },
+      media: [],
+    };
+    await set('project:legacy-project', legacyRecord, PROJECT_STORE);
+    await set(
+      'meta:project-index',
+      {
+        schemaVersion: 3,
+        activeProjectId: 'legacy-project',
+        projectIds: ['legacy-project'],
+        migrationCompletedAt: '2026-07-16T08:00:00.000Z',
+      },
+      PROJECT_STORE,
+    );
+
+    const first = await projectRepository.initialize();
+    const second = await projectRepository.initialize();
+    const migrated = await projectRepository.open('legacy-project');
+
+    expect(first.projects).toHaveLength(1);
+    expect(second.projects).toHaveLength(1);
+    expect(migrated.project).toMatchObject({
+      schemaVersion: 4,
+      displayName: 'Äldre projekt',
+      priceDecision: { kind: 'evidence_based' },
+    });
+    expect(await get('project:legacy-project', PROJECT_STORE)).toEqual(legacyRecord);
   });
 
   it('creates and independently saves multiple projects', async () => {
@@ -94,6 +142,34 @@ describe('projectRepository', () => {
     expect(projects).toHaveLength(2);
     expect((await projectRepository.open(first.project.id)).draft.inputText).toBe('First item');
     expect((await projectRepository.open(second.project.id)).draft.inputText).toBe('Second item');
+  });
+
+  it('keeps explicit names and price decisions and uses a recoverable trash', async () => {
+    await projectRepository.initialize();
+    const created = await projectRepository.create('Min stol');
+    await projectRepository.setPriceDecision(created.project.id, {
+      kind: 'user_entered',
+      amountSek: 750,
+    });
+    await projectRepository.remove(created.project.id);
+
+    expect(await projectRepository.list()).toEqual([]);
+    expect(await projectRepository.listTrash()).toEqual([
+      expect.objectContaining({ displayName: 'Min stol', trashedAt: expect.any(String) }),
+    ]);
+    const backup = await projectRepository.exportBackup();
+    expect(backup?.records[0].project.priceDecision).toEqual({
+      kind: 'user_entered',
+      amountSek: 750,
+    });
+
+    await projectRepository.restore(created.project.id);
+    expect(await projectRepository.list()).toEqual([
+      expect.objectContaining({ displayName: 'Min stol', trashedAt: undefined }),
+    ]);
+    await projectRepository.remove(created.project.id);
+    await projectRepository.emptyTrash();
+    expect(await projectRepository.listTrash()).toEqual([]);
   });
 
   it('persists local photo assessments and fact candidates with the project workspace', async () => {
