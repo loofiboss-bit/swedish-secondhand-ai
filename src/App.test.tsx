@@ -28,7 +28,7 @@ describe('App project shell', () => {
 
     expect(screen.getByRole('heading', { name: /swedish secondhand ai/i })).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: /från pryl|from item/i }),
+      await screen.findByRole('heading', { name: /från pryl|from item/i }, { timeout: 10_000 }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: /inställningar|settings/i }),

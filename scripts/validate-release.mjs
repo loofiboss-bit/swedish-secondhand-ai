@@ -10,8 +10,8 @@ const githubTag =
 const expectedTag = process.env.RELEASE_TAG || githubTag || '';
 const errors = [];
 
-if (!/^(?:1\.0\.0|2\.0\.0)(?:-beta\.\d+)?$/.test(version)) {
-  errors.push(`package version ${version} is outside the approved v1/v2 beta or stable trains`);
+if (!/^[1-9]\d*\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/.test(version)) {
+  errors.push(`package version ${version} is not an approved semantic desktop release version`);
 }
 if (expectedTag && expectedTag !== `v${version}`) {
   errors.push(`tag ${expectedTag} does not match package version v${version}`);

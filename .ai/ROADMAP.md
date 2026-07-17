@@ -11,7 +11,7 @@ The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).
 - v2.0.0 — Smart Seller Coach with isolated item projects, schema 3 migration and recovery,
   deterministic coaching, market and pricing workshops, editable listings, local follow-up, and
   release checksums and SBOM (published 2026-07-16). A Linux blank-renderer defect was confirmed
-  after publication; the corrective AppImage hotfix is implemented locally but not yet published.
+  after publication; the corrective AppImage hotfix is prepared for the authorized v2.0.1 release.
 
 The maintainer explicitly replaced the former stable-v1-first and v2 beta/soak sequence on
 2026-07-16. The completed release state and gate evidence are recorded in the implementation

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.0.1 - 2026-07-17
+
 - Fixed the Linux AppImage blank window by emitting renderer asset and lazy-chunk URLs relative
   to the packaged `file://` entry point.
 - Added release validation that rejects root-relative packaged renderer assets and a Linux smoke

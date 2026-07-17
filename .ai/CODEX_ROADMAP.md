@@ -86,8 +86,8 @@ maintainer.
 
 ## Post-release maintenance
 
-Status: Linux AppImage startup hotfix implemented and locally validated on
-`fix/v2-appimage-blank-screen`; public hotfix publication is pending explicit authorization.
+Status: Linux AppImage startup hotfix implemented, merged, and prepared for the authorized
+`v2.0.1` tag-triggered publication.
 
 - The v2.0.0 AppImage process started but rendered a blank window because Vite emitted
   root-relative `/assets/...` URLs for an Electron `file://` entry point.
