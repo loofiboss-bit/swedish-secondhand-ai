@@ -1,11 +1,22 @@
 import { test, expect } from '@playwright/test';
 
 async function finishOnboarding(page: import('@playwright/test').Page, mode = 'offline') {
-  const dialog = page.getByRole('dialog', { name: /välkommen|welcome/i });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole('radio', { name: new RegExp(mode, 'i') }).check();
-  await dialog.getByRole('button', { name: /spara och börja|save and start/i }).click();
-  await expect(dialog).toBeHidden();
+  const startPage = page.getByRole('heading', { name: /välkommen|welcome/i });
+  await expect(startPage).toBeVisible();
+  await page.getByRole('button', { name: /börja offline|start offline/i }).click();
+  await expect(startPage).toBeHidden();
+  if (mode !== 'offline') {
+    await page.getByRole('button', { name: /inställningar|settings/i }).click();
+    await page.getByRole('combobox', { name: /ai-läge|ai mode/i }).selectOption(mode);
+    await page.getByRole('button', { name: /hem|home/i }).click();
+  }
+}
+
+async function createProject(page: import('@playwright/test').Page, description: string) {
+  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await page.getByRole('textbox', { name: /projektnamn|project name/i }).fill('E2E test project');
+  await page.getByRole('textbox', { name: /beskrivning|description/i }).fill(description);
+  await page.getByRole('button', { name: /skapa och fortsätt|create and continue/i }).click();
 }
 
 test('loads project home and opens an item workspace', async ({ page }) => {
@@ -14,7 +25,7 @@ test('loads project home and opens an item workspace', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: /swedish secondhand ai/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /från pryl|from item/i })).toBeVisible();
-  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await createProject(page, 'IKEA chair in good condition');
   await expect(page.getByRole('heading', { name: /analysera|analyze/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /marknad & pris|market & price/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /nästa bästa|next best/i })).toBeVisible();
@@ -30,7 +41,7 @@ test('supports keyboard focus, semantic navigation, zoom, and reduced motion', a
   await page.keyboard.press('Tab');
   await expect(page.locator(':focus')).toBeVisible();
 
-  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await createProject(page, 'IKEA chair in good condition');
   const projectNavigation = page.getByRole('navigation', {
     name: /arbetsyta för vara|item workspace/i,
   });
@@ -61,7 +72,7 @@ test('offline intake exposes conservative candidates and explicit knowledge gaps
 }) => {
   await page.goto('/');
   await finishOnboarding(page);
-  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await createProject(page, 'Sony kamera i bra skick');
   await page.getByLabel(/ladda upp bilder|upload images/i).setInputFiles({
     name: 'item.png',
     mimeType: 'image/png',
@@ -72,7 +83,9 @@ test('offline intake exposes conservative candidates and explicit knowledge gaps
   });
   await expect(page.getByRole('heading', { name: /bildcoach|photo coach/i })).toBeVisible();
   await expect(page.getByText(/låg upplösning|low resolution/i)).toBeVisible();
-  await page.getByLabel(/beskriv varan|describe the item/i).fill('Sony kamera i bra skick');
+  await page
+    .getByLabel(/beskriv varan|item description|describe the item/i)
+    .fill('Sony kamera i bra skick');
   await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();
 
   await expect(
@@ -118,9 +131,11 @@ test('preserves a locked correction and prices only reviewed comparables', async
   });
   await page.goto('/');
   await finishOnboarding(page, 'gemini');
-  await page.getByRole('button', { name: /ny vara|new item/i }).click();
+  await createProject(page, 'Sony camera in good condition');
 
-  await page.getByLabel(/beskriv varan|describe the item/i).fill('Sony camera in good condition');
+  await page
+    .getByLabel(/beskriv varan|item description|describe the item/i)
+    .fill('Sony camera in good condition');
   await page.getByRole('button', { name: /identifiera vara|identify item/i }).click();
   await expect(
     page.getByRole('heading', { name: /identifierad vara|detected item/i }),
@@ -151,7 +166,7 @@ test('preserves a locked correction and prices only reviewed comparables', async
     await checkbox.check();
   }
 
-  await page.getByRole('button', { name: /beräkna värde|estimate value/i }).click();
+  await page.getByRole('button', { name: /beräkna värde|^estimate(?: value)?$/i }).click();
   await expect(page.getByText(/low-confidence/)).toBeVisible();
   await expect(page.locator('.valuation-box strong')).toHaveText(/5000 SEK|5500 SEK/);
 

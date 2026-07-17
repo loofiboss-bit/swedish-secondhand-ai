@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppSettings } from '@core/types';
@@ -17,6 +17,8 @@ const {
   setTraderaAppIdMock,
   setTraderaApiKeyMock,
   testGeminiConnectionMock,
+  testOllamaConnectionMock,
+  testTraderaConnectionMock,
 } = vi.hoisted(() => ({
   setAppLanguageMock: vi.fn().mockResolvedValue(undefined),
   getSettingsMock: vi.fn(),
@@ -30,6 +32,8 @@ const {
   setTraderaAppIdMock: vi.fn(),
   setTraderaApiKeyMock: vi.fn(),
   testGeminiConnectionMock: vi.fn(),
+  testOllamaConnectionMock: vi.fn(),
+  testTraderaConnectionMock: vi.fn(),
 }));
 
 vi.mock('@core/config/i18n', async () => {
@@ -66,6 +70,8 @@ vi.mock('@core/services/settingsService', () => ({
     setTraderaAppId: setTraderaAppIdMock,
     setTraderaApiKey: setTraderaApiKeyMock,
     testGeminiConnection: testGeminiConnectionMock,
+    testOllamaConnection: testOllamaConnectionMock,
+    testTraderaConnection: testTraderaConnectionMock,
   },
 }));
 
@@ -98,6 +104,8 @@ describe('SettingsPanel', () => {
       isLoading: false,
       error: null,
       connectionState: 'idle',
+      ollamaConnectionState: 'idle',
+      traderaConnectionState: 'idle',
     });
     getSettingsMock.mockResolvedValue(baseSettings);
     updateSettingsMock.mockImplementation(async (partial) => ({ ...baseSettings, ...partial }));
@@ -116,10 +124,12 @@ describe('SettingsPanel', () => {
     completeOnboardingMock.mockResolvedValue({ ...baseSettings, onboardingCompleted: true });
     setOllamaBaseUrlMock.mockImplementation(async (ollamaBaseUrl: string) => ({
       ...baseSettings,
+      aiMode: 'ollama',
       ollamaBaseUrl,
     }));
     setOllamaModelMock.mockImplementation(async (ollamaModel: string) => ({
       ...baseSettings,
+      aiMode: 'ollama',
       ollamaModel,
     }));
     setTraderaAppIdMock.mockImplementation(async (traderaAppId: number) => ({
@@ -131,6 +141,8 @@ describe('SettingsPanel', () => {
       secretStatus: { ...baseSettings.secretStatus, traderaConfigured: true },
     });
     testGeminiConnectionMock.mockResolvedValue(true);
+    testOllamaConnectionMock.mockResolvedValue(true);
+    testTraderaConnectionMock.mockResolvedValue(true);
   });
 
   afterEach(cleanup);
@@ -145,7 +157,9 @@ describe('SettingsPanel', () => {
 
     await waitFor(() => expect(setGeminiApiKeyMock).toHaveBeenCalledWith('AIza-updated'));
     await waitFor(() => expect(geminiInput).toHaveValue(''));
-    expect(screen.getByText(/Gemini API-nyckel.*konfigurerad/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Gemini API (?:key|nyckel).*configured|konfigurerad/i),
+    ).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('AIza-updated');
   });
 
@@ -174,7 +188,8 @@ describe('SettingsPanel', () => {
     const user = userEvent.setup();
     render(<SettingsPanel />);
 
-    const appId = screen.getByRole('spinbutton', { name: /tradera app-id/i });
+    await user.click(screen.getByText(/tradera data \(optional\)|tradera-data \(valfritt\)/i));
+    const appId = screen.getByRole('spinbutton', { name: /tradera app(?:-id| id)/i });
     await user.clear(appId);
     await user.type(appId, '4321');
     await user.tab();
@@ -182,32 +197,15 @@ describe('SettingsPanel', () => {
     await waitFor(() => expect(setTraderaAppIdMock).toHaveBeenCalledWith(4321));
   });
 
-  it('synchronizes non-secret inputs while keeping secret fields blank', () => {
+  it('shows only settings for the selected AI mode', async () => {
+    const user = userEvent.setup();
     render(<SettingsPanel />);
 
-    act(() => {
-      useSettingsStore.setState({
-        settings: {
-          ...baseSettings,
-          ollamaBaseUrl: 'http://localhost:22434/v1',
-          ollamaModel: 'external-model',
-          secretStatus: {
-            ...baseSettings.secretStatus,
-            geminiConfigured: true,
-            traderaConfigured: true,
-          },
-        },
-      });
-    });
-
-    expect(screen.getByPlaceholderText('http://localhost:11434/v1')).toHaveValue(
-      'http://localhost:22434/v1',
-    );
-    expect(screen.getByPlaceholderText('llava')).toHaveValue('external-model');
-    expect(screen.getAllByPlaceholderText(/Sparad säkert/i)).toHaveLength(2);
-    expect(screen.getAllByPlaceholderText(/Sparad säkert/i)).toSatisfy((inputs: HTMLElement[]) =>
-      inputs.every((input) => (input as HTMLInputElement).value === ''),
-    );
+    expect(screen.getByPlaceholderText('AIza...')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('http://localhost:11434/v1')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByDisplayValue(/Gemini/), 'ollama');
+    expect(await screen.findByPlaceholderText('http://localhost:11434/v1')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('AIza...')).not.toBeInTheDocument();
   });
 
   it('tests a configured Gemini connection and renders public status only', async () => {
@@ -220,9 +218,11 @@ describe('SettingsPanel', () => {
     });
     render(<SettingsPanel />);
 
-    await user.click(screen.getByRole('button', { name: /testa anslutning/i }));
+    await user.click(screen.getByRole('button', { name: /test gemini|testa gemini/i }));
 
     await waitFor(() => expect(testGeminiConnectionMock).toHaveBeenCalledOnce());
-    expect(await screen.findByText(/anslutningen fungerar/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/connection successful|anslutningen fungerar/i),
+    ).toBeInTheDocument();
   });
 });

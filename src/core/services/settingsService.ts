@@ -4,6 +4,8 @@ import {
   DEFAULT_OLLAMA_MODEL,
 } from '@core/ai/providers/ollama/OllamaConfig';
 import { DEFAULT_GEMINI_MODEL } from '@core/ai/providers/gemini';
+import { OllamaProvider } from '@core/ai/providers/ollama';
+import { getDesktopBridge } from '@core/platform/desktopBridge';
 import { logger } from './loggerService';
 import { readVersionedDataset, writeVersionedDataset } from './persistenceService';
 
@@ -100,8 +102,15 @@ function normalizeOllamaBaseUrl(value: string | undefined): string {
 }
 
 function normalizePreferences(settings: PersistedSettings | undefined): AppSettings {
+  const detectedLanguage =
+    typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('en')
+      ? 'en'
+      : 'sv';
   return {
-    language: settings?.language === 'en' ? 'en' : 'sv',
+    language:
+      settings?.language === 'en' || settings?.language === 'sv'
+        ? settings.language
+        : detectedLanguage,
     currency: 'SEK',
     traderaAppId:
       typeof settings?.traderaAppId === 'number' &&
@@ -290,6 +299,32 @@ class SettingsService {
     if (!bridge) throw new Error('Connection tests require the desktop application.');
     const result = await bridge.ai.testGeminiConnection(DEFAULT_GEMINI_MODEL);
     return result.connected;
+  }
+
+  async testOllamaConnection(): Promise<boolean> {
+    const settings = await this.getSettings();
+    const provider = new OllamaProvider({
+      resolveConfig: async () => ({
+        baseUrl: settings.ollamaBaseUrl ?? DEFAULT_OLLAMA_BASE_URL,
+        modelId: settings.ollamaModel ?? DEFAULT_OLLAMA_MODEL,
+      }),
+      createFallback: () => {
+        throw new Error('Health checks do not create analysis fallbacks.');
+      },
+    });
+    const status = await provider.checkHealth({ context: { timeoutMs: 5_000 } });
+    return status.state === 'healthy';
+  }
+
+  async testTraderaConnection(): Promise<boolean> {
+    const settings = await this.getSettings();
+    if (!settings.traderaAppId || !settings.secretStatus.traderaConfigured) return false;
+    const result = await getDesktopBridge().marketplace.fetchTraderaComparables({
+      appId: settings.traderaAppId,
+      query: 'test',
+      limit: 1,
+    });
+    return result.configured;
   }
 
   async setAiMode(aiMode: AppSettings['aiMode']): Promise<AppSettings> {

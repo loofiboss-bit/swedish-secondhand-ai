@@ -9,6 +9,7 @@ import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { CommandPalette } from '@shared/components/CommandPalette';
+import type { ProjectQuickStartInput } from '@features/projects/ProjectDashboard';
 
 type AppView = 'home' | 'projects' | 'workspace' | 'settings';
 
@@ -98,6 +99,8 @@ export function App() {
     saveToHistory,
     hydrateFromDraft,
     buildDraft,
+    setInputText,
+    addImage,
   } = valuationStore;
   const { currentStep, completedSteps, hydrateFromDraft: hydrateWorkflow } = workflowStore;
 
@@ -180,12 +183,30 @@ export function App() {
     setIsSwitchingProject(false);
   };
 
-  const createProject = async () => {
+  const createProject = async (input?: ProjectQuickStartInput) => {
     setIsSwitchingProject(true);
     if (activeProjectId) await saveActiveProject();
-    const hydrated = await createProjectRecord();
-    if (hydrated) hydrateProject(hydrated);
+    const hydrated = await createProjectRecord(input?.displayName);
+    if (hydrated) {
+      hydrateProject(hydrated);
+      if (input) {
+        setInputText(input.description);
+        input.images.forEach((image) => addImage(image));
+      }
+    }
     setIsSwitchingProject(false);
+  };
+
+  const finishOnboarding = (withExample: boolean) => {
+    if (withExample) {
+      void createProject({
+        displayName: t('exampleProjectName'),
+        description: t('exampleProjectDescription'),
+        images: [],
+      });
+      return;
+    }
+    setAppView('home');
   };
 
   const changeSection = (section: ProjectSection) => {
@@ -238,12 +259,6 @@ export function App() {
 
   return (
     <div className="app-shell">
-      {!settingsLoading && !settings.onboardingCompleted && (
-        <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
-          <OnboardingDialog />
-        </Suspense>
-      )}
-
       <header className="app-header app-header--v2">
         <div className="brand-lockup">
           <h1>
@@ -294,7 +309,13 @@ export function App() {
         </p>
       )}
 
-      {loading ? (
+      {!settingsLoading && !settings.onboardingCompleted ? (
+        <main className="app-content app-content--onboarding">
+          <Suspense fallback={<p className="loading-panel">{t('loadingPanel')}</p>}>
+            <OnboardingDialog onStarted={finishOnboarding} />
+          </Suspense>
+        </main>
+      ) : loading ? (
         <p className="loading-panel">{t('loadingProjects')}</p>
       ) : projectStatus === 'recovery' ? (
         <main className="recovery-layout">
@@ -313,7 +334,7 @@ export function App() {
               <ProjectDashboard
                 mode="home"
                 projects={projects}
-                onCreate={() => void createProject()}
+                onCreate={(input) => void createProject(input)}
                 onOpen={(id) => void openProject(id)}
                 onRemove={(id) => void removeProject(id)}
               />
@@ -322,7 +343,7 @@ export function App() {
               <ProjectDashboard
                 mode="library"
                 projects={projects}
-                onCreate={() => void createProject()}
+                onCreate={(input) => void createProject(input)}
                 onOpen={(id) => void openProject(id)}
                 onRemove={(id) => void removeProject(id)}
               />

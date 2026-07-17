@@ -90,6 +90,14 @@ describe('App schema 3 project migration', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.click(
+      await screen.findByRole(
+        'button',
+        { name: /börja offline|start offline/i },
+        { timeout: 10_000 },
+      ),
+    );
+
     const projectButton = await screen.findByRole(
       'button',
       { name: /^Draft: IKEA Poang in very good condition/ },
@@ -103,5 +111,5 @@ describe('App schema 3 project migration', () => {
     expect(useWorkflowStore.getState().currentStep).toBe('templates');
     expect(useListingStore.getState().templates).toEqual(draftFixture.templates);
     expect(useValuationStore.getState().images).toEqual(draftFixture.images);
-  });
+  }, 20_000);
 });

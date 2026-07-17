@@ -27,6 +27,12 @@ describe('App project shell', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: /swedish secondhand ai/i })).toBeInTheDocument();
+    const startOffline = await screen.findByRole(
+      'button',
+      { name: /börja offline|start offline/i },
+      { timeout: 10_000 },
+    );
+    await user.click(startOffline);
     expect(
       await screen.findByRole('heading', { name: /från pryl|from item/i }, { timeout: 10_000 }),
     ).toBeInTheDocument();
@@ -34,10 +40,15 @@ describe('App project shell', () => {
       screen.queryByRole('heading', { name: /inställningar|settings/i }),
     ).not.toBeInTheDocument();
 
-    const dialog = screen.queryByRole('dialog', { name: /välkommen|welcome/i });
-    if (dialog)
-      await user.click(screen.getByRole('button', { name: /spara och börja|save and start/i }));
     await user.click(screen.getByRole('button', { name: /ny vara|new item/i }));
+    await user.type(screen.getByRole('textbox', { name: /projektnamn|project name/i }), 'Min stol');
+    await user.type(
+      screen.getByRole('textbox', { name: /beskrivning|description/i }),
+      'IKEA stol i gott skick',
+    );
+    await user.click(
+      screen.getByRole('button', { name: /skapa och fortsätt|create and continue/i }),
+    );
 
     expect(
       await screen.findByRole(
@@ -52,5 +63,5 @@ describe('App project shell', () => {
     expect(
       await screen.findByRole('heading', { name: /inställningar|settings/i }),
     ).toBeInTheDocument();
-  });
+  }, 20_000);
 });

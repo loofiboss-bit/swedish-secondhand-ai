@@ -13,6 +13,8 @@ const {
   setTraderaAppIdMock,
   setTraderaApiKeyMock,
   testGeminiConnectionMock,
+  testOllamaConnectionMock,
+  testTraderaConnectionMock,
 } = vi.hoisted(() => ({
   getSettingsMock: vi.fn(),
   updateSettingsMock: vi.fn(),
@@ -25,6 +27,8 @@ const {
   setTraderaAppIdMock: vi.fn(),
   setTraderaApiKeyMock: vi.fn(),
   testGeminiConnectionMock: vi.fn(),
+  testOllamaConnectionMock: vi.fn(),
+  testTraderaConnectionMock: vi.fn(),
 }));
 
 const baseSettings: AppSettings = {
@@ -74,6 +78,8 @@ vi.mock('@core/services/settingsService', () => ({
     setTraderaAppId: setTraderaAppIdMock,
     setTraderaApiKey: setTraderaApiKeyMock,
     testGeminiConnection: testGeminiConnectionMock,
+    testOllamaConnection: testOllamaConnectionMock,
+    testTraderaConnection: testTraderaConnectionMock,
   },
 }));
 
@@ -87,6 +93,8 @@ describe('useSettingsStore', () => {
       isLoading: false,
       error: null,
       connectionState: 'idle',
+      ollamaConnectionState: 'idle',
+      traderaConnectionState: 'idle',
     });
     getSettingsMock.mockResolvedValue(baseSettings);
     updateSettingsMock.mockImplementation(async (partial) => ({ ...baseSettings, ...partial }));
@@ -108,6 +116,8 @@ describe('useSettingsStore', () => {
       secretStatus: { ...baseSettings.secretStatus, traderaConfigured: true },
     });
     testGeminiConnectionMock.mockResolvedValue(true);
+    testOllamaConnectionMock.mockResolvedValue(true);
+    testTraderaConnectionMock.mockResolvedValue(false);
   });
 
   it('loads provider preferences and non-sensitive secret status', async () => {
@@ -192,5 +202,15 @@ describe('useSettingsStore', () => {
 
     expect(testGeminiConnectionMock).toHaveBeenCalledOnce();
     expect(useSettingsStore.getState().connectionState).toBe('connected');
+  });
+
+  it('reports localized-provider connection states independently', async () => {
+    await useSettingsStore.getState().testOllamaConnection();
+    await useSettingsStore.getState().testTraderaConnection();
+
+    expect(testOllamaConnectionMock).toHaveBeenCalledOnce();
+    expect(testTraderaConnectionMock).toHaveBeenCalledOnce();
+    expect(useSettingsStore.getState().ollamaConnectionState).toBe('connected');
+    expect(useSettingsStore.getState().traderaConnectionState).toBe('failed');
   });
 });

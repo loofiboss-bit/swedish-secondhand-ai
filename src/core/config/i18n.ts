@@ -13,8 +13,7 @@ i18n
       en: { common: enCommon },
       sv: { common: svCommon },
     },
-    fallbackLng: 'en',
-    lng: 'sv',
+    fallbackLng: 'sv',
     defaultNS: 'common',
     ns: ['common'],
     interpolation: {

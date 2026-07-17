@@ -22,7 +22,7 @@ Status: completed and published 2026-07-17 from merge `c23d053`.
 
 ## M1 — Schema 4 and simplified core contracts
 
-Status: in progress on `feature/v3-schema4`.
+Status: completed in merge `d201220` after local and GitHub validation.
 
 - Add explicit project names, `PriceDecision`, archive state and recoverable trash.
 - Migrate schema 3 deterministically and idempotently while retaining verified schema 3 rollback
@@ -32,7 +32,7 @@ Status: in progress on `feature/v3-schema4`.
 
 ## M2 — Immediate offline start and clear configuration
 
-Status: planned.
+Status: in progress on `feature/v3-offline-start`.
 
 - Make **Start offline** the primary first-run action and detect the OS language.
 - Show only the selected provider configuration with localized connection tests.
@@ -75,7 +75,7 @@ Status: planned.
 ## Progress
 
 - [x] G0 Safe v2.0.1 maintenance release
-- [ ] M1 Schema 4 and simplified core contracts
+- [x] M1 Schema 4 and simplified core contracts
 - [ ] M2 Immediate offline start and clear configuration
 - [ ] M3 Guided workflow and progressive detail
 - [ ] M4 Flexible pricing and simpler listing studio
