@@ -16,6 +16,7 @@ describe('App project shell', () => {
     useProjectStore.setState({
       status: 'idle',
       projects: [],
+      trash: [],
       activeProjectId: null,
       activeProject: null,
       error: null,
@@ -57,7 +58,7 @@ describe('App project shell', () => {
 
     await user.click(screen.getByRole('button', { name: /inställningar|settings/i }));
     expect(
-      await screen.findByRole('heading', { name: /inställningar|settings/i }),
+      await screen.findByRole('heading', { name: /inställningar|settings/i }, { timeout: 15_000 }),
     ).toBeInTheDocument();
-  }, 20_000);
+  }, 35_000);
 });

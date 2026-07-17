@@ -1,31 +1,43 @@
 # Support and recovery
 
-## v2 project migration
-
-The first v2 start creates a schema 3 project index from the active v1 draft and history. The
-schema 2 source keys are retained. If validation or commit verification fails, the app shows
-read-only recovery and leaves the source untouched. Export a backup before resetting data.
-
 ## First checks
 
-1. Record app version, operating system, selected AI mode, and public provider status. Do not copy
-   API keys.
-2. Retry offline mode to separate local workflow issues from provider/network issues.
-3. Confirm Ollama listens on `http://localhost:11434` when local AI is selected.
-4. Export a non-secret backup before resetting data when the app can still open.
+1. Open **Settings → Backup and data recovery** and export **safe diagnostics**. It contains only
+   version, platform, migration/provider status and normalized error codes.
+2. Retry in offline mode to separate a local workflow issue from provider or network access.
+3. If Ollama is selected, confirm it is running at the configured local address.
+4. Export a compact or full non-secret backup before resetting data.
 
-## Data recovery
+Never paste API keys, listing text, project descriptions, images or private marketplace URLs into
+a public issue.
 
-The Backup and data recovery panel can export all non-secret datasets, import selected datasets,
-reset selected datasets, or reset all non-secret data. Import validates the whole file before
-writing anything. Restart the app after an import or reset.
+## Schema 4 migration
 
-A v0.5/current-main payload is treated as schema 1 and migrated once to the schema 2 envelope.
-Re-reading schema 2 is idempotent. Corrupt or unsupported data is rejected and is not overwritten
-automatically. Provider keys are separate from backups and dataset reset.
+The first v3 start migrates schema 3 projects deterministically to schema 4. Existing numeric
+valuations become evidence-based price decisions; other projects remain unset. The schema 3
+source stays as rollback data until the schema 4 write and readback are verified. Corrupt or
+unsupported input opens recovery and is not overwritten.
+
+## Restore projects
+
+**Delete** moves a project to trash and offers **Undo**. Open **Projects → Trash** to restore it
+later. Nothing is removed automatically. **Empty trash** is the only permanent project deletion
+and always requires explicit confirmation.
+
+## Backup and import
+
+Format 3 backups contain live and trashed projects; compact backups omit images. Secrets are
+excluded. Formats 2 and 3 can be imported. The complete selected replacement is validated before
+any data is committed. Restart the app after import or reset.
+
+## Provider failures
+
+Use the connection test shown for Gemini, Ollama or Tradera. Authentication failures require a
+new protected key; unavailable services can be retried or bypassed by continuing offline. A
+provider failure must not discard the active draft.
 
 ## Getting help
 
-Use a GitHub issue for reproducible non-security bugs. Include sanitized steps, version, platform,
-and whether the problem survives offline mode. Use the private process in `SECURITY.md` for
-security or credential concerns.
+Use a GitHub issue for reproducible non-security bugs and attach the safe diagnostic JSON plus
+sanitized reproduction steps. Use the private process in `SECURITY.md` for credential or security
+concerns.

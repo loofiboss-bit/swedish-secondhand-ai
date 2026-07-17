@@ -6,6 +6,10 @@ import {
   type BackupDatasetId,
 } from '@core/services/backupService';
 import { SectionCard } from '@shared/components/SectionCard';
+import { diagnosticsService } from '@core/services/diagnosticsService';
+import { useProjectStore } from '@core/store/useProjectStore';
+import { useSettingsStore } from '@core/store/useSettingsStore';
+import { useValuationStore } from '@core/store/useValuationStore';
 
 const DATASETS: BackupDatasetId[] = [
   'projects',
@@ -19,6 +23,28 @@ export function DataManagementPanel() {
   const { t } = useTranslation('common');
   const [selected, setSelected] = useState<BackupDatasetId[]>(DATASETS);
   const [message, setMessage] = useState('');
+  const projectState = useProjectStore((state) => state.status);
+  const projectError = useProjectStore((state) => state.error);
+  const settings = useSettingsStore((state) => state.settings);
+  const settingsError = useSettingsStore((state) => state.error);
+  const valuationError = useValuationStore((state) => state.error);
+
+  const exportDiagnostics = () => {
+    const data = diagnosticsService.create({
+      settings,
+      projectState,
+      errors: [projectError, settingsError, valuationError],
+    });
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+    );
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `swedish-secondhand-ai-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setMessage(t('diagnosticsExported'));
+  };
 
   const toggle = (dataset: BackupDatasetId) => {
     setSelected((current) =>
@@ -83,6 +109,9 @@ export function DataManagementPanel() {
         </button>
         <button type="button" onClick={() => void exportBackup(false)}>
           {t('exportCompactBackup')}
+        </button>
+        <button type="button" onClick={exportDiagnostics}>
+          {t('exportDiagnostics')}
         </button>
         <label className="button-like">
           {t('importSelected')}

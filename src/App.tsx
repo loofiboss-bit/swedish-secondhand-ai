@@ -73,6 +73,7 @@ export function App() {
   const {
     status: projectStatus,
     projects,
+    trash,
     activeProjectId,
     activeProject,
     error: projectError,
@@ -81,7 +82,11 @@ export function App() {
     openProject: openProjectRecord,
     saveActive,
     setActiveSection,
+    renameProject,
+    setProjectArchived,
     removeProject,
+    restoreProject,
+    emptyTrash,
   } = useProjectStore();
 
   const [appView, setAppView] = useState<AppView>('home');
@@ -340,18 +345,28 @@ export function App() {
               <ProjectDashboard
                 mode="home"
                 projects={projects}
+                trash={trash}
                 onCreate={(input) => void createProject(input)}
                 onOpen={(id) => void openProject(id)}
                 onRemove={(id) => void removeProject(id)}
+                onRestore={(id) => void restoreProject(id)}
+                onEmptyTrash={() => void emptyTrash()}
+                onRename={(id, name) => void renameProject(id, name)}
+                onArchive={(id, archived) => void setProjectArchived(id, archived)}
               />
             )}
             {appView === 'projects' && (
               <ProjectDashboard
                 mode="library"
                 projects={projects}
+                trash={trash}
                 onCreate={(input) => void createProject(input)}
                 onOpen={(id) => void openProject(id)}
                 onRemove={(id) => void removeProject(id)}
+                onRestore={(id) => void restoreProject(id)}
+                onEmptyTrash={() => void emptyTrash()}
+                onRename={(id, name) => void renameProject(id, name)}
+                onArchive={(id, archived) => void setProjectArchived(id, archived)}
               />
             )}
             {appView === 'settings' && (
