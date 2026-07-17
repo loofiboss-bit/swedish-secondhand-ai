@@ -41,7 +41,7 @@ describe('backupService', () => {
     const backup = await backupService.exportBackup(new Date('2026-07-15T12:00:00.000Z'));
     const stored = await get<DataEnvelope<unknown>>(DATASET_KEYS['listing-draft']);
 
-    expect(backup).toMatchObject({ formatVersion: 2, appVersion: '2.0.1' });
+    expect(backup).toMatchObject({ formatVersion: 3, appVersion: '2.0.1' });
     expect(JSON.stringify(backup)).not.toContain('legacy-secret');
     expect(JSON.stringify(backup)).not.toMatch(/geminiApiKey|traderaApiKey/);
     expect(stored).toMatchObject({ schemaVersion: 2, dataset: 'listing-draft', data: draft });
@@ -162,7 +162,7 @@ describe('backupService', () => {
   it('rolls legacy datasets back when project replacement cannot commit', async () => {
     await set(DATASET_KEYS.history, createEnvelope('history', []));
     const before = await get(DATASET_KEYS.history);
-    await set('meta:project-index', { schemaVersion: 99 }, PROJECT_STORE);
+    await set('meta:project-index-v4', { schemaVersion: 99 }, PROJECT_STORE);
     const replacement = {
       formatVersion: 2 as const,
       appVersion: '2.0.0-beta.1',

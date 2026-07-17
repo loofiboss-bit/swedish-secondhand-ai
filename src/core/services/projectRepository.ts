@@ -4,6 +4,7 @@ import type {
   ItemProject,
   ListingDraft,
   MediaAsset,
+  PriceDecision,
   ProjectSection,
   ProjectStatus,
   ProjectSummary,
@@ -17,22 +18,24 @@ import { factsFromFingerprint } from './verifiedFactsService';
 
 const PROJECT_DB = 'swedish-secondhand-ai-v2';
 const PROJECT_STORE = createStore(PROJECT_DB, 'project-records');
-const INDEX_KEY = 'meta:project-index';
-const PROJECT_KEY_PREFIX = 'project:';
-const PROJECT_SCHEMA_VERSION = 3;
+const LEGACY_INDEX_KEY = 'meta:project-index';
+const LEGACY_PROJECT_KEY_PREFIX = 'project:';
+const INDEX_KEY = 'meta:project-index-v4';
+const PROJECT_KEY_PREFIX = 'project-v4:';
+const PROJECT_SCHEMA_VERSION = 4;
 const MAX_PROJECTS = 100;
 const MAX_IMAGES_PER_PROJECT = 6;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_ENCODED_IMAGE_LENGTH = Math.ceil(MAX_IMAGE_BYTES / 3) * 4;
 
 interface ProjectRecord {
-  schemaVersion: 3;
+  schemaVersion: 4;
   project: ItemProject;
   media: MediaAsset[];
 }
 
 interface ProjectIndex {
-  schemaVersion: 3;
+  schemaVersion: 4;
   activeProjectId: string | null;
   projectIds: string[];
   migrationCompletedAt: string;
@@ -56,10 +59,22 @@ export interface ProjectBackupRecord {
 }
 
 export interface ProjectBackupDataset {
-  schemaVersion: 3;
+  schemaVersion: 4;
   activeProjectId: string | null;
   imagesIncluded: boolean;
   records: ProjectBackupRecord[];
+}
+
+type LegacyItemProject = Omit<
+  ItemProject,
+  'schemaVersion' | 'displayName' | 'priceDecision' | 'archivedAt' | 'trashedAt'
+> & { schemaVersion: 3 };
+
+export interface LegacyProjectBackupDataset {
+  schemaVersion: 3;
+  activeProjectId: string | null;
+  imagesIncluded: boolean;
+  records: Array<{ project: LegacyItemProject; images: string[] }>;
 }
 
 export interface ProjectOutcomeUpdate {
@@ -70,6 +85,10 @@ export interface ProjectOutcomeUpdate {
 
 function projectKey(id: string): string {
   return `${PROJECT_KEY_PREFIX}${id}`;
+}
+
+function legacyProjectKey(id: string): string {
+  return `${LEGACY_PROJECT_KEY_PREFIX}${id}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -89,12 +108,53 @@ function isProjectIndex(value: unknown): value is ProjectIndex {
   );
 }
 
+interface LegacyProjectIndex {
+  schemaVersion: 3;
+  activeProjectId: string | null;
+  projectIds: string[];
+  migrationCompletedAt: string;
+}
+
+function isLegacyProjectIndex(value: unknown): value is LegacyProjectIndex {
+  if (!isRecord(value)) return false;
+  return (
+    value.schemaVersion === 3 &&
+    (typeof value.activeProjectId === 'string' || value.activeProjectId === null) &&
+    Array.isArray(value.projectIds) &&
+    value.projectIds.length <= MAX_PROJECTS &&
+    value.projectIds.every((id) => typeof id === 'string') &&
+    new Set(value.projectIds).size === value.projectIds.length &&
+    typeof value.migrationCompletedAt === 'string'
+  );
+}
+
 function isProjectStatus(value: unknown): value is ProjectStatus {
   return ['draft', 'ready', 'listed', 'sold', 'paused'].includes(String(value));
 }
 
 function isProjectSection(value: unknown): value is ProjectSection {
   return ['item', 'market', 'listing', 'follow-up'].includes(String(value));
+}
+
+function isPriceDecision(value: unknown): value is PriceDecision {
+  if (!isRecord(value)) return false;
+  if (value.kind === 'unset') return true;
+  if (value.kind === 'user_entered') {
+    return (
+      typeof value.amountSek === 'number' &&
+      Number.isFinite(value.amountSek) &&
+      value.amountSek > 0 &&
+      value.amountSek <= 10_000_000
+    );
+  }
+  if (value.kind !== 'evidence_based' || !isRecord(value.valuation)) return false;
+  const valuation = value.valuation;
+  return (
+    ['ready', 'low-confidence'].includes(String(valuation.status)) &&
+    typeof valuation.priceRecommendedSek === 'number' &&
+    Number.isFinite(valuation.priceRecommendedSek) &&
+    valuation.priceRecommendedSek > 0
+  );
 }
 
 function isItemProject(value: unknown): value is ItemProject {
@@ -139,6 +199,14 @@ function isItemProject(value: unknown): value is ItemProject {
     value.id.length <= 300 &&
     typeof value.title === 'string' &&
     value.title.length <= 200 &&
+    typeof value.displayName === 'string' &&
+    value.displayName.trim().length > 0 &&
+    value.displayName.length <= 200 &&
+    isPriceDecision(value.priceDecision) &&
+    (value.archivedAt === undefined ||
+      (typeof value.archivedAt === 'string' && Number.isFinite(Date.parse(value.archivedAt)))) &&
+    (value.trashedAt === undefined ||
+      (typeof value.trashedAt === 'string' && Number.isFinite(Date.parse(value.trashedAt)))) &&
     isProjectStatus(value.status) &&
     isProjectSection(value.currentSection) &&
     typeof value.createdAt === 'string' &&
@@ -278,6 +346,53 @@ export function isProjectBackupDataset(value: unknown): value is ProjectBackupDa
   return value.activeProjectId === null || ids.has(value.activeProjectId);
 }
 
+export function migrateLegacyProjectBackupDataset(
+  value: unknown,
+): ProjectBackupDataset | undefined {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 3 ||
+    (typeof value.activeProjectId !== 'string' && value.activeProjectId !== null) ||
+    typeof value.imagesIncluded !== 'boolean' ||
+    !Array.isArray(value.records) ||
+    value.records.length > MAX_PROJECTS
+  ) {
+    return undefined;
+  }
+  const records: ProjectBackupRecord[] = [];
+  for (const entry of value.records) {
+    if (
+      !isRecord(entry) ||
+      !isRecord(entry.project) ||
+      entry.project.schemaVersion !== 3 ||
+      typeof entry.project.title !== 'string' ||
+      !isRecord(entry.project.workspace) ||
+      !Array.isArray(entry.images)
+    ) {
+      return undefined;
+    }
+    const legacy = entry.project as unknown as LegacyItemProject;
+    const draft = { ...legacy.workspace, images: entry.images } as ListingDraft;
+    if (!isListingDraft(draft)) return undefined;
+    records.push({
+      project: {
+        ...legacy,
+        schemaVersion: 4,
+        displayName: legacy.title || 'Namnlös vara',
+        priceDecision: priceDecisionFromDraft(draft),
+      },
+      images: entry.images as string[],
+    });
+  }
+  const migrated: ProjectBackupDataset = {
+    schemaVersion: 4,
+    activeProjectId: value.activeProjectId,
+    imagesIncluded: value.imagesIncluded,
+    records,
+  };
+  return isProjectBackupDataset(migrated) ? migrated : undefined;
+}
+
 function emptyDraft(now = new Date().toISOString()): ListingDraft {
   return {
     version: 1,
@@ -320,18 +435,29 @@ function sectionFromDraft(draft: ListingDraft): ProjectSection {
 }
 
 function summary(record: ProjectRecord): ProjectSummary {
-  const valuation = record.project.workspace.valuation;
+  const valuation =
+    record.project.priceDecision.kind === 'evidence_based'
+      ? record.project.priceDecision.valuation
+      : null;
   return {
     id: record.project.id,
-    title: record.project.title,
+    displayName: record.project.displayName,
+    title: record.project.displayName,
     status: record.project.status,
     updatedAt: record.project.updatedAt,
-    recommendedPriceSek:
-      valuation && valuation.status !== 'insufficient-evidence'
-        ? valuation.priceRecommendedSek
-        : null,
+    recommendedPriceSek: valuation?.priceRecommendedSek ?? null,
     thumbnailMediaId: record.project.workspace.mediaIds[0],
+    archivedAt: record.project.archivedAt,
+    trashedAt: record.project.trashedAt,
   };
+}
+
+function priceDecisionFromDraft(draft: ListingDraft, current?: PriceDecision): PriceDecision {
+  if (current?.kind === 'user_entered') return current;
+  if (draft.valuation && draft.valuation.status !== 'insufficient-evidence') {
+    return { kind: 'evidence_based', valuation: draft.valuation };
+  }
+  return { kind: 'unset' };
 }
 
 function hash(value: string): string {
@@ -391,6 +517,10 @@ function recordFromDraft(
     current?: ProjectRecord;
     migratedFrom?: ItemProject['migratedFrom'];
     outcome?: ItemProject['outcome'];
+    displayName?: string;
+    priceDecision?: PriceDecision;
+    archivedAt?: string;
+    trashedAt?: string;
   } = {},
 ): ProjectRecord {
   const now = new Date().toISOString();
@@ -399,13 +529,24 @@ function recordFromDraft(
     throw new Error('A project can contain at most six images.');
   const media = images.map((image, index) => dataUrlToMedia(image, id, index, now));
   const project: ItemProject = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     id,
-    title: titleFromDraft(draft),
+    displayName:
+      options.displayName ??
+      (options.current?.project.displayName === 'Namnlös vara'
+        ? titleFromDraft(draft)
+        : options.current?.project.displayName) ??
+      titleFromDraft(draft),
+    title: options.displayName ?? options.current?.project.displayName ?? titleFromDraft(draft),
     status: options.status ?? statusFromDraft(draft, options.current?.project.status),
     currentSection: options.current?.project.currentSection ?? sectionFromDraft(draft),
     createdAt: options.createdAt ?? options.current?.project.createdAt ?? now,
     updatedAt: now,
+    priceDecision:
+      options.priceDecision ??
+      priceDecisionFromDraft(draft, options.current?.project.priceDecision),
+    archivedAt: options.archivedAt ?? options.current?.project.archivedAt,
+    trashedAt: options.trashedAt ?? options.current?.project.trashedAt,
     workspace: {
       ...workspace,
       mediaIds: media.map((asset) => asset.id),
@@ -413,7 +554,8 @@ function recordFromDraft(
     outcome: options.outcome ?? options.current?.project.outcome,
     migratedFrom: options.migratedFrom ?? options.current?.project.migratedFrom,
   };
-  return { schemaVersion: 3, project, media };
+  project.title = project.displayName;
+  return { schemaVersion: 4, project, media };
 }
 
 function draftFromHistory(entry: HistoryEntry): ListingDraft {
@@ -434,6 +576,52 @@ function statusFromHistory(entry: HistoryEntry): ProjectStatus {
   return 'listed';
 }
 
+async function migrateLegacyRecord(id: string, value: unknown): Promise<ProjectRecord> {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 3 ||
+    !isRecord(value.project) ||
+    value.project.schemaVersion !== 3 ||
+    value.project.id !== id ||
+    !isRecord(value.project.workspace) ||
+    !Array.isArray(value.media)
+  ) {
+    throw new Error('Legacy project data is corrupt or unsupported.');
+  }
+  const legacyProject = value.project;
+  const media = value.media;
+  if (
+    typeof legacyProject.title !== 'string' ||
+    !isProjectStatus(legacyProject.status) ||
+    !isProjectSection(legacyProject.currentSection) ||
+    typeof legacyProject.createdAt !== 'string' ||
+    typeof legacyProject.updatedAt !== 'string' ||
+    media.some((asset) => !isRecord(asset) || !(asset.blob instanceof Blob))
+  ) {
+    throw new Error('Legacy project data is corrupt or unsupported.');
+  }
+  const images = await Promise.all(
+    media.map((asset) => blobToDataUrl((asset as { blob: Blob }).blob)),
+  );
+  const draft = { ...(legacyProject.workspace as Record<string, unknown>), images } as ListingDraft;
+  if (!isListingDraft(draft)) throw new Error('Legacy project workspace is corrupt.');
+  const record = recordFromDraft(id, draft, {
+    status: legacyProject.status,
+    createdAt: legacyProject.createdAt,
+    displayName: legacyProject.title || 'Namnlös vara',
+    migratedFrom: legacyProject.migratedFrom as ItemProject['migratedFrom'],
+    outcome: legacyProject.outcome as ItemProject['outcome'],
+    priceDecision: priceDecisionFromDraft(draft),
+  });
+  record.project = {
+    ...record.project,
+    currentSection: legacyProject.currentSection,
+    updatedAt: legacyProject.updatedAt,
+  };
+  if (!isProjectRecord(record)) throw new Error('Schema 4 project migration validation failed.');
+  return record;
+}
+
 class ProjectRepository {
   private static instance: ProjectRepository;
 
@@ -448,6 +636,41 @@ class ProjectRepository {
       if (existing !== undefined) {
         if (!isProjectIndex(existing)) throw new Error('Unsupported project index.');
         return this.stateFromIndex(existing);
+      }
+
+      const legacyIndex = await get<unknown>(LEGACY_INDEX_KEY, PROJECT_STORE);
+      if (legacyIndex !== undefined) {
+        if (!isLegacyProjectIndex(legacyIndex)) {
+          throw new Error('Unsupported legacy project index.');
+        }
+        const records = await Promise.all(
+          legacyIndex.projectIds.map(async (id) =>
+            migrateLegacyRecord(id, await get<unknown>(legacyProjectKey(id), PROJECT_STORE)),
+          ),
+        );
+        const index: ProjectIndex = {
+          schemaVersion: 4,
+          activeProjectId: legacyIndex.activeProjectId,
+          projectIds: records.map((record) => record.project.id),
+          migrationCompletedAt: new Date().toISOString(),
+        };
+        await setMany(
+          [
+            ...records.map(
+              (record) => [projectKey(record.project.id), record] as [string, unknown],
+            ),
+            [INDEX_KEY, index] as [string, unknown],
+          ],
+          PROJECT_STORE,
+        );
+        const verified = await get<unknown>(INDEX_KEY, PROJECT_STORE);
+        const verifiedRecords = await Promise.all(
+          records.map((record) => get<unknown>(projectKey(record.project.id), PROJECT_STORE)),
+        );
+        if (!isProjectIndex(verified) || !verifiedRecords.every(isProjectRecord)) {
+          throw new Error('Schema 4 project migration verification failed.');
+        }
+        return this.stateFromIndex(index);
       }
 
       const [rawDraft, draft, history] = await Promise.all([
@@ -483,7 +706,7 @@ class ProjectRepository {
       }
       if (!records.every(isProjectRecord)) throw new Error('Project migration validation failed.');
       const index: ProjectIndex = {
-        schemaVersion: 3,
+        schemaVersion: 4,
         activeProjectId: records[0]?.project.id ?? null,
         projectIds: records.map((record) => record.project.id),
         migrationCompletedAt: new Date().toISOString(),
@@ -510,11 +733,14 @@ class ProjectRepository {
     }
   }
 
-  async create(): Promise<HydratedProject> {
+  async create(displayName?: string): Promise<HydratedProject> {
     const index = await this.requireIndex();
     const now = new Date().toISOString();
     const id = `project-${crypto.randomUUID()}`;
-    const record = recordFromDraft(id, emptyDraft(now), { createdAt: now });
+    const record = recordFromDraft(id, emptyDraft(now), {
+      createdAt: now,
+      displayName: displayName?.trim() || undefined,
+    });
     const nextIndex = {
       ...index,
       activeProjectId: id,
@@ -557,6 +783,50 @@ class ProjectRepository {
       project: {
         ...record.project,
         status,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    await setMany([[projectKey(id), next]], PROJECT_STORE);
+    return summary(next);
+  }
+
+  async rename(id: string, displayName: string): Promise<ProjectSummary> {
+    const normalized = displayName.trim();
+    if (!normalized || normalized.length > 200) throw new Error('Project name is invalid.');
+    const record = await this.requireRecord(id);
+    const next: ProjectRecord = {
+      ...record,
+      project: {
+        ...record.project,
+        displayName: normalized,
+        title: normalized,
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    if (!isProjectRecord(next)) throw new Error('Project name is invalid.');
+    await setMany([[projectKey(id), next]], PROJECT_STORE);
+    return summary(next);
+  }
+
+  async setPriceDecision(id: string, priceDecision: PriceDecision): Promise<ProjectSummary> {
+    if (!isPriceDecision(priceDecision)) throw new Error('Price decision is invalid.');
+    const record = await this.requireRecord(id);
+    const next: ProjectRecord = {
+      ...record,
+      project: { ...record.project, priceDecision, updatedAt: new Date().toISOString() },
+    };
+    if (!isProjectRecord(next)) throw new Error('Price decision is invalid.');
+    await setMany([[projectKey(id), next]], PROJECT_STORE);
+    return summary(next);
+  }
+
+  async setArchived(id: string, archived: boolean): Promise<ProjectSummary> {
+    const record = await this.requireRecord(id);
+    const next: ProjectRecord = {
+      ...record,
+      project: {
+        ...record.project,
+        archivedAt: archived ? new Date().toISOString() : undefined,
         updatedAt: new Date().toISOString(),
       },
     };
@@ -653,22 +923,85 @@ class ProjectRepository {
     const index = await this.requireIndex();
     const records = await Promise.all(index.projectIds.map((id) => this.requireRecord(id)));
     return records
+      .filter((record) => !record.project.trashedAt)
       .map(summary)
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
   async remove(id: string): Promise<ProjectRepositoryState> {
     const index = await this.requireIndex();
-    const projectIds = index.projectIds.filter((projectId) => projectId !== id);
+    if (!index.projectIds.includes(id)) throw new Error('Project does not exist.');
+    const record = await this.requireRecord(id);
+    const trashed: ProjectRecord = {
+      ...record,
+      project: {
+        ...record.project,
+        trashedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    };
+    const nextActiveId =
+      index.activeProjectId === id
+        ? ((await this.list()).find((project) => project.id !== id)?.id ?? null)
+        : index.activeProjectId;
+    const nextIndex: ProjectIndex = {
+      ...index,
+      activeProjectId: nextActiveId,
+    };
+    await setMany(
+      [
+        [projectKey(id), trashed],
+        [INDEX_KEY, nextIndex],
+      ],
+      PROJECT_STORE,
+    );
+    return this.stateFromIndex(nextIndex);
+  }
+
+  async listTrash(): Promise<ProjectSummary[]> {
+    const index = await this.requireIndex();
+    const records = await Promise.all(index.projectIds.map((id) => this.requireRecord(id)));
+    return records
+      .filter((record) => Boolean(record.project.trashedAt))
+      .map(summary)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  async restore(id: string): Promise<ProjectRepositoryState> {
+    const index = await this.requireIndex();
+    const record = await this.requireRecord(id);
+    const restored: ProjectRecord = {
+      ...record,
+      project: { ...record.project, trashedAt: undefined, updatedAt: new Date().toISOString() },
+    };
+    await setMany(
+      [
+        [projectKey(id), restored],
+        [INDEX_KEY, { ...index, activeProjectId: id }],
+      ],
+      PROJECT_STORE,
+    );
+    return this.stateFromIndex({ ...index, activeProjectId: id });
+  }
+
+  async emptyTrash(): Promise<ProjectRepositoryState> {
+    const index = await this.requireIndex();
+    const records = await Promise.all(index.projectIds.map((id) => this.requireRecord(id)));
+    const trashedIds = records
+      .filter((record) => Boolean(record.project.trashedAt))
+      .map((record) => record.project.id);
+    const projectIds = index.projectIds.filter((id) => !trashedIds.includes(id));
     const nextIndex: ProjectIndex = {
       ...index,
       projectIds,
       activeProjectId:
-        index.activeProjectId === id ? (projectIds[0] ?? null) : index.activeProjectId,
+        index.activeProjectId && projectIds.includes(index.activeProjectId)
+          ? index.activeProjectId
+          : (projectIds[0] ?? null),
     };
     await setMany(
       [
-        [projectKey(id), null],
+        ...trashedIds.map((id) => [projectKey(id), null] as [string, unknown]),
         [INDEX_KEY, nextIndex],
       ],
       PROJECT_STORE,
@@ -713,15 +1046,20 @@ class ProjectRepository {
       }),
     );
     return {
-      schemaVersion: 3,
+      schemaVersion: 4,
       activeProjectId: rawIndex.activeProjectId,
       imagesIncluded: includeImages,
       records,
     };
   }
 
-  async importBackup(dataset: ProjectBackupDataset): Promise<ProjectRepositoryState> {
-    if (!isProjectBackupDataset(dataset)) throw new Error('Project backup is invalid.');
+  async importBackup(
+    input: ProjectBackupDataset | LegacyProjectBackupDataset,
+  ): Promise<ProjectRepositoryState> {
+    const dataset = isProjectBackupDataset(input)
+      ? input
+      : migrateLegacyProjectBackupDataset(input);
+    if (!dataset) throw new Error('Project backup is invalid.');
     const currentRaw = await get<unknown>(INDEX_KEY, PROJECT_STORE);
     if (currentRaw !== undefined && !isProjectIndex(currentRaw)) {
       throw new Error('Current project index is corrupt or unsupported.');
@@ -732,12 +1070,17 @@ class ProjectRepository {
       const record = recordFromDraft(project.id, draft, {
         status: project.status,
         createdAt: project.createdAt,
+        displayName: project.displayName,
+        priceDecision: project.priceDecision,
+        archivedAt: project.archivedAt,
+        trashedAt: project.trashedAt,
         migratedFrom: project.migratedFrom,
         outcome: project.outcome,
       });
       record.project = {
         ...record.project,
-        title: project.title,
+        displayName: project.displayName,
+        title: project.displayName,
         currentSection: project.currentSection,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
@@ -745,7 +1088,7 @@ class ProjectRepository {
       return record;
     });
     const index: ProjectIndex = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       activeProjectId: dataset.activeProjectId,
       projectIds: records.map((record) => record.project.id),
       migrationCompletedAt: new Date().toISOString(),
@@ -768,7 +1111,7 @@ class ProjectRepository {
     const rawIndex = await get<unknown>(INDEX_KEY, PROJECT_STORE);
     const projectIds = isProjectIndex(rawIndex) ? rawIndex.projectIds : [];
     const index: ProjectIndex = {
-      schemaVersion: 3,
+      schemaVersion: 4,
       activeProjectId: null,
       projectIds: [],
       migrationCompletedAt: new Date().toISOString(),
@@ -791,6 +1134,7 @@ class ProjectRepository {
   private async listFromIndex(index: ProjectIndex): Promise<ProjectSummary[]> {
     const records = await Promise.all(index.projectIds.map((id) => this.requireRecord(id)));
     return records
+      .filter((record) => !record.project.trashedAt)
       .map(summary)
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }

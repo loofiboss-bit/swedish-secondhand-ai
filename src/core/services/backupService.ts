@@ -6,7 +6,9 @@ import { isListingDraft, isListingDraftDataset } from './listingDraftService';
 import { isManualComparableDataset } from './manualCompsService';
 import {
   isProjectBackupDataset,
+  migrateLegacyProjectBackupDataset,
   projectRepository,
+  type LegacyProjectBackupDataset,
   type ProjectBackupDataset,
 } from './projectRepository';
 import {
@@ -36,11 +38,20 @@ export interface BackupFileV2 {
   appVersion: string;
   exportedAt: string;
   datasets: BackupFileV1['datasets'] & {
+    projects?: LegacyProjectBackupDataset;
+  };
+}
+
+export interface BackupFileV3 {
+  formatVersion: 3;
+  appVersion: string;
+  exportedAt: string;
+  datasets: BackupFileV1['datasets'] & {
     projects?: ProjectBackupDataset;
   };
 }
 
-export type BackupFile = BackupFileV1 | BackupFileV2;
+export type BackupFile = BackupFileV1 | BackupFileV2 | BackupFileV3;
 
 const BACKUP_FIELD_BY_DATASET: Record<DatasetId, keyof BackupFileV1['datasets']> = {
   settings: 'settings',
@@ -78,7 +89,10 @@ function publicSettings(settings: PersistedSettings | undefined): PersistedSetti
 }
 
 export function validateBackup(value: unknown): BackupFile {
-  if (!isRecord(value) || (value.formatVersion !== 1 && value.formatVersion !== 2)) {
+  if (
+    !isRecord(value) ||
+    (value.formatVersion !== 1 && value.formatVersion !== 2 && value.formatVersion !== 3)
+  ) {
     throw new Error('Unsupported backup format.');
   }
   if (
@@ -111,8 +125,13 @@ export function validateBackup(value: unknown): BackupFile {
   ) {
     throw new Error('Backup manual comparables are invalid.');
   }
+  if (value.formatVersion === 2 && datasets.projects !== undefined) {
+    if (!migrateLegacyProjectBackupDataset(datasets.projects)) {
+      throw new Error('Backup projects are invalid.');
+    }
+  }
   if (
-    value.formatVersion === 2 &&
+    value.formatVersion === 3 &&
     datasets.projects !== undefined &&
     !isProjectBackupDataset(datasets.projects)
   ) {
@@ -123,7 +142,7 @@ export function validateBackup(value: unknown): BackupFile {
 }
 
 class BackupService {
-  async exportBackup(now = new Date(), includeProjectImages = true): Promise<BackupFileV2> {
+  async exportBackup(now = new Date(), includeProjectImages = true): Promise<BackupFileV3> {
     const settings = await readVersionedDataset('settings', isPersistedSettings, (legacy) => {
       if (!isPersistedSettings(legacy)) throw new Error('Settings data is corrupt.');
       return legacy;
@@ -151,7 +170,7 @@ class BackupService {
     const projects = await projectRepository.exportBackup(includeProjectImages);
 
     return {
-      formatVersion: 2,
+      formatVersion: 3,
       appVersion: packageMetadata.version,
       exportedAt: now.toISOString(),
       datasets: {
@@ -188,7 +207,9 @@ class BackupService {
       replacements[dataset] = data;
     }
     const projectReplacement =
-      selected.has('projects') && backup.formatVersion === 2 ? backup.datasets.projects : undefined;
+      selected.has('projects') && (backup.formatVersion === 2 || backup.formatVersion === 3)
+        ? backup.datasets.projects
+        : undefined;
     const replacementDatasets = Object.keys(replacements) as DatasetId[];
     const replacementKeys = replacementDatasets.map((dataset) => DATASET_KEYS[dataset]);
     const previousValues = await getMany<unknown>(replacementKeys);

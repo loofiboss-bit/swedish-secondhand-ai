@@ -265,6 +265,11 @@ export interface InsufficientEvidenceValuationResult extends ValuationResultBase
 export type PricedValuationResult = ReadyValuationResult | LowConfidenceValuationResult;
 export type ValuationResult = PricedValuationResult | InsufficientEvidenceValuationResult;
 
+export type PriceDecision =
+  | { kind: 'unset' }
+  | { kind: 'user_entered'; amountSek: number }
+  | { kind: 'evidence_based'; valuation: PricedValuationResult };
+
 export interface ListingTemplate {
   site: MarketplaceSite;
   title: string;
@@ -457,13 +462,17 @@ export interface VerifiedProjectOutcome {
 }
 
 export interface ItemProject {
-  schemaVersion: 3;
+  schemaVersion: 4;
   id: string;
+  displayName: string;
   title: string;
   status: ProjectStatus;
   currentSection: ProjectSection;
   createdAt: string;
   updatedAt: string;
+  priceDecision: PriceDecision;
+  archivedAt?: string;
+  trashedAt?: string;
   workspace: ProjectWorkspace;
   outcome?: ProjectOutcome;
   migratedFrom?: 'listing-draft' | 'history';
@@ -471,11 +480,25 @@ export interface ItemProject {
 
 export interface ProjectSummary {
   id: string;
+  displayName: string;
   title: string;
   status: ProjectStatus;
   updatedAt: string;
   recommendedPriceSek: number | null;
   thumbnailMediaId?: string;
+  archivedAt?: string;
+  trashedAt?: string;
+}
+
+export type ProjectProgressStep = 'item' | 'price' | 'listing' | 'complete';
+
+export interface ProjectProgress {
+  currentStep: ProjectProgressStep;
+  completedSteps: ProjectProgressStep[];
+  itemReady: boolean;
+  priceReady: boolean;
+  listingReady: boolean;
+  complete: boolean;
 }
 
 export interface SiteConstraint {

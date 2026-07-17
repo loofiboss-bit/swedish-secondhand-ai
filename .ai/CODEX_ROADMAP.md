@@ -1,109 +1,83 @@
-# Swedish Secondhand AI — v2.0.0 Smart Seller Coach roadmap
+# Swedish Secondhand AI — v3.0.0 Guided Selling roadmap
 
-Target: a local-first, project-based Windows and Linux seller coach for Swedish private sellers.
-Each milestone is independently tested and layered sequentially. The maintainer explicitly removed
-the beta and soak prerequisites on 2026-07-16; v2 therefore proceeds through a direct stable release
-candidate while retaining migration, security, platform-upgrade, and artifact gates.
+Target: a local-first Windows and Linux seller coach that lets an occasional Swedish private
+seller create a copy-ready listing with their own price in at most six primary actions and within
+five minutes. Evidence-based valuation remains an optional, clearly stronger pricing route.
 
 ## Product boundary
 
-v2 supports multiple local item projects, deterministic coaching, category-aware evidence,
-photo-quality guidance, transparent market observations and pricing scenarios, editable Tradera,
-Blocket and Vinted listing drafts, and manual listing follow-up. Gemini, Ollama and deterministic
-offline analysis remain the only AI modes.
+v3 retains Gemini, Ollama, deterministic offline analysis, official Tradera comparables, local
+projects, protected secrets and manual copy/export for Tradera, Blocket and Vinted. Accounts,
+cloud sync, scraping, automatic publishing, payments, mobile/web clients, new AI runtimes and
+automatic updates remain out of scope.
 
-Accounts, cloud sync, scraping, browser automation, automatic marketplace publishing, payments,
-mobile/web clients, automatic updates, and new AI runtimes remain out of scope.
+## G0 — Safe v2.0.1 maintenance release
 
-## G0 — v1 contract stabilization
+Status: completed and published 2026-07-17 from merge `c23d053`.
 
-Status: completed in merge `665af32`.
+- Published the merged relative-asset AppImage fix as v2.0.1.
+- Generalized semantic-version release and publication gates.
+- Verified Windows and Linux packaging, v2.0.0 upgrades, visible AppImage rendering, checksums,
+  SBOM and GitHub artifact readback.
 
-- Align Tradera with fixed REST v4 App ID/App key authentication.
-- Separate asking, realized and unknown price evidence.
-- Cache bounded searches and prevent non-realized prices from anchoring valuations.
-- Keep the live credential smoke as an operational integration gate without coupling v2 to a v1
-  beta or soak.
+## M1 — Schema 4 and simplified core contracts
 
-## M1 — Project library and schema 3 data
+Status: in progress on `feature/v3-schema4`.
 
-Status: completed and validated on `feature/v2-project-library`.
+- Add explicit project names, `PriceDecision`, archive state and recoverable trash.
+- Migrate schema 3 deterministically and idempotently while retaining verified schema 3 rollback
+  records.
+- Export backup format 3 with live and trashed projects; import formats 2 and 3.
+- Derive `ProjectProgress` from project data instead of persisting new workflow state.
 
-- Replace the global five-step shell with Home, Projects, item workspace, and separate Settings.
-- Support draft, ready, listed, sold and paused project states.
-- Store each project and its image media atomically in the schema 3 project database.
-- Migrate the active v1 draft and history idempotently while retaining all schema 2 source keys.
-- Enter read-only recovery when legacy data cannot be validated.
-- Add full and compact format-2 backup/import for projects and images.
+## M2 — Immediate offline start and clear configuration
 
-Acceptance: multiple projects remain isolated across restart; migration, corrupt data, images,
-backup/import, reset, unit tests, E2E, and `npm run validate` pass.
+Status: planned.
 
-## M2 — Deterministic seller coach and smart intake
+- Make **Start offline** the primary first-run action and detect the OS language.
+- Show only the selected provider configuration with localized connection tests.
+- Add a network-free example project and a project quick start with name, description and images.
 
-Status: completed and validated on `feature/v2-smart-intake`.
+## M3 — Guided workflow and progressive detail
 
-- Add priority-ordered coach actions and evidence gaps.
-- Add local image quality checks and category-specific photo coverage.
-- Add Electronics, Fashion, Furniture, Collectibles and General fact profiles.
-- Extend AI responses with candidates, uncertainty and evidence references without overriding
-  locked user facts.
+Status: planned.
 
-## M3 — Market intelligence and pricing workshop
+- Use Item → Price → Listing → Done with one primary next action.
+- Show only the coach's most important task; move provenance and advanced tools into details.
+- Localize enums, dates, sources and normalized errors; use contextual dismissible errors.
+- Expose localized autosave states and remove the legacy global workflow from UI state.
 
-Status: completed and validated on `feature/v2-market-workshop`.
+## M4 — Flexible pricing and simpler listing studio
 
-- Add editable exact/broad comparable query plans, normalization and deduplication.
-- Expose observation provenance, price kind, cache age and deterministic relevance.
-- Compare all three pricing strategies without allowing AI or asking prices to set final prices.
+Status: planned.
 
-## M4 — Listing studio and sell plan
+- Support evidence-based price, clearly labelled user price or no price yet.
+- Generate listing text without valuation; require a price only for the complete copy bundle.
+- Keep numerical recommendations gated by two approved realized comparables.
+- Guide manual comparable entry and show one recommended marketplace tab at a time.
 
-Status: completed and validated on `feature/v2-listing-studio`.
+## M5 — Safe project management and support
 
-- Make listing fields editable with per-field origin and user-edit preservation.
-- Add previews, character limits, image ordering, actionable policy issues and copy bundles.
-- Add transparent marketplace, format, price and shipping recommendations.
+Status: planned.
 
-## M5 — Follow-up and local learning
+- Add search, status filters, rename, archive, trash/undo and explicit empty-trash confirmation.
+- Export privacy-safe diagnostics without user text, images, URLs or secrets.
+- Refresh README, user guide, support flow and all v3 screenshots.
 
-Status: completed and validated on `feature/v2-follow-up-learning`.
+## M6 — v3 release candidate and stable gate
 
-- Track listing date, marketplace, URL, asking price, outcome and realized price.
-- Add local 3/7/14-day follow-up guidance.
-- Calibrate only from sufficient user-owned verified outcomes.
+Status: planned.
 
-## M6 — Stable v2 release
-
-Status: completed. Stable `v2.0.0` was published on 2026-07-16 from commit `47ead307` after
-migration, security, accessibility, E2E, Linux and Windows upgrade, package, checksum, SBOM and
-artifact-readback gates passed. Beta and soak requirements were explicitly removed by the
-maintainer.
-
-- Require migration, security, accessibility, E2E, package and release gates.
-- Publish stable `v2.0.0` only with no P0/P1, high-severity security, data-loss, platform-upgrade,
-  or artifact-readback failure.
-
-## Post-release maintenance
-
-Status: Linux AppImage startup hotfix implemented, merged, and prepared for the authorized
-`v2.0.1` tag-triggered publication.
-
-- The v2.0.0 AppImage process started but rendered a blank window because Vite emitted
-  root-relative `/assets/...` URLs for an Electron `file://` entry point.
-- Renderer assets and lazy chunks now use relative paths.
-- Release validation rejects root-relative packaged assets.
-- Linux package smoke now inspects the real Electron renderer and requires visible app content;
-  process liveness alone is no longer accepted.
-- `.ai/ROADMAP.md` now reflects released v2 status and is checked against this authority by
-  `npm run validate:roadmaps`.
+- Publish `v3.0.0-rc.1` only after full local and cross-platform release validation.
+- Stable v3.0.0 requires a seven-day RC period, verified clean installs and v2.0.1 upgrades on
+  Windows/Linux, no open P0/P1 or high security findings, and artifact/checksum/SBOM readback.
 
 ## Progress
 
-- [x] G0 v1 contract stabilization
-- [x] M1 Project library and schema 3 data
-- [x] M2 Deterministic seller coach and smart intake
-- [x] M3 Market intelligence and pricing workshop
-- [x] M4 Listing studio and sell plan
-- [x] M5 Follow-up and local learning
-- [x] M6 Stable v2 release
+- [x] G0 Safe v2.0.1 maintenance release
+- [ ] M1 Schema 4 and simplified core contracts
+- [ ] M2 Immediate offline start and clear configuration
+- [ ] M3 Guided workflow and progressive detail
+- [ ] M4 Flexible pricing and simpler listing studio
+- [ ] M5 Safe project management and support
+- [ ] M6 v3 release candidate and stable gate
