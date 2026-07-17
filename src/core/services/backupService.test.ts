@@ -1,6 +1,7 @@
 import { clear, get, set } from 'idb-keyval';
 import { Blob as NodeBlob } from 'node:buffer';
 import { beforeEach, describe, expect, it } from 'vitest';
+import packageMetadata from '../../../package.json';
 import type { HistoryEntry, ListingDraft } from '@core/types';
 import { backupService, isBackupTextWithinLimit } from './backupService';
 import { DATASET_KEYS, createEnvelope, type DataEnvelope } from './persistenceService';
@@ -41,7 +42,7 @@ describe('backupService', () => {
     const backup = await backupService.exportBackup(new Date('2026-07-15T12:00:00.000Z'));
     const stored = await get<DataEnvelope<unknown>>(DATASET_KEYS['listing-draft']);
 
-    expect(backup).toMatchObject({ formatVersion: 3, appVersion: '2.0.1' });
+    expect(backup).toMatchObject({ formatVersion: 3, appVersion: packageMetadata.version });
     expect(JSON.stringify(backup)).not.toContain('legacy-secret');
     expect(JSON.stringify(backup)).not.toMatch(/geminiApiKey|traderaApiKey/);
     expect(stored).toMatchObject({ schemaVersion: 2, dataset: 'listing-draft', data: draft });

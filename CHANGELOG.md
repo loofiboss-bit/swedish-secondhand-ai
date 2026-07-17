@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 3.0.0-rc.1 - 2026-07-17
+
+- Added an immediate offline start, optional local demo and project quick start with bulk images.
+- Added schema 4, explicit price decisions, derived progress, backup format 3 and retained schema 3
+  rollback records.
+- Reworked the workspace into Item, Price, Listing and Done with one primary coach action,
+  progressive evidence details, localized errors and visible autosave status.
+- Added copy-ready own-price listings without confidence or AI claims while preserving the
+  two-approved-realized-comparable gate for evidence-based recommendations.
+- Added recommended marketplace tabs, safe project search/rename/archive/trash/undo and a
+  whitelist-based privacy-safe diagnostic export.
+- Updated the complete v3 user/support documentation, screenshots, accessibility checks and
+  v2.0.1 upgrade validation for Windows and Linux release artifacts.
+
 ## 2.0.1 - 2026-07-17
 
 - Fixed the Linux AppImage blank window by emitting renderer asset and lazy-chunk URLs relative

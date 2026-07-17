@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 async function finishOnboarding(page: import('@playwright/test').Page, mode = 'offline') {
   const startPage = page.getByRole('heading', { name: /välkommen|welcome/i });
@@ -89,6 +90,15 @@ test('supports keyboard focus, semantic navigation, zoom, and reduced motion', a
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
   );
   expect(hasHorizontalOverflow).toBe(false);
+
+  const accessibility = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(
+    accessibility.violations.filter((violation) =>
+      ['serious', 'critical'].includes(violation.impact ?? ''),
+    ),
+  ).toEqual([]);
 });
 
 test('searches, renames, archives, trashes, and restores a project safely', async ({ page }) => {
