@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a change within the local-first desktop scope
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        v3 is a local-first Windows and Linux app with manual marketplace publishing. Accounts, cloud sync, scraping, automatic publishing, payments, mobile or web clients, and new AI runtimes are outside the current scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Seller problem
+      description: Describe the task that is difficult today. Do not include private listing data.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Explain what the seller should be able to complete.
+    validations:
+      required: true
+  - type: textarea
+    id: current-workaround
+    attributes:
+      label: Current workaround
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Scope check
+      options:
+        - label: The request keeps publishing manual and does not require scraping or account access.
+          required: true

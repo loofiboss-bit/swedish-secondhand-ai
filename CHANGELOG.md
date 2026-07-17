@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Reorganized the GitHub documentation around the v3 user journey, with a concise README,
+  versioned documentation index, Swedish quick start, and focused guides for installation, first
+  listing, pricing, providers, backup, and troubleshooting.
+- Updated privacy, security, support, contribution, and release-script documentation to match
+  schema 4, backup format 3, the v3 provider boundary, and the current release candidate.
+- Rebuilt the repository wiki as a user-facing entry point with links to versioned source guides.
+
 ## 3.0.0-rc.1 - 2026-07-17
 
 - Added an immediate offline start, optional local demo and project quick start with bulk images.

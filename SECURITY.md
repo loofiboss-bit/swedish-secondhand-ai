@@ -2,26 +2,50 @@
 
 ## Supported versions
 
-Security fixes are applied to the current public v1 beta/stable line. Development snapshots and
-older v0.x builds should be upgraded before reporting behavior already corrected on the current
-line.
+Security fixes target the current public v3 release-candidate or stable line and the latest
+maintenance release needed for supported upgrades. Older v0.x and v1 builds should be upgraded.
+Reproduce a v2 issue on the latest v2 maintenance build or v3 release candidate when possible.
 
-## Reporting a vulnerability
+The latest public package is listed on the
+[GitHub Releases page](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases).
 
-Use the repository's private GitHub Security Advisory reporting flow. Do not open a public issue
-for raw API keys, backup contents, or an unpatched vulnerability. Include affected version,
-platform, minimal reproduction, expected impact, and whether protected storage was available.
-Never include a real provider credential.
+## Report a vulnerability privately
 
-## v1 security boundary
+Use the repository's
+[private vulnerability reporting](https://github.com/loofiboss-bit/swedish-secondhand-ai/security/advisories/new)
+flow. Do not open a public issue for an unpatched vulnerability, credential, backup content, or
+private marketplace data.
+
+Include:
+
+- affected app version and package type;
+- operating system and version;
+- a minimal reproduction using test data;
+- expected impact and required user interaction;
+- whether operating-system protected storage was available.
+
+Never include a real provider credential. Revoke any credential used during accidental exposure.
+
+## Security boundary
 
 - Electron uses context isolation, sandboxing, disabled Node integration, narrow preload methods,
-  validated IPC, blocked navigation/new windows, and a restrictive CSP.
-- Gemini and Tradera secrets live behind operating-system protected storage. Cloud features stop
-  when that storage is unavailable; local Ollama and offline behavior remain usable.
-- Credential-bearing calls, redirects, response size/schema, deadlines, and operation frequency
-  are constrained in the main process.
-- Backups exclude secrets and are validated completely before atomic import.
+  validated IPC, blocked navigation and new windows, and a restrictive content security policy.
+- Gemini and Tradera secrets stay behind the main-process boundary in operating-system protected
+  storage. The renderer receives configured or not-configured status, never the saved secret.
+- Cloud operations stop when protected storage is unavailable. Offline mode and local Ollama
+  remain usable.
+- Credential-bearing requests have fixed destinations, bounded payloads and responses, deadlines,
+  schema validation, and operation-rate limits.
+- Numeric valuation requires explicit user-approved realized comparables. Insufficient evidence
+  produces no numeric price.
+- Backups exclude secrets and imports validate the full replacement before committing it.
+- Safe diagnostics exclude user text, images, source URLs, and secrets.
 
-Keep the operating system and app current, review generated facts, and revoke provider keys if a
-device profile may be compromised.
+## Download safety
+
+Release packages include `SHA256SUMS.txt` and a CycloneDX software bill of materials. Verify the
+checksum before running a download. Windows packages are not code-signed, so a valid checksum is
+especially important.
+
+Keep the operating system and app current. Review every generated fact and listing before use.
+See [Install and update](./docs/guides/INSTALLATION.md) for verification commands.
