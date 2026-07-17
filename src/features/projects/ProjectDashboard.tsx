@@ -6,9 +6,14 @@ import { SectionCard } from '@shared/components/SectionCard';
 interface ProjectDashboardProps {
   mode: 'home' | 'library';
   projects: ProjectSummary[];
+  trash: ProjectSummary[];
   onCreate: (input?: ProjectQuickStartInput) => void;
   onOpen: (id: string) => void;
   onRemove: (id: string) => void;
+  onRestore: (id: string) => void;
+  onEmptyTrash: () => void;
+  onRename: (id: string, displayName: string) => void;
+  onArchive: (id: string, archived: boolean) => void;
 }
 
 export interface ProjectQuickStartInput {
@@ -36,9 +41,14 @@ const STATUS_ORDER: ProjectStatus[] = ['draft', 'ready', 'listed', 'sold', 'paus
 export function ProjectDashboard({
   mode,
   projects,
+  trash,
   onCreate,
   onOpen,
   onRemove,
+  onRestore,
+  onEmptyTrash,
+  onRename,
+  onArchive,
 }: ProjectDashboardProps) {
   const { t, i18n } = useTranslation('common');
   const [showQuickStart, setShowQuickStart] = useState(projects.length === 0);
@@ -46,6 +56,10 @@ export function ProjectDashboard({
   const [description, setDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | ProjectStatus>('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const [lastRemoved, setLastRemoved] = useState<ProjectSummary | null>(null);
 
   const createFromQuickStart = async () => {
     if (!displayName.trim() || !description.trim()) return;
@@ -64,7 +78,15 @@ export function ProjectDashboard({
       ) as Record<ProjectStatus, number>,
     [projects],
   );
-  const visible = mode === 'home' ? projects.slice(0, 5) : projects;
+  const filteredProjects = projects.filter((project) => {
+    const matchesSearch = project.displayName
+      .toLocaleLowerCase()
+      .includes(search.toLocaleLowerCase());
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    const matchesArchive = showArchived ? Boolean(project.archivedAt) : !project.archivedAt;
+    return matchesSearch && matchesStatus && matchesArchive;
+  });
+  const visible = mode === 'home' ? filteredProjects.slice(0, 5) : filteredProjects;
   const prioritized = projects
     .filter((project) => project.status !== 'sold')
     .sort((left, right) => {
@@ -196,6 +218,54 @@ export function ProjectDashboard({
           ) : undefined
         }
       >
+        {mode === 'library' && (
+          <div className="project-filters">
+            <label className="field">
+              <span>{t('searchProjects')}</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </label>
+            <label className="field">
+              <span>{t('filterByStatus')}</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as 'all' | ProjectStatus)}
+              >
+                <option value="all">{t('allStatuses')}</option>
+                {STATUS_ORDER.map((status) => (
+                  <option key={status} value={status}>
+                    {t(`projectStatus_${status}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(event) => setShowArchived(event.target.checked)}
+              />
+              {t('showArchived')}
+            </label>
+          </div>
+        )}
+        {lastRemoved && (
+          <div className="undo-banner" role="status">
+            <span>{t('projectMovedToTrash', { name: lastRemoved.displayName })}</span>
+            <button
+              type="button"
+              onClick={() => {
+                onRestore(lastRemoved.id);
+                setLastRemoved(null);
+              }}
+            >
+              {t('undo')}
+            </button>
+          </div>
+        )}
         {visible.length === 0 ? (
           <div className="empty-state">
             <h3>{t('noProjects')}</h3>
@@ -234,16 +304,65 @@ export function ProjectDashboard({
                 <button
                   type="button"
                   className="button-danger-quiet"
-                  onClick={() => onRemove(project.id)}
+                  onClick={() => {
+                    setLastRemoved(project);
+                    onRemove(project.id);
+                  }}
                   aria-label={`${t('removeProject')}: ${project.title}`}
                 >
                   {t('remove')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const name = window.prompt(t('renameProjectPrompt'), project.displayName);
+                    if (name?.trim()) onRename(project.id, name.trim());
+                  }}
+                >
+                  {t('rename')}
+                </button>
+                <button type="button" onClick={() => onArchive(project.id, !project.archivedAt)}>
+                  {project.archivedAt ? t('unarchive') : t('archive')}
                 </button>
               </li>
             ))}
           </ul>
         )}
       </SectionCard>
+
+      {mode === 'library' && (
+        <SectionCard
+          title={`${t('trash')} (${trash.length})`}
+          action={
+            trash.length > 0 ? (
+              <button
+                type="button"
+                className="button-danger-quiet"
+                onClick={() => {
+                  if (window.confirm(t('confirmEmptyTrash'))) onEmptyTrash();
+                }}
+              >
+                {t('emptyTrash')}
+              </button>
+            ) : undefined
+          }
+        >
+          {trash.length === 0 ? (
+            <p>{t('trashEmpty')}</p>
+          ) : (
+            <ul className="project-list project-list--trash">
+              {trash.map((project) => (
+                <li key={project.id}>
+                  <strong>{project.displayName}</strong>
+                  <button type="button" onClick={() => onRestore(project.id)}>
+                    {t('restore')}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+      )}
     </div>
   );
 }

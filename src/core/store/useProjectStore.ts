@@ -16,6 +16,7 @@ import type {
 interface ProjectState {
   status: 'idle' | 'loading' | 'ready' | 'recovery';
   projects: ProjectSummary[];
+  trash: ProjectSummary[];
   activeProjectId: string | null;
   activeProject: ItemProject | null;
   error: AppErrorCode | null;
@@ -27,7 +28,11 @@ interface ProjectState {
   updateActiveOutcome: (outcome: ProjectOutcome) => Promise<void>;
   setActiveSection: (section: ProjectSection) => Promise<void>;
   setActivePriceDecision: (decision: PriceDecision) => Promise<void>;
+  renameProject: (id: string, displayName: string) => Promise<void>;
+  setProjectArchived: (id: string, archived: boolean) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
+  restoreProject: (id: string) => Promise<void>;
+  emptyTrash: () => Promise<void>;
 }
 
 function applyRepositoryState(state: ProjectRepositoryState) {
@@ -48,13 +53,15 @@ function replaceSummary(projects: ProjectSummary[], summary: ProjectSummary): Pr
 export const useProjectStore = create<ProjectState>((set, get) => ({
   status: 'idle',
   projects: [],
+  trash: [],
   activeProjectId: null,
   activeProject: null,
   error: null,
   initialize: async () => {
     set({ status: 'loading', error: null });
     const state = await projectRepository.initialize();
-    set({ ...applyRepositoryState(state), activeProject: null });
+    const trash = state.status === 'ready' ? await projectRepository.listTrash() : [];
+    set({ ...applyRepositoryState(state), trash, activeProject: null });
   },
   createProject: async (displayName) => {
     try {
@@ -173,13 +180,55 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       set({ error: normalizeAppError(error, 'project_operation_failed') });
     }
   },
+  renameProject: async (id, displayName) => {
+    try {
+      const summary = await projectRepository.rename(id, displayName);
+      set((state) => ({
+        projects: replaceSummary(state.projects, summary),
+        activeProject:
+          state.activeProject?.id === id
+            ? { ...state.activeProject, displayName: summary.displayName, title: summary.title }
+            : state.activeProject,
+        error: null,
+      }));
+    } catch (error) {
+      set({ error: normalizeAppError(error, 'project_operation_failed') });
+    }
+  },
+  setProjectArchived: async (id, archived) => {
+    try {
+      const summary = await projectRepository.setArchived(id, archived);
+      set((state) => ({ projects: replaceSummary(state.projects, summary), error: null }));
+    } catch (error) {
+      set({ error: normalizeAppError(error, 'project_operation_failed') });
+    }
+  },
   removeProject: async (id) => {
     try {
       const state = await projectRepository.remove(id);
+      const trash = await projectRepository.listTrash();
       set({
         ...applyRepositoryState(state),
+        trash,
         activeProject: get().activeProjectId === id ? null : get().activeProject,
       });
+    } catch (error) {
+      set({ error: normalizeAppError(error, 'project_operation_failed') });
+    }
+  },
+  restoreProject: async (id) => {
+    try {
+      const state = await projectRepository.restore(id);
+      const trash = await projectRepository.listTrash();
+      set({ ...applyRepositoryState(state), trash, activeProject: get().activeProject });
+    } catch (error) {
+      set({ error: normalizeAppError(error, 'project_operation_failed') });
+    }
+  },
+  emptyTrash: async () => {
+    try {
+      const state = await projectRepository.emptyTrash();
+      set({ ...applyRepositoryState(state), trash: [], activeProject: get().activeProject });
     } catch (error) {
       set({ error: normalizeAppError(error, 'project_operation_failed') });
     }

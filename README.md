@@ -10,7 +10,23 @@
 
 Desktop-first valuation and listing assistant for Swedish secondhand markets.
 
-## What's New in v2.0.0
+## What's New in v3.0.0
+
+- A new user can start offline immediately and create a copy-ready listing with their own price
+  without an account, API key, or market data.
+- The default path is **Item → Price → Listing → Done** with one primary coach action at a time.
+- Pricing is an explicit choice: **Your price**, optional evidence-based recommendation, or decide
+  later. Seller-entered prices never receive confidence or AI/market claims.
+- Advanced provider, provenance, comparable weighting, and scenario tools stay available behind
+  progressive details.
+- The listing studio opens the recommended marketplace first and keeps the other marketplaces in
+  tabs. Listing text can be drafted before pricing; the complete package requires a price.
+- Projects support search, status filters, rename, archive, recoverable trash and explicit
+  permanent deletion. Privacy-safe diagnostics exclude text, images, URLs and secrets.
+- Schema 4 and backup format 3 preserve live and trashed projects while retaining the verified
+  schema 3 rollback source during migration.
+
+## v2.0.0 foundation
 
 - A local project library keeps multiple items isolated as drafts, ready listings, published
   items, sold items, or paused work.
@@ -76,13 +92,16 @@ Desktop-first valuation and listing assistant for Swedish secondhand markets.
 - Local-first storage for settings, manual comps, drafts, and history.
 - Swedish-first UI with English fallback.
 
-## Item workspace
+## Five-minute offline path
 
-1. Create or open an item project.
-2. Review the item from text/images.
-3. Fetch Tradera comparables, add manual evidence, and estimate value.
-4. Generate and review site listings.
-5. Copy/export manually and track the item in Follow-up.
+1. Choose **Start offline**.
+2. Create an item with a project name and description; images are optional.
+3. Review the detected facts.
+4. Choose **Your price** and enter SEK.
+5. Generate the listing, review the recommended marketplace and copy the package.
+
+For a stronger price recommendation, open evidence-based valuation and approve at least two
+verified realized comparables. Asking prices remain context only.
 
 ## Keyboard Shortcuts
 

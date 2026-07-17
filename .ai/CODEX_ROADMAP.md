@@ -49,7 +49,7 @@ Status: completed in merge `c4d1890` after local, E2E and GitHub validation.
 
 ## M4 — Flexible pricing and simpler listing studio
 
-Status: in progress on `feature/v3-flexible-price`.
+Status: completed in merge `012a7f6` after local, E2E and GitHub validation.
 
 - Support evidence-based price, clearly labelled user price or no price yet.
 - Generate listing text without valuation; require a price only for the complete copy bundle.
@@ -58,7 +58,7 @@ Status: in progress on `feature/v3-flexible-price`.
 
 ## M5 — Safe project management and support
 
-Status: planned.
+Status: in progress on `feature/v3-project-support`.
 
 - Add search, status filters, rename, archive, trash/undo and explicit empty-trash confirmation.
 - Export privacy-safe diagnostics without user text, images, URLs or secrets.
@@ -78,6 +78,6 @@ Status: planned.
 - [x] M1 Schema 4 and simplified core contracts
 - [x] M2 Immediate offline start and clear configuration
 - [x] M3 Guided workflow and progressive detail
-- [ ] M4 Flexible pricing and simpler listing studio
+- [x] M4 Flexible pricing and simpler listing studio
 - [ ] M5 Safe project management and support
 - [ ] M6 v3 release candidate and stable gate

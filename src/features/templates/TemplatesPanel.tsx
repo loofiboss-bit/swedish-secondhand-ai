@@ -364,7 +364,7 @@ export function TemplatesPanel() {
                               type="button"
                               onClick={() => openField(draft.site, issue.field)}
                             >
-                              {issue.message}
+                              {t(`readinessIssue_${issue.id}`, { defaultValue: issue.message })}
                             </button>
                           </li>
                         ))}

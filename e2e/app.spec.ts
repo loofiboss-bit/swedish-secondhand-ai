@@ -91,6 +91,31 @@ test('supports keyboard focus, semantic navigation, zoom, and reduced motion', a
   expect(hasHorizontalOverflow).toBe(false);
 });
 
+test('searches, renames, archives, trashes, and restores a project safely', async ({ page }) => {
+  await page.goto('/');
+  await finishOnboarding(page);
+  await createProject(page, 'Projekt för säker hantering');
+  await page.getByRole('button', { name: /projekt|projects/i }).click();
+
+  await page.getByLabel(/sök projekt|search projects/i).fill('E2E test');
+  await expect(page.getByText('E2E test project').first()).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept('Omdöpt projekt'));
+  await page.getByRole('button', { name: /byt namn|rename/i }).click();
+  await page.getByLabel(/sök projekt|search projects/i).fill('');
+  await expect(page.getByText('Omdöpt projekt').first()).toBeVisible();
+
+  await page.getByRole('button', { name: /^arkivera$|^archive$/i }).click();
+  await expect(page.getByText('Omdöpt projekt')).toBeHidden();
+  await page.getByLabel(/visa arkiverade|show archived/i).check();
+  await expect(page.getByText('Omdöpt projekt').first()).toBeVisible();
+
+  await page.getByRole('button', { name: /ta bort.*omdöpt|remove.*omdöpt/i }).click();
+  await expect(page.getByRole('status')).toContainText(/papperskorgen|trash/i);
+  await page.getByRole('button', { name: /ångra|undo/i }).click();
+  await expect(page.getByText('Omdöpt projekt').first()).toBeVisible();
+});
+
 test('offline intake exposes conservative candidates and explicit knowledge gaps', async ({
   page,
 }) => {

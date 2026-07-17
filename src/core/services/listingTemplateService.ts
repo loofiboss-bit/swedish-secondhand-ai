@@ -19,6 +19,27 @@ const titleLimits: Record<MarketplaceSite, number> = {
   vinted: 60,
 };
 
+const categoryLabel: Record<VerifiedProductFacts['category']['value'], string> = {
+  Electronics: 'Elektronik',
+  Fashion: 'Mode',
+  Furniture: 'Möbler',
+  Collectibles: 'Samlarobjekt',
+  General: 'Övrigt',
+};
+
+const conditionLabel: Record<VerifiedProductFacts['conditionGrade']['value'], string> = {
+  new: 'Ny',
+  like_new: 'Nyskick',
+  good: 'Bra skick',
+  fair: 'Godtagbart skick',
+  poor: 'Slitet skick',
+  unknown: 'Inte verifierat',
+};
+
+function present(value: string): string {
+  return value === 'Unknown' || value.trim() === '' ? 'Inte verifierat' : value;
+}
+
 function reviewedList(values: string[], unknownText: string): string {
   return values.length > 0 ? values.join(', ') : unknownText;
 }
@@ -159,10 +180,12 @@ class ListingTemplateService {
         title: generated(template.title),
         description: generated(template.description),
         priceSek: generated(template.priceSuggestionSek),
-        category: generated(facts?.category.value ?? ''),
+        category: generated(facts ? categoryLabel[facts.category.value] : ''),
         attributes: generated(
           facts
-            ? Object.entries(facts.attributes).map(([key, fact]) => `${key}: ${fact.value}`)
+            ? Object.entries(facts.attributes).map(
+                ([key, fact]) => `${key}: ${present(fact.value)}`,
+              )
             : [],
         ),
         shippingPickup: generated(template.shippingSuggestion),
@@ -179,7 +202,15 @@ class ListingTemplateService {
     facts: VerifiedProductFacts,
     priceDecision: PriceDecision,
   ): ListingTemplate {
-    const title = `${facts.brand.value} ${facts.title.value}`.trim().slice(0, titleLimits[site]);
+    const brand = present(facts.brand.value);
+    const rawTitle = present(facts.title.value);
+    const title = (
+      rawTitle.toLocaleLowerCase().includes(brand.toLocaleLowerCase())
+        ? rawTitle
+        : `${brand} ${rawTitle}`
+    )
+      .trim()
+      .slice(0, titleLimits[site]);
     const testing =
       facts.testedStatus.value === 'tested'
         ? 'Testad av säljaren'
@@ -193,10 +224,10 @@ class ListingTemplateService {
           ? 'Inte verifierad'
           : 'Äkthet inte verifierad';
     const bullets = [
-      `Kategori: ${facts.category.value}`,
-      `Skick: ${facts.conditionGrade.value}`,
-      `Varumärke: ${facts.brand.value}`,
-      `Modell: ${facts.model.value}`,
+      `Kategori: ${categoryLabel[facts.category.value]}`,
+      `Skick: ${conditionLabel[facts.conditionGrade.value]}`,
+      `Varumärke: ${brand}`,
+      `Modell: ${present(facts.model.value)}`,
       `Defekter: ${reviewedList(facts.defects.value, 'Inte fullständigt verifierat — inspektera före publicering')}`,
       `Tillbehör som ingår: ${reviewedList(facts.includedAccessories.value, 'Inte verifierat')}`,
       `Tillbehör som saknas: ${reviewedList(facts.missingAccessories.value, 'Inte verifierat')}`,
@@ -227,8 +258,8 @@ class ListingTemplateService {
         site === 'blocket'
           ? 'Hämtning eller spårbar frakt inom Sverige.'
           : 'Spårbar frakt inom Sverige.',
-      tags: [facts.category.value, facts.brand.value, siteLabel[site]].filter(
-        (entry) => entry && entry !== 'Unknown',
+      tags: [categoryLabel[facts.category.value], brand, siteLabel[site]].filter(
+        (entry) => entry && entry !== 'Inte verifierat',
       ),
       disclaimer:
         priceDecision.kind === 'evidence_based'
