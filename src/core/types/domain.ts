@@ -362,7 +362,7 @@ export interface ComparableQuery {
 export interface ListingTemplateInput {
   site: MarketplaceSite;
   facts: VerifiedProductFacts;
-  valuation: PricedValuationResult;
+  priceDecision: PriceDecision;
 }
 
 export interface MarketplaceAdapter {

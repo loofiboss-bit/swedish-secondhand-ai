@@ -3,7 +3,7 @@ import type {
   ListingOwnedField,
   MarketplaceListingDraft,
   MarketplaceSite,
-  PricedValuationResult,
+  PriceDecision,
   VerifiedProductFacts,
 } from '@core/types';
 
@@ -35,10 +35,10 @@ class ListingTemplateService {
 
   generateTemplates(
     facts: VerifiedProductFacts,
-    valuation: PricedValuationResult,
+    priceDecision: PriceDecision = { kind: 'unset' },
   ): ListingTemplate[] {
     return (['tradera', 'blocket', 'vinted'] as const).map((site) =>
-      this.renderTemplate(site, facts, valuation),
+      this.renderTemplate(site, facts, priceDecision),
     );
   }
 
@@ -58,13 +58,13 @@ class ListingTemplateService {
 
   generateListingDrafts(
     facts: VerifiedProductFacts,
-    valuation: PricedValuationResult,
+    priceDecision: PriceDecision,
     imageCount: number,
     existing: MarketplaceListingDraft[] = [],
     replaceUserEdits = false,
     now = new Date().toISOString(),
   ): MarketplaceListingDraft[] {
-    return this.generateTemplates(facts, valuation).map((template) => {
+    return this.generateTemplates(facts, priceDecision).map((template) => {
       const current = existing.find((draft) => draft.site === template.site);
       const generated = this.draftFromTemplate(template, facts, imageCount, now);
       if (!current) return generated;
@@ -177,7 +177,7 @@ class ListingTemplateService {
   private renderTemplate(
     site: MarketplaceSite,
     facts: VerifiedProductFacts,
-    valuation: PricedValuationResult,
+    priceDecision: PriceDecision,
   ): ListingTemplate {
     const title = `${facts.brand.value} ${facts.title.value}`.trim().slice(0, titleLimits[site]);
     const testing =
@@ -202,7 +202,9 @@ class ListingTemplateService {
       `Tillbehör som saknas: ${reviewedList(facts.missingAccessories.value, 'Inte verifierat')}`,
       `Teststatus: ${testing}`,
       `Äkthet: ${authenticity}`,
-      `Prisstrategi: ${valuation.pricingStrategy}`,
+      ...(priceDecision.kind === 'evidence_based'
+        ? [`Prisstrategi: ${priceDecision.valuation.pricingStrategy}`]
+        : []),
     ];
     const siteSpecific =
       site === 'tradera'
@@ -215,7 +217,12 @@ class ListingTemplateService {
       site,
       title,
       description: `${title}\n\n${bullets.join('\n')}\n\n${siteSpecific}`,
-      priceSuggestionSek: valuation.priceRecommendedSek,
+      priceSuggestionSek:
+        priceDecision.kind === 'user_entered'
+          ? priceDecision.amountSek
+          : priceDecision.kind === 'evidence_based'
+            ? priceDecision.valuation.priceRecommendedSek
+            : 0,
       shippingSuggestion:
         site === 'blocket'
           ? 'Hämtning eller spårbar frakt inom Sverige.'
@@ -224,7 +231,11 @@ class ListingTemplateService {
         (entry) => entry && entry !== 'Unknown',
       ),
       disclaimer:
-        'Prisförslag är en uppskattning. Kontrollera fakta och aktuella jämförelser innan publicering.',
+        priceDecision.kind === 'evidence_based'
+          ? 'Prisförslag är en evidensbaserad uppskattning. Kontrollera fakta och jämförelser före publicering.'
+          : priceDecision.kind === 'user_entered'
+            ? 'Priset har angetts av säljaren.'
+            : 'Pris är inte valt ännu. Lägg till ett pris före publicering.',
     };
   }
 }

@@ -453,7 +453,7 @@ function summary(record: ProjectRecord): ProjectSummary {
 }
 
 function priceDecisionFromDraft(draft: ListingDraft, current?: PriceDecision): PriceDecision {
-  if (current?.kind === 'user_entered') return current;
+  if (current) return current;
   if (draft.valuation && draft.valuation.status !== 'insufficient-evidence') {
     return { kind: 'evidence_based', valuation: draft.valuation };
   }

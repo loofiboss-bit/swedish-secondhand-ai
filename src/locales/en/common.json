@@ -493,5 +493,16 @@
   "keepCurrentSession": "Keep current session",
   "fixPriceStep": "Fix price step",
   "fixTemplateStep": "Fix template step",
+  "priceStep": "Step 2 of 4 · Price",
+  "choosePricePath": "How would you like to set the price?",
+  "choosePricePathIntro": "Your own price is fastest. Evidence-based pricing is optional and needs at least two approved realized prices.",
+  "useOwnPrice": "Use my own price",
+  "useEvidencePrice": "Use evidence-based price",
+  "decidePriceLater": "Decide later",
+  "yourPrice": "Your price",
+  "confirmOwnPrice": "Use my price",
+  "evidencePriceAdvanced": "Evidence-based valuation and market data",
+  "chooseMarketplace": "Choose marketplace",
+  "recommendedMarketplace": "Recommended",
   "discardDraft": "Discard draft"
 }

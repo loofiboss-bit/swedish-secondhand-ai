@@ -7,6 +7,7 @@ import type {
   ItemProject,
   ListingDraft,
   ProjectOutcome,
+  PriceDecision,
   ProjectSection,
   ProjectStatus,
   ProjectSummary,
@@ -25,6 +26,7 @@ interface ProjectState {
   setActiveStatus: (status: ProjectStatus) => Promise<void>;
   updateActiveOutcome: (outcome: ProjectOutcome) => Promise<void>;
   setActiveSection: (section: ProjectSection) => Promise<void>;
+  setActivePriceDecision: (decision: PriceDecision) => Promise<void>;
   removeProject: (id: string) => Promise<void>;
 }
 
@@ -150,6 +152,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     try {
       const project = await projectRepository.setSection(id, section);
       set({ activeProject: project, error: null });
+    } catch (error) {
+      set({ error: normalizeAppError(error, 'project_operation_failed') });
+    }
+  },
+  setActivePriceDecision: async (priceDecision) => {
+    const id = get().activeProjectId;
+    if (!id) return;
+    try {
+      const summary = await projectRepository.setPriceDecision(id, priceDecision);
+      set((state) => ({
+        projects: replaceSummary(state.projects, summary),
+        activeProject:
+          state.activeProject?.id === id
+            ? { ...state.activeProject, priceDecision, updatedAt: summary.updatedAt }
+            : state.activeProject,
+        error: null,
+      }));
     } catch (error) {
       set({ error: normalizeAppError(error, 'project_operation_failed') });
     }

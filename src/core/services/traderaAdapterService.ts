@@ -112,11 +112,21 @@ class TraderaAdapterService implements MarketplaceAdapter {
 
   renderTemplate(input: ListingTemplateInput): ListingTemplate {
     const facts = input.facts;
+    const price =
+      input.priceDecision.kind === 'user_entered'
+        ? input.priceDecision.amountSek
+        : input.priceDecision.kind === 'evidence_based'
+          ? input.priceDecision.valuation.priceRecommendedSek
+          : 0;
+    const strategy =
+      input.priceDecision.kind === 'evidence_based'
+        ? `\nPrisstrategi: ${input.priceDecision.valuation.pricingStrategy}`
+        : '';
     return {
       site: 'tradera',
       title: facts.title.value.slice(0, 80),
-      description: `${facts.title.value}\n\nSkick: ${facts.conditionGrade.value}\nKategori: ${facts.category.value}\nDefekter: ${facts.defects.value.join(', ') || 'Inte fullständigt verifierat'}\nSaknade tillbehör: ${facts.missingAccessories.value.join(', ') || 'Inte verifierat'}\nTeststatus: ${facts.testedStatus.value}\nÄkthet: ${facts.authenticityStatus.value}\nPrisstrategi: ${input.valuation.pricingStrategy}`,
-      priceSuggestionSek: input.valuation.priceRecommendedSek,
+      description: `${facts.title.value}\n\nSkick: ${facts.conditionGrade.value}\nKategori: ${facts.category.value}\nDefekter: ${facts.defects.value.join(', ') || 'Inte fullständigt verifierat'}\nSaknade tillbehör: ${facts.missingAccessories.value.join(', ') || 'Inte verifierat'}\nTeststatus: ${facts.testedStatus.value}\nÄkthet: ${facts.authenticityStatus.value}${strategy}`,
+      priceSuggestionSek: price,
       shippingSuggestion: 'Skickas spårbart inom Sverige.',
       tags: [facts.category.value, facts.brand.value].filter((entry) => entry !== 'Unknown'),
       disclaimer: 'Prisforslag baserat pa historiska jamforelser och manuell granskning.',

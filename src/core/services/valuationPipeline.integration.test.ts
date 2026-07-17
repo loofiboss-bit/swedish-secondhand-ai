@@ -85,10 +85,10 @@ describe('valuation pipeline integration', () => {
     );
     expect(valuation.status).not.toBe('insufficient-evidence');
     if (valuation.status === 'insufficient-evidence') throw new Error('Expected a price');
-    const templates = listingTemplateService.generateTemplates(
-      factsFromFingerprint(fingerprint),
+    const templates = listingTemplateService.generateTemplates(factsFromFingerprint(fingerprint), {
+      kind: 'evidence_based',
       valuation,
-    );
+    });
 
     expect(valuation.priceRecommendedSek).toBeGreaterThan(0);
     expect(valuation.pricingStrategy).toBe('balanced');
