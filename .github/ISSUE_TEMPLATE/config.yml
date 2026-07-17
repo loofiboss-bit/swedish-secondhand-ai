@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private vulnerability report
+    url: https://github.com/loofiboss-bit/swedish-secondhand-ai/security/advisories/new
+    about: Report credential exposure or an unpatched vulnerability privately.
+  - name: User documentation
+    url: https://github.com/loofiboss-bit/swedish-secondhand-ai/wiki
+    about: Read install, first-listing, pricing, provider, backup, and troubleshooting guides.

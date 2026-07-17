@@ -25,8 +25,13 @@ npm run validate
 
 ---
 
-## Architecture Rule
+## Architecture rule
 
-Keep separation: **Services -> Stores -> Features/Components**
+Keep dependencies flowing in one direction:
 
-No persistence or API logic directly inside UI components.
+```text
+platform/provider adapters -> core services -> Zustand stores -> features/components
+```
+
+No persistence, provider SDK, secret, Node API, or unrestricted IPC logic belongs in a UI
+component.

@@ -39,6 +39,11 @@ test('capture v3 user guide screenshots', async ({ page }) => {
   await page.screenshot({ path: 'docs/screenshots/04-templates-quality.png', fullPage: true });
 
   await page.getByRole('button', { name: /^klart$|^done$/i }).click();
+  await expect(
+    page.getByRole('heading', {
+      name: /registrera manuell publicering|record manual publication/i,
+    }),
+  ).toBeVisible();
   await page.screenshot({ path: 'docs/screenshots/05-review-history.png', fullPage: true });
 
   await page.keyboard.press('Control+KeyK');

@@ -1,158 +1,115 @@
 <p align="center">
-  <img src="./docs/branding/readme-banner.svg" alt="Swedish Secondhand AI banner" width="100%" />
-</p>
-
-<p align="center">
-  <img src="./docs/branding/logo.svg" alt="Swedish Secondhand AI logo" width="128" />
+  <img src="./docs/branding/readme-banner.svg" alt="Swedish Secondhand AI" width="100%" />
 </p>
 
 # Swedish Secondhand AI
 
-Desktop-first valuation and listing assistant for Swedish secondhand markets.
+Swedish Secondhand AI is a local-first desktop seller coach for Tradera, Blocket, and Vinted.
+It helps you review item facts, choose a price, and prepare listing text without signing in or
+publishing on your behalf.
 
-## What's New in v3.0.0
+The current public build is **v3.0.0-rc.1** for Windows x64 and Linux x64. It is a release
+candidate, so back up your projects before upgrading.
 
-- A new user can start offline immediately and create a copy-ready listing with their own price
-  without an account, API key, or market data.
-- The default path is **Item → Price → Listing → Done** with one primary coach action at a time.
-- Pricing is an explicit choice: **Your price**, optional evidence-based recommendation, or decide
-  later. Seller-entered prices never receive confidence or AI/market claims.
-- Advanced provider, provenance, comparable weighting, and scenario tools stay available behind
-  progressive details.
-- The listing studio opens the recommended marketplace first and keeps the other marketplaces in
-  tabs. Listing text can be drafted before pricing; the complete package requires a price.
-- Projects support search, status filters, rename, archive, recoverable trash and explicit
-  permanent deletion. Privacy-safe diagnostics exclude text, images, URLs and secrets.
-- Schema 4 and backup format 3 preserve live and trashed projects while retaining the verified
-  schema 3 rollback source during migration.
+[Download v3.0.0-rc.1](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v3.0.0-rc.1)
+· [Install guide](./docs/guides/INSTALLATION.md)
+· [Svensk kom igång-guide](./docs/guides/KOM_IGANG.md)
+· [Full user guide](./USER_GUIDE.md)
 
-## v2.0.0 foundation
+![The offline welcome screen](./docs/screenshots/01-overview.png)
 
-- A local project library keeps multiple items isolated as drafts, ready listings, published
-  items, sold items, or paused work.
-- Each item workspace is divided into Item, Market & price, Listing, and Follow-up; provider and
-  backup settings live in a separate Settings view.
-- Schema 3 migrates the active v1 draft and history without deleting the schema 2 rollback source.
-- Full backups include project images; compact backups explicitly omit images. Secrets remain
-  excluded from both formats.
-- A deterministic seller coach orders the next actions by safety, missing facts, photos, market
-  evidence, price, listing, and follow-up; every action explains why it matters.
-- Local photo checks measure resolution, light, contrast, sharpness, duplicates, and crop risk
-  without changing the original JPEG, PNG, or WebP.
-- Category profiles and source-labelled fact candidates make unknowns visible while preserving
-  every user correction and lock across later analysis.
-- The market workspace builds editable exact/broad searches, deduplicates observations across
-  queries, and exposes match type, price kind, source, date, relevance, and cache age.
-- Active asking prices remain a separate context interval. Only user-approved realized prices
-  enter the three reproducible fast, balanced, and max-value scenarios.
-- The listing studio owns every Tradera, Blocket, and Vinted field independently, preserves user
-  edits during regeneration, previews copy and cover crops, and exports structured manual-copy
-  packages.
-- Readiness uses clickable blockers, warnings, and improvements instead of a generic score. A
-  transparent sell plan explains marketplace, sale format, price strategy, and fulfillment.
-- Follow-up records manual publication, URL, starting price, sold/not-sold/paused outcome, final
-  price, and sale duration locally, with due advice after 3, 7, and 14 days.
-- Confidence and strategy calibration activates only after five verified own outcomes in the same
-  category; any resulting price factor is shown as an explicit adjustment.
+## What you can do
 
-## What's New in v1.0.0-beta.1
+- Start offline with no account, API key, or network connection.
+- Keep separate projects for items you are preparing, listing, or following up.
+- Review and correct every fact used in a listing. Your edits remain authoritative.
+- Set your own price, wait until later, or use approved realized comparables for an
+  evidence-based recommendation.
+- Prepare separate copy for Tradera, Blocket, and Vinted, then publish it manually.
+- Archive projects, recover deleted projects from trash, and export non-secret backups.
+- Add Gemini, local Ollama, and official Tradera data when you want more analysis or market
+  evidence.
 
-- Safe-by-default offline first run, with optional Ollama or Gemini modes and explicit transient
-  fallback.
-- Protected main-process provider boundary, evidence-gated pricing, verified listing facts, and
-  versioned backup/migration support.
-- Reproducible Windows NSIS/portable and Linux AppImage release artifacts with checksums and SBOM.
+The app does not scrape marketplaces, publish listings, sync projects to the cloud, or run
+automatic updates.
 
-## v0.5 workflow foundation
+## The shortest path to a listing
 
-- Guided listing workflow: `Analyze -> Comparables -> Price -> Templates -> Review`.
-- Draft autosave and resume across app restarts.
-- One-click `Run full pipeline` orchestration.
-- Pricing strategies: `fast_sale`, `balanced`, `max_value`.
-- Deterministic comparable ranking, user inclusion decisions, visible weighting, and outlier
-  handling in valuation.
-- Source-labelled product facts with user locks; a later AI analysis cannot overwrite a locked
-  correction.
-- Evidence-aware valuation statuses. Fewer than two approved comparables produce no numeric price.
-- Confidence explanation breakdown (similarity, sample size, source quality, calibration).
-- History outcome capture (`pending`, `sold`, `not_sold`) with sold-price feedback loop.
-- Marketplace assist layer with per-site policy checks and quality scoring.
-- Publish-readiness gate and actionable fix suggestions per template.
-- Copy bundle export per site (title, description, tags, pricing notes).
-- Guided workspace layout with persistent summary sidebar.
-- Command palette (`Ctrl/Cmd + K`) and keyboard navigation shortcuts.
-- History search/filter and detail drill-down.
+1. Select **Start offline**.
+2. Create a project with a name and item description.
+3. Select **Identify item** and correct the detected facts.
+4. Open **Price**, enter **Your price**, and select **Use my price**.
+5. Open **Listing** and select **Update untouched fields**.
+6. Review a marketplace tab and copy the structured package.
 
-## Core Capabilities
+Listing text can be drafted before you choose a price. The complete copy package needs a price.
+For an evidence-based recommendation, approve at least two verified realized prices. Asking
+prices remain context only.
 
-- Item identification from text or image.
-- SEK valuation output with min/recommended/max range.
-- Hybrid comparables: Tradera API + manual Blocket/Vinted comps.
-- Tradera, Blocket, Vinted template generation with site-specific optimization.
-- Local-first storage for settings, manual comps, drafts, and history.
-- Swedish-first UI with English fallback.
+## Choose an analysis mode
 
-## Five-minute offline path
+| Mode    | Network use       | Best for                               | What leaves the device                   |
+| ------- | ----------------- | -------------------------------------- | ---------------------------------------- |
+| Offline | None              | A quick start and manual review        | Nothing                                  |
+| Ollama  | Local loopback    | Local model analysis                   | Requests stay on the same device         |
+| Gemini  | Google Gemini API | Cloud-assisted text and image analysis | Item text and up to two supported images |
 
-1. Choose **Start offline**.
-2. Create an item with a project name and description; images are optional.
-3. Review the detected facts.
-4. Choose **Your price** and enter SEK.
-5. Generate the listing, review the recommended marketplace and copy the package.
+Tradera is configured separately. It sends a bounded search query to Tradera's official API only
+when you request market data. Read [Providers and market data](./docs/guides/PROVIDERS.md) before
+adding credentials.
 
-For a stronger price recommendation, open evidence-based valuation and approve at least two
-verified realized comparables. Asking prices remain context only.
+## Downloads and verification
 
-## Keyboard Shortcuts
+The v3 release candidate includes:
 
-- `Ctrl/Cmd + K` — Open command palette
-- `Ctrl/Cmd + Enter` — Run full pipeline
-- `Alt + ArrowRight` — Next workflow step
-- `Alt + ArrowLeft` — Previous workflow step
+- a Linux x64 AppImage;
+- a Windows x64 installer and portable executable;
+- `SHA256SUMS.txt` for download verification;
+- a CycloneDX software bill of materials.
 
-## Tech Stack
-
-- React 18 + TypeScript + Vite
-- Electron 40
-- Zustand
-- idb-keyval
-- i18next
-- Vitest + Playwright
-
-## Scripts
-
-- `npm run dev`
-- `npm run electron:dev`
-- `npm run test`
-- `npm run test:e2e`
-- `npm run validate`
-- `npm run validate:release`
-- `npm run validate:publication` (requires verified repository release-gate variables)
-- `npm run validate:security-deps`
-- `npm run dist`
-
-## API Notes
-
-- Tradera comparables use official API access.
-- Blocket and Vinted remain manual-posting workflows (no scraping/direct publishing).
-- Gemini API keys and Tradera App keys are user-provided and encrypted through the operating
-  system's protected credential storage. Tradera App IDs are non-secret settings. The renderer
-  receives only configured/not-configured secret status.
-- Tradera search uses the fixed official REST v4 endpoint. Asking prices are shown as market
-  context; only verified realized prices can anchor a valuation.
-
-See [Privacy](./PRIVACY.md), [Security](./SECURITY.md), and
-[Support and recovery](./SUPPORT.md) for provider data flows, vulnerability reporting, backups,
-migrations, and reset behavior.
-
-## Build Targets
-
-- Windows (NSIS + portable)
-- Linux (AppImage)
+Windows packages are not code-signed. Verify the SHA-256 checksum before opening a downloaded
+file. The [install guide](./docs/guides/INSTALLATION.md) has commands for Linux and Windows.
 
 ## Documentation
 
-- [User Guide](./USER_GUIDE.md)
-- [Privacy](./PRIVACY.md)
-- [Security policy](./SECURITY.md)
-- [Support and recovery](./SUPPORT.md)
+Start with the [documentation index](./docs/README.md), or open one of these guides:
+
+- [Install and update](./docs/guides/INSTALLATION.md)
+- [Kom igång på svenska](./docs/guides/KOM_IGANG.md)
+- [Create your first listing](./docs/guides/FIRST_LISTING.md)
+- [Choose a price](./docs/guides/PRICING.md)
+- [Configure Gemini, Ollama, and Tradera](./docs/guides/PROVIDERS.md)
+- [Back up, restore, and delete data](./docs/guides/BACKUP_AND_RECOVERY.md)
+- [Troubleshoot common problems](./docs/guides/TROUBLESHOOTING.md)
+
+The GitHub [wiki](https://github.com/loofiboss-bit/swedish-secondhand-ai/wiki) is the short
+user-facing entry point. Repository guides remain the source of truth for versioned instructions.
+
+## Privacy and pricing safeguards
+
+Projects, images, settings, outcomes, and generated listings stay in the local app profile unless
+you explicitly use Gemini or Tradera. Secrets are stored behind the Electron main-process
+boundary using operating-system protected storage and are excluded from backups and diagnostics.
+
+AI can suggest facts and explain evidence. It cannot set the final numeric price. The app only
+calculates an evidence-based price from comparables that you approve, and it returns no numeric
+recommendation when the evidence is insufficient.
+
+Read [Privacy](./PRIVACY.md), [Security](./SECURITY.md), and
+[Support and recovery](./SUPPORT.md) for the complete boundaries.
+
+## Development
+
+The app uses React, TypeScript, Vite, Electron, Zustand, Vitest, and Playwright.
+
+```bash
+npm ci
+npm run electron:dev
+```
+
+Run `npm run validate` before submitting a change. See [Contributing](./CONTRIBUTING.md) for the
+repository workflow and [scripts/README.md](./scripts/README.md) for release utilities.
+
+## License
+
+[MIT](./LICENSE)

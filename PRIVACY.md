@@ -1,38 +1,61 @@
 # Privacy
 
-Swedish Secondhand AI is a local-first desktop application. Preferences, drafts, history,
-manual comparables, reviewed facts, valuations, and listing templates are stored on the local
-device. These datasets use versioned records so upgrades can validate and migrate them before
-use.
+Swedish Secondhand AI is a local-first desktop app. Projects, images, reviewed facts, valuations,
+listing drafts, settings, comparables, and outcome history remain in the local app profile unless
+you explicitly use Gemini or Tradera.
+
+The app has no account system, cloud sync, telemetry upload, automatic publishing, or background
+marketplace scraping.
 
 ## Provider data
 
-- **Gemini:** when selected, item text and at most two supported original images are sent to Google. The key
-  remains in operating-system protected storage and is used only by the Electron main process.
-- **Ollama:** requests are restricted to HTTP loopback on port `11434`.
-- **Offline:** deterministic analysis does not send item content to an AI provider.
-- **Tradera:** a bounded query plus the non-secret App ID is sent to the fixed official REST v4 API
-  only when requested. The App key stays in the Electron main process. Results are cached locally
-  for 24 hours to reduce external requests.
-- **Blocket and Vinted:** v1 creates copy-ready text only. It does not scrape or publish.
+| Service | When data is sent                | Data sent                                            | Credential handling                           |
+| ------- | -------------------------------- | ---------------------------------------------------- | --------------------------------------------- |
+| Offline | Never                            | Nothing                                              | No credential                                 |
+| Ollama  | When Ollama analysis is selected | Item text and up to three images over local loopback | No cloud credential                           |
+| Gemini  | When Gemini analysis is selected | Item text and up to two supported original images    | API key in operating-system protected storage |
+| Tradera | When you request market data     | A bounded search query and public App ID             | App key in operating-system protected storage |
 
-Photo quality measurements, perceptual duplicate hashes, category checklists, coach actions, fact
-candidates, and knowledge gaps are computed or stored locally. Photo assessment does not alter an
-image. Ollama receives at most three images only when it is selected; offline mode receives none.
+Ollama connections are restricted to HTTP loopback on port `11434`. Tradera uses the fixed
+official REST v4 endpoint and caches results locally for 24 hours. Blocket and Vinted are manual
+copy workflows; the app does not connect to, scrape, or publish on either marketplace.
 
-Publication URLs, dates, asking prices, outcomes, final prices, and sale duration remain inside the
-local project database and backup. Local learning uses only complete user-recorded outcomes on the
-device, requires at least five outcomes in the matching category, and is never uploaded.
+If protected storage is unavailable, Gemini and authenticated Tradera operations stay disabled.
+Offline and Ollama remain available.
 
-## Backups and diagnostics
+## Local analysis and history
 
-Backup format 2 contains selected non-secret datasets, app version, export time, and optionally
-project images. Compact exports explicitly omit images. It never contains API keys, protected
-values, or secret status. Legacy format-1 imports remain supported. Imports are fully validated
-before replacement is committed, with rollback of legacy datasets if project replacement fails.
+Photo quality, duplicate detection, category checklists, coach actions, fact candidates, and
+knowledge gaps are computed or stored locally. Photo assessment does not alter the original
+image.
 
-Diagnostics retain at most 100 local entries and sanitize credential-shaped values, sensitive
-keys, errors, large strings, and deep data. Diagnostics are not uploaded automatically.
+Publication dates, marketplace URLs, starting prices, outcomes, final prices, and sale duration
+remain local. Price calibration uses only complete outcomes that you record on the device. It
+requires at least five outcomes in the same category and is never uploaded.
 
-Resetting local data does not delete protected provider keys unless the user removes those keys
-separately in Settings.
+## Backups
+
+Backup format 3 contains live and trashed projects and can include project images. Compact backups
+omit images. Backups exclude API keys, protected values, and secret status.
+
+The current app imports formats 2 and 3. It validates the complete replacement before writing and
+does not activate a partial dataset after a failed import. Read
+[Back up, restore, and delete data](./docs/guides/BACKUP_AND_RECOVERY.md) before importing or
+resetting data.
+
+## Diagnostics
+
+The safe diagnostic export contains app and platform versions, migration state, configured
+provider status, and normalized error codes. It excludes project descriptions, listing text,
+images, source URLs, and secrets.
+
+Review any diagnostic file before sharing it. Diagnostics are not uploaded automatically.
+
+## Deletion
+
+Deleting a project moves it to recoverable trash. **Empty trash** permanently removes trashed
+projects after explicit confirmation. Resetting local data does not necessarily delete protected
+provider keys; remove those keys separately in Settings.
+
+For security reports, follow [SECURITY.md](./SECURITY.md). For recovery help, follow
+[SUPPORT.md](./SUPPORT.md).

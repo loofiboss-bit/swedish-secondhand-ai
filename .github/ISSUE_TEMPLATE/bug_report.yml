@@ -1,0 +1,72 @@
+name: Bug report
+description: Report a reproducible non-security problem
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include API keys, backup files, private marketplace URLs, images, unpublished listing text, or vulnerability details. Use GitHub private vulnerability reporting for security issues.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      placeholder: v3.0.0-rc.1
+    validations:
+      required: true
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - Windows installer
+        - Windows portable
+        - Linux AppImage
+        - Development checkout
+    validations:
+      required: true
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 24H2 or Fedora Linux 42
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Start from a fresh app launch and use sanitized test data.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Safe diagnostics
+      description: Attach the reviewed safe diagnostic JSON by dragging it here. Do not attach a backup.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Safety checks
+      options:
+        - label: I removed credentials, private URLs, user text, images, and backup data.
+          required: true
+        - label: This report does not describe an unpatched security vulnerability.
+          required: true

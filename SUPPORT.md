@@ -1,43 +1,54 @@
 # Support and recovery
 
+Start with the [troubleshooting guide](./docs/guides/TROUBLESHOOTING.md). Preserve your projects
+before reinstalling, resetting, importing, or clearing the local app profile.
+
 ## First checks
 
-1. Open **Settings → Backup and data recovery** and export **safe diagnostics**. It contains only
-   version, platform, migration/provider status and normalized error codes.
-2. Retry in offline mode to separate a local workflow issue from provider or network access.
-3. If Ollama is selected, confirm it is running at the configured local address.
-4. Export a compact or full non-secret backup before resetting data.
+1. Export a full backup from **Settings → Backup and data recovery**.
+2. Export safe diagnostics and review the JSON before sharing it.
+3. Retry the same action in Offline mode.
+4. If a provider is selected, use its connection test in Settings.
+5. Record the app version, package type, operating system, and exact steps.
 
-Never paste API keys, listing text, project descriptions, images or private marketplace URLs into
-a public issue.
-
-## Schema 4 migration
-
-The first v3 start migrates schema 3 projects deterministically to schema 4. Existing numeric
-valuations become evidence-based price decisions; other projects remain unset. The schema 3
-source stays as rollback data until the schema 4 write and readback are verified. Corrupt or
-unsupported input opens recovery and is not overwritten.
+Never post API keys, backup files, listing text, project descriptions, images, private URLs, or
+unpatched security details in a public issue.
 
 ## Restore projects
 
-**Delete** moves a project to trash and offers **Undo**. Open **Projects → Trash** to restore it
-later. Nothing is removed automatically. **Empty trash** is the only permanent project deletion
-and always requires explicit confirmation.
+Deleting a project moves it to trash and offers **Undo**. Open **Projects → Trash** to restore it
+later. Nothing is removed automatically. **Empty trash** is permanent and always requires
+confirmation.
 
-## Backup and import
+Backup format 3 includes live and trashed projects; compact backups omit images. Import accepts
+formats 2 and 3 and validates the full replacement before committing it. Secrets are excluded
+from every backup.
 
-Format 3 backups contain live and trashed projects; compact backups omit images. Secrets are
-excluded. Formats 2 and 3 can be imported. The complete selected replacement is validated before
-any data is committed. Restart the app after import or reset.
+Follow [Back up, restore, and delete data](./docs/guides/BACKUP_AND_RECOVERY.md) before import or
+reset.
+
+## Upgrade and migration recovery
+
+The first v3 start migrates schema-3 projects to schema 4. The schema-3 source remains as rollback
+data until the schema-4 write and readback are verified. Corrupt or unsupported input opens
+recovery and is not overwritten.
+
+If an upgrade or import fails, stop changing the local data. Keep the original app profile and
+backup, export safe diagnostics, and report the exact version transition.
 
 ## Provider failures
 
-Use the connection test shown for Gemini, Ollama or Tradera. Authentication failures require a
-new protected key; unavailable services can be retried or bypassed by continuing offline. A
-provider failure must not discard the active draft.
+Use the connection test for Gemini, Ollama, or Tradera. Authentication failures require a valid
+credential. An unavailable provider can be retried or bypassed with Offline mode when the action
+does not require market data. A provider failure should not discard the active draft.
 
-## Getting help
+Read [Providers and market data](./docs/guides/PROVIDERS.md) for setup and data flow.
 
-Use a GitHub issue for reproducible non-security bugs and attach the safe diagnostic JSON plus
-sanitized reproduction steps. Use the private process in `SECURITY.md` for credential or security
-concerns.
+## Open an issue
+
+Use a [GitHub issue](https://github.com/loofiboss-bit/swedish-secondhand-ai/issues) for a
+reproducible non-security bug. Include sanitized reproduction steps, expected and actual behavior,
+app and operating-system versions, package type, and the reviewed safe diagnostic JSON.
+
+Use the private process in [SECURITY.md](./SECURITY.md) for credential exposure or a possible
+vulnerability.
