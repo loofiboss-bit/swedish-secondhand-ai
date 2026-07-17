@@ -25,7 +25,10 @@ describe('CoachPanel', () => {
     const onNavigate = vi.fn();
     render(<CoachPanel projectStatus="draft" onNavigate={onNavigate} />);
 
-    expect(screen.getByRole('heading', { name: /nästa bästa|next best/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /nästa viktiga|next important/i }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /öppna|open/i })).toHaveLength(1);
     expect(screen.getAllByText(/förväntad effekt|expected impact/i).length).toBeGreaterThan(0);
     await user.click(screen.getAllByRole('button', { name: /öppna|open/i })[0]);
     expect(onNavigate).toHaveBeenCalledWith('item', 'item-analysis');

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { setAppLanguage } from '@core/config/i18n';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { SectionCard } from '@shared/components/SectionCard';
+import { ContextualError } from '@shared/components/ContextualError';
 
 type ConnectionState = 'idle' | 'testing' | 'connected' | 'failed';
 
@@ -40,11 +41,7 @@ export function SettingsPanel() {
 
   return (
     <SectionCard title={t('settings')}>
-      {store.error && (
-        <p className="error" role="alert">
-          {store.error}
-        </p>
-      )}
+      <ContextualError code={store.error} />
       {settings.secretStatus.migrationStatus === 'failed' && (
         <p className="error" role="status">
           {t('secretMigrationFailed')}

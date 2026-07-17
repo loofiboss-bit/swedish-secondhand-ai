@@ -4,12 +4,14 @@ import { historyService } from '@core/services/historyService';
 import type { HistoryEntry, SaleStatus } from '@core/types';
 import { SectionCard } from '@shared/components/SectionCard';
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString();
+function formatDate(value: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(value),
+  );
 }
 
 export function HistoryPanel() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<SaleStatus | 'all'>('all');
@@ -110,7 +112,7 @@ export function HistoryPanel() {
                     : `${entry.valuation.priceRecommendedSek} SEK`}{' '}
                   ({Math.round(entry.valuation.confidence * 100)}%)
                 </p>
-                <p>{formatDate(entry.createdAt)}</p>
+                <p>{formatDate(entry.createdAt, i18n.resolvedLanguage ?? i18n.language)}</p>
                 <p>
                   {t(
                     `status${

@@ -9,6 +9,7 @@ import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
 import { CommandPalette } from '@shared/components/CommandPalette';
+import { ContextualError } from '@shared/components/ContextualError';
 import type { ProjectQuickStartInput } from '@features/projects/ProjectDashboard';
 
 type AppView = 'home' | 'projects' | 'workspace' | 'settings';
@@ -87,11 +88,10 @@ export function App() {
   const [workspaceSection, setWorkspaceSection] = useState<ProjectSection>('item');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const [isSaveBusy, setIsSaveBusy] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'error'>('saved');
   const [isSwitchingProject, setIsSwitchingProject] = useState(false);
 
   const {
-    error: valuationError,
     loadManualComparables,
     runPipeline,
     estimateValue,
@@ -125,24 +125,36 @@ export function App() {
     hydrateWorkflow(hydrated.draft.currentStep, hydrated.draft.completedSteps);
     setWorkspaceSection(hydrated.project.currentSection);
     setLastSavedAt(hydrated.draft.savedAt);
+    setSaveStatus('saved');
     setAppView('workspace');
   };
 
   const saveActiveProject = async () => {
     if (!activeProjectId || !activeProject) return;
-    setIsSaveBusy(true);
+    setSaveStatus('saving');
     const draft = buildDraft(currentStep, completedSteps);
-    await saveActive(draft);
-    setLastSavedAt(draft.savedAt);
-    setIsSaveBusy(false);
+    const saved = await saveActive(draft);
+    if (saved) {
+      setLastSavedAt(draft.savedAt);
+      setSaveStatus('saved');
+    } else {
+      setSaveStatus('error');
+    }
   };
 
   useEffect(() => {
     if (!activeProjectId || !activeProject || appView !== 'workspace' || isSwitchingProject) return;
     const timer = window.setTimeout(() => {
+      setSaveStatus('saving');
       const draft = buildDraft(currentStep, completedSteps);
-      void saveActive(draft);
-      setLastSavedAt(draft.savedAt);
+      void saveActive(draft).then((saved) => {
+        if (saved) {
+          setLastSavedAt(draft.savedAt);
+          setSaveStatus('saved');
+        } else {
+          setSaveStatus('error');
+        }
+      });
     }, 600);
     return () => window.clearTimeout(timer);
   }, [
@@ -255,8 +267,6 @@ export function App() {
   ];
 
   const loading = settingsLoading || projectStatus === 'loading';
-  const error = valuationError || projectError;
-
   return (
     <div className="app-shell">
       <header className="app-header app-header--v2">
@@ -295,19 +305,15 @@ export function App() {
           <button type="button" onClick={() => setIsCommandPaletteOpen(true)}>
             {t('commandPalette')}
           </button>
-          {appView === 'workspace' && activeProjectId && (
-            <button type="button" onClick={() => void saveActiveProject()} disabled={isSaveBusy}>
-              {isSaveBusy ? t('savingDraft') : t('saveProjectNow')}
+          {appView === 'workspace' && activeProjectId && saveStatus === 'error' && (
+            <button type="button" onClick={() => void saveActiveProject()}>
+              {t('retrySave')}
             </button>
           )}
         </div>
       </header>
 
-      {error && (
-        <p className="error-banner" role="alert" aria-live="assertive">
-          {error}
-        </p>
-      )}
+      <ContextualError code={projectError} />
 
       {!settingsLoading && !settings.onboardingCompleted ? (
         <main className="app-content app-content--onboarding">
@@ -360,11 +366,15 @@ export function App() {
                   <div>
                     <p className="eyebrow">{t(`projectStatus_${activeProject.status}`)}</p>
                     <h2>{activeProject.title}</h2>
-                    {lastSavedAt && (
-                      <p className="save-status">
-                        {t('lastSaved')}: {new Date(lastSavedAt).toLocaleTimeString()}
-                      </p>
-                    )}
+                    <p className={`save-status save-status--${saveStatus}`} role="status">
+                      {t(`saveStatus_${saveStatus}`)}
+                      {saveStatus === 'saved' && lastSavedAt
+                        ? ` · ${new Intl.DateTimeFormat(settings.language, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }).format(new Date(lastSavedAt))}`
+                        : ''}
+                    </p>
                   </div>
                   <button type="button" onClick={() => setAppView('projects')}>
                     {t('backToProjects')}

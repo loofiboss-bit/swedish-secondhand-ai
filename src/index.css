@@ -1056,6 +1056,51 @@ select {
   color: var(--text-secondary);
 }
 
+.contextual-error {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+  padding: var(--space-3);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  background: rgba(255, 105, 105, 0.08);
+}
+
+.contextual-error p {
+  margin: 0.3rem 0;
+}
+
+.contextual-error small {
+  color: var(--text-secondary);
+}
+
+.contextual-error > button {
+  align-self: start;
+  min-width: 2.2rem;
+}
+
+.fact-explanation,
+.analysis-explanation,
+.coach-all-actions {
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.fact-explanation summary,
+.analysis-explanation summary,
+.coach-all-actions summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.coach-all-actions ol {
+  margin: var(--space-2) 0 0;
+}
+
 .command-palette {
   width: min(640px, calc(100% - 2rem));
   background: #0d1b14;

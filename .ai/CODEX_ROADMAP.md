@@ -32,7 +32,7 @@ Status: completed in merge `d201220` after local and GitHub validation.
 
 ## M2 — Immediate offline start and clear configuration
 
-Status: in progress on `feature/v3-offline-start`.
+Status: completed in merge `17053e3` after local, E2E and GitHub validation.
 
 - Make **Start offline** the primary first-run action and detect the OS language.
 - Show only the selected provider configuration with localized connection tests.
@@ -40,7 +40,7 @@ Status: in progress on `feature/v3-offline-start`.
 
 ## M3 — Guided workflow and progressive detail
 
-Status: planned.
+Status: in progress on `feature/v3-guided-workflow`.
 
 - Use Item → Price → Listing → Done with one primary next action.
 - Show only the coach's most important task; move provenance and advanced tools into details.
@@ -76,7 +76,7 @@ Status: planned.
 
 - [x] G0 Safe v2.0.1 maintenance release
 - [x] M1 Schema 4 and simplified core contracts
-- [ ] M2 Immediate offline start and clear configuration
+- [x] M2 Immediate offline start and clear configuration
 - [ ] M3 Guided workflow and progressive detail
 - [ ] M4 Flexible pricing and simpler listing studio
 - [ ] M5 Safe project management and support

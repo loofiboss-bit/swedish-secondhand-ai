@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   ComparableRecord,
+  AppErrorCode,
   ComparableQueryPlan,
   AnalysisKnowledgeGap,
   FactCandidate,
@@ -24,6 +25,7 @@ import { historyService } from '@core/services/historyService';
 import { marketIntelligenceService } from '@core/services/marketIntelligenceService';
 import { sellPlanService } from '@core/services/sellPlanService';
 import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
+import { normalizeAppError } from '@core/services/appErrorService';
 import {
   factsFromFingerprint,
   fingerprintFromFacts,
@@ -54,7 +56,7 @@ interface ValuationState {
   valuationScenarios: ValuationScenario[];
   localLearningSampleSize: number;
   loading: boolean;
-  error: string | null;
+  error: AppErrorCode | null;
   setInputText: (text: string) => void;
   setPricingStrategy: (strategy: PricingStrategy) => void;
   addImage: (dataUrl: string, assessment?: PhotoAssessment) => void;
@@ -156,7 +158,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     try {
       const state = get();
       if (!state.inputText.trim() && state.images.length === 0) {
-        set({ loading: false, error: 'Add item text or at least one image before analysis.' });
+        set({ loading: false, error: 'analysis_input_required' });
         return;
       }
 
@@ -182,14 +184,14 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       useWorkflowStore.getState().markStepComplete('analyze');
     } catch (error) {
       if (controller.signal.aborted) {
-        set({ loading: false, error: 'Analysis cancelled.' });
+        set({ loading: false, error: 'analysis_cancelled' });
         return;
       }
       set({
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to analyze item',
+        error: normalizeAppError(error, 'analysis_failed'),
       });
-      useWorkflowStore.getState().setStepError('analyze', 'Analysis failed. Try again.');
+      useWorkflowStore.getState().setStepError('analyze', 'analysis_failed');
     } finally {
       if (activeAnalysis === controller) activeAnalysis = null;
     }
@@ -197,12 +199,12 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   cancelAnalysis: () => {
     activeAnalysis?.abort();
     activeAnalysis = null;
-    set({ loading: false, error: 'Analysis cancelled.' });
+    set({ loading: false, error: 'analysis_cancelled' });
   },
   fetchTraderaComparables: async () => {
     const { fingerprint, productFacts } = get();
     if (!fingerprint || !productFacts) {
-      set({ error: 'Analyze item before fetching comparables.' });
+      set({ error: 'analysis_required' });
       return;
     }
 
@@ -240,11 +242,9 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     } catch (error) {
       set({
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch Tradera comparables',
+        error: normalizeAppError(error, 'comparables_failed'),
       });
-      useWorkflowStore
-        .getState()
-        .setStepError('comparables', 'Unable to fetch Tradera comparables.');
+      useWorkflowStore.getState().setStepError('comparables', 'comparables_failed');
     }
   },
   updateComparableQuery: (id, query) => {
@@ -269,7 +269,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       const manualComps = await manualCompsService.list();
       set({ manualComps });
     } catch {
-      set({ error: 'Manual comparable data is corrupt or from an unsupported version.' });
+      set({ error: 'comparable_data_invalid' });
     }
   },
   addManualComparable: async (comp) => {
@@ -374,7 +374,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   estimateValue: async () => {
     const state = get();
     if (!state.fingerprint || !state.productFacts) {
-      set({ error: 'Analyze item before valuation' });
+      set({ error: 'analysis_required' });
       return;
     }
 
@@ -429,15 +429,15 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     } catch (error) {
       set({
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to estimate value',
+        error: normalizeAppError(error, 'valuation_failed'),
       });
-      useWorkflowStore.getState().setStepError('price', 'Estimation failed.');
+      useWorkflowStore.getState().setStepError('price', 'valuation_failed');
     }
   },
   compareScenarios: async () => {
     const state = get();
     if (!state.productFacts) {
-      set({ error: 'Analyze item before comparing price scenarios.' });
+      set({ error: 'analysis_required' });
       return;
     }
     set({ loading: true, error: null });
@@ -450,7 +450,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     } catch (error) {
       set({
         loading: false,
-        error: error instanceof Error ? error.message : 'Failed to compare price scenarios.',
+        error: normalizeAppError(error, 'scenario_failed'),
       });
     }
   },
@@ -467,18 +467,18 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     try {
       get().generateTemplates();
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to generate templates' });
-      useWorkflowStore.getState().setStepError('templates', 'Template generation failed.');
+      set({ error: normalizeAppError(error, 'listing_failed') });
+      useWorkflowStore.getState().setStepError('templates', 'listing_failed');
     }
   },
   generateTemplates: (replaceUserEdits = false) => {
     const state = get();
     if (!state.fingerprint || !state.productFacts || !state.valuation) {
-      set({ error: 'Estimate value before generating templates.' });
+      set({ error: 'listing_price_required' });
       return;
     }
     if (state.valuation.status === 'insufficient-evidence') {
-      set({ error: state.valuation.action });
+      set({ error: 'listing_price_required' });
       return;
     }
     const listingStore = useListingStore.getState();
@@ -508,12 +508,12 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
     const listingStore = useListingStore.getState();
     const templates = listingStore.templates;
     if (!state.fingerprint || !state.productFacts || !state.valuation || templates.length === 0) {
-      set({ error: 'Generate templates before saving history' });
+      set({ error: 'history_listing_required' });
       return;
     }
     if (listingStore.hasBlockingIssues()) {
-      set({ error: 'Resolve template blocking issues before saving history.' });
-      useWorkflowStore.getState().setStepError('review', 'Resolve blocking issues before saving.');
+      set({ error: 'history_blocked' });
+      useWorkflowStore.getState().setStepError('review', 'history_blocked');
       return;
     }
 

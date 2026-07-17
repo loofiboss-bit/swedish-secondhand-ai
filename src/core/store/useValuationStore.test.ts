@@ -204,7 +204,7 @@ describe('useValuationStore runPipeline', () => {
     expect(getComparablesMock).not.toHaveBeenCalled();
     expect(estimateValueMock).not.toHaveBeenCalled();
     expect(generateListingDraftsMock).not.toHaveBeenCalled();
-    expect(useValuationStore.getState().error).toMatch(/add item text or at least one image/i);
+    expect(useValuationStore.getState().error).toBe('analysis_input_required');
     expect(useWorkflowStore.getState().currentStep).toBe('analyze');
   });
 
@@ -220,7 +220,7 @@ describe('useValuationStore runPipeline', () => {
       images: ['data:image/jpeg;base64,AAA'],
       fingerprint: null,
       loading: false,
-      error: 'Configured model was not found',
+      error: 'analysis_failed',
     });
     expect(useWorkflowStore.getState().currentStep).toBe('analyze');
   });
@@ -235,10 +235,8 @@ describe('useValuationStore runPipeline', () => {
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).not.toHaveBeenCalled();
     expect(generateListingDraftsMock).not.toHaveBeenCalled();
-    expect(useValuationStore.getState().error).toBe('Tradera timeout');
-    expect(useWorkflowStore.getState().stepErrors.comparables).toBe(
-      'Unable to fetch Tradera comparables.',
-    );
+    expect(useValuationStore.getState().error).toBe('comparables_failed');
+    expect(useWorkflowStore.getState().stepErrors.comparables).toBe('comparables_failed');
   });
 
   it('short-circuits before template generation when estimate fails', async () => {
@@ -251,8 +249,8 @@ describe('useValuationStore runPipeline', () => {
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
     expect(generateListingDraftsMock).not.toHaveBeenCalled();
-    expect(useValuationStore.getState().error).toBe('Estimator down');
-    expect(useWorkflowStore.getState().stepErrors.price).toBe('Estimation failed.');
+    expect(useValuationStore.getState().error).toBe('valuation_failed');
+    expect(useWorkflowStore.getState().stepErrors.price).toBe('valuation_failed');
     expect(useWorkflowStore.getState().currentStep).toBe('price');
   });
 
@@ -268,8 +266,8 @@ describe('useValuationStore runPipeline', () => {
     expect(getComparablesMock).toHaveBeenCalledTimes(2);
     expect(estimateValueMock).toHaveBeenCalledTimes(1);
     expect(generateListingDraftsMock).toHaveBeenCalledTimes(1);
-    expect(useValuationStore.getState().error).toBe('Template engine crashed');
-    expect(useWorkflowStore.getState().stepErrors.templates).toBe('Template generation failed.');
+    expect(useValuationStore.getState().error).toBe('listing_failed');
+    expect(useWorkflowStore.getState().stepErrors.templates).toBe('listing_failed');
   });
 
   it('builds all three deterministic price scenarios from the same reviewed evidence', async () => {
