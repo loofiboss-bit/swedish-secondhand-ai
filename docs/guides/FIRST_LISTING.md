@@ -14,12 +14,15 @@ Select **New item**. Give the project a name that you will recognize in the Proj
 write only what you know. Useful details include brand, model, material, measurements, condition,
 defects, missing parts, included accessories, and whether you tested the item.
 
-JPEG, PNG, and WebP images are supported. Add up to six images or continue without them.
+JPEG, PNG, and WebP images are supported. Add up to six images or continue without them. Quick
+start checks each file independently; HEIC/HEIF, mismatched formats, files over 10 MiB, and a
+seventh image are rejected without discarding valid selections.
 
 ## 3. Review the facts
 
 Select **Identify item**. Offline analysis is conservative, so some fields may stay unknown.
-Review every field before continuing. Do not turn an uncertain suggestion into a claim.
+Review required facts first. Recommended and advanced evidence remain available in expandable
+sections. Do not turn an uncertain suggestion into a claim.
 
 Keep known defects, missing parts, failed tests, and authenticity uncertainty visible. Listings
 are generated only from reviewed facts.
@@ -37,13 +40,16 @@ complete package can be copied.
 Open **Listing** and select **Update untouched fields**. Review the recommended marketplace first,
 then open the other tabs if you plan to cross-list.
 
-Resolve blockers and read warnings. Check the title, description, price, category, attributes,
-delivery or pickup, tags, and disclosures. Fields you edit are preserved during later updates.
+Resolve blockers and read warnings. The primary preview shows final text, price, cover, and
+fulfillment. Category, attributes, tags, disclosures, and image order remain in editable details.
+Fields you edit are preserved during later updates unless you explicitly accept the replacement
+dialog.
 
 ## 6. Publish manually
 
-Copy the structured package. Open the marketplace yourself, verify its current rules and fees,
-and paste each field. Compare the marketplace preview with the app before publishing.
+Select **Copy ready listing**. If clipboard access is denied, select the fallback text and copy it
+manually. Open the marketplace yourself, verify its current rules and fees, and paste each field.
+Compare the marketplace preview with the app before publishing.
 
 After publication, open **Done** and record the marketplace, date, starting price, and optional
 URL. Add the outcome later so your local history stays useful.

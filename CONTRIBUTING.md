@@ -9,7 +9,7 @@ boundaries. Read [AGENTS.md](./AGENTS.md) and the current
 - Search existing issues and pull requests.
 - Keep one roadmap milestone or focused fix per branch.
 - Do not add accounts, cloud sync, scraping, automatic marketplace publishing, new AI runtimes,
-  payments, mobile or web clients, or automatic updates to the v3 scope.
+  payments, mobile or web clients, or automatic updates to the v4 scope.
 - Preserve unrelated local changes and existing data contracts.
 
 ## Local setup

@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ProjectStatus, ProjectSummary } from '@core/types';
+import type { PhotoAssessment, ProjectStatus, ProjectSummary } from '@core/types';
 import { SectionCard } from '@shared/components/SectionCard';
+import { Dialog } from '@shared/components/Dialog';
+import { imageIntakeService, type RejectedImageIntake } from '@core/services/imageIntakeService';
 
 interface ProjectDashboardProps {
   mode: 'home' | 'library';
@@ -20,23 +22,24 @@ export interface ProjectQuickStartInput {
   displayName: string;
   description: string;
   images: string[];
-}
-
-async function filesToDataUrls(files: File[]): Promise<string[]> {
-  return Promise.all(
-    files.slice(0, 6).map(
-      (file) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(reader.error ?? new Error('Image could not be read.'));
-          reader.readAsDataURL(file);
-        }),
-    ),
-  );
+  photoAssessments: PhotoAssessment[];
 }
 
 const STATUS_ORDER: ProjectStatus[] = ['draft', 'ready', 'listed', 'sold', 'paused'];
+const MAX_PROJECT_NAME_LENGTH = 200;
+
+function projectCardStage(project: ProjectSummary) {
+  const nextIssue = project.readiness.issues.find(
+    (issue) => issue.id === project.readiness.nextAction?.id,
+  );
+  const stageId =
+    nextIssue?.stage ??
+    (['item', 'price', 'listing'] as const).find(
+      (candidate) => !project.readiness.stages[candidate].ready,
+    ) ??
+    (['listed', 'sold', 'paused'].includes(project.status) ? 'follow-up' : 'listing');
+  return project.readiness.stages[stageId];
+}
 
 export function ProjectDashboard({
   mode,
@@ -54,19 +57,56 @@ export function ProjectDashboard({
   const [showQuickStart, setShowQuickStart] = useState(projects.length === 0);
   const [displayName, setDisplayName] = useState('');
   const [description, setDescription] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
+  const [quickImages, setQuickImages] = useState<string[]>([]);
+  const [quickImageNames, setQuickImageNames] = useState<string[]>([]);
+  const [quickAssessments, setQuickAssessments] = useState<PhotoAssessment[]>([]);
+  const [quickImageErrors, setQuickImageErrors] = useState<RejectedImageIntake[]>([]);
+  const [processingImages, setProcessingImages] = useState(false);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ProjectStatus>('all');
   const [showArchived, setShowArchived] = useState(false);
   const [lastRemoved, setLastRemoved] = useState<ProjectSummary | null>(null);
+  const [menuProjectId, setMenuProjectId] = useState<string | null>(null);
+  const [renameProjectTarget, setRenameProjectTarget] = useState<ProjectSummary | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [showEmptyTrashDialog, setShowEmptyTrashDialog] = useState(false);
 
   const createFromQuickStart = async () => {
     if (!displayName.trim() || !description.trim()) return;
     setCreating(true);
-    const images = await filesToDataUrls(files);
-    onCreate({ displayName: displayName.trim(), description: description.trim(), images });
+    onCreate({
+      displayName: displayName.trim(),
+      description: description.trim(),
+      images: quickImages,
+      photoAssessments: quickAssessments,
+    });
     setCreating(false);
+  };
+  const intakeQuickStartFiles = async (selectedFiles: Iterable<File>) => {
+    setProcessingImages(true);
+    const result = await imageIntakeService.intake(selectedFiles, {
+      images: quickImages,
+      assessments: quickAssessments,
+    });
+    setQuickImages(result.images);
+    setQuickAssessments(result.assessments);
+    setQuickImageNames((names) => [
+      ...names,
+      ...result.accepted.map((accepted) => accepted.fileName),
+    ]);
+    setQuickImageErrors(result.rejected);
+    setProcessingImages(false);
+  };
+  const removeQuickStartImage = (index: number) => {
+    const next = imageIntakeService.remove(
+      { images: quickImages, assessments: quickAssessments },
+      index,
+    );
+    setQuickImages(next.images);
+    setQuickAssessments(next.assessments);
+    setQuickImageNames((names) => names.filter((_, currentIndex) => currentIndex !== index));
   };
   const counts = useMemo(
     () =>
@@ -90,16 +130,53 @@ export function ProjectDashboard({
   const prioritized = projects
     .filter((project) => project.status !== 'sold')
     .sort((left, right) => {
-      const priority: Record<ProjectStatus, number> = {
-        listed: 1,
-        draft: 2,
-        paused: 3,
-        ready: 4,
-        sold: 5,
+      const severity = {
+        blocker: 0,
+        warning: 1,
+        improvement: 2,
+        'optional-research': 3,
       };
-      return priority[left.status] - priority[right.status];
+      const leftSeverity = left.readiness.nextAction
+        ? severity[left.readiness.nextAction.severity]
+        : 4;
+      const rightSeverity = right.readiness.nextAction
+        ? severity[right.readiness.nextAction.severity]
+        : 4;
+      return (
+        leftSeverity - rightSeverity ||
+        (left.readiness.nextAction?.priority ?? 100) -
+          (right.readiness.nextAction?.priority ?? 100) ||
+        left.updatedAt.localeCompare(right.updatedAt)
+      );
     })
     .slice(0, 3);
+  const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>, projectId: string) => {
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+    );
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    let nextIndex: number | null = null;
+
+    if (event.key === 'ArrowDown') {
+      nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+    } else if (event.key === 'ArrowUp') {
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = items.length - 1;
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setMenuProjectId(null);
+      requestAnimationFrame(() => document.getElementById(`project-actions-${projectId}`)?.focus());
+      return;
+    }
+
+    if (nextIndex !== null) {
+      event.preventDefault();
+      items[nextIndex]?.focus();
+    }
+  };
 
   return (
     <div className="project-dashboard">
@@ -149,7 +226,7 @@ export function ProjectDashboard({
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.preventDefault();
-                setFiles(Array.from(event.dataTransfer.files).slice(0, 6));
+                void intakeQuickStartFiles(Array.from(event.dataTransfer.files));
               }}
             >
               <span>{t('quickStartImages')}</span>
@@ -157,12 +234,52 @@ export function ProjectDashboard({
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                onChange={(event) => setFiles(Array.from(event.target.files ?? []).slice(0, 6))}
+                onChange={(event) => {
+                  void intakeQuickStartFiles(Array.from(event.target.files ?? []));
+                  event.target.value = '';
+                }}
               />
-              <small>{t('quickStartImageCount', { count: files.length })}</small>
+              <small>
+                {processingImages
+                  ? t('imageIntakeProcessing')
+                  : t('quickStartImageCount', { count: quickImages.length })}
+              </small>
             </label>
+            {quickImageErrors.length > 0 && (
+              <div className="inline-warning" role="alert">
+                <strong>{t('imageIntakeRejected')}</strong>
+                <ul>
+                  {quickImageErrors.map((rejection, index) => (
+                    <li key={`${rejection.fileName}-${index}`}>
+                      {rejection.fileName}: {t(`imageIntakeError_${rejection.code}`)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {quickImages.length > 0 && (
+              <ul className="quick-start-image-list" aria-label={t('quickStartImagePreviews')}>
+                {quickImages.map((image, index) => (
+                  <li key={`${quickImageNames[index] ?? 'image'}-${index}`}>
+                    <img
+                      src={image}
+                      alt={quickImageNames[index] ?? t('imageReference', { count: index + 1 })}
+                    />
+                    <span>{quickImageNames[index]}</span>
+                    <small>
+                      {quickAssessments[index]
+                        ? `${quickAssessments[index].width}×${quickAssessments[index].height}`
+                        : ''}
+                    </small>
+                    <button type="button" onClick={() => removeQuickStartImage(index)}>
+                      {t('remove')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="quick-start-actions">
-              <button type="submit" disabled={creating}>
+              <button type="submit" disabled={creating || processingImages}>
                 {creating ? t('creatingProject') : t('createAndContinue')}
               </button>
               {projects.length > 0 && (
@@ -197,7 +314,11 @@ export function ProjectDashboard({
               <li key={project.id}>
                 <div>
                   <strong>{project.title}</strong>
-                  <span>{t(`homeCoach_${project.status}`)}</span>
+                  <span>
+                    {project.readiness.nextAction
+                      ? t(project.readiness.nextAction.titleKey)
+                      : t('coachAllClear')}
+                  </span>
                 </div>
                 <button type="button" onClick={() => onOpen(project.id)}>
                   {t('openCoachAction')}
@@ -278,54 +399,126 @@ export function ProjectDashboard({
           </div>
         ) : (
           <ul className="project-list">
-            {visible.map((project) => (
-              <li key={project.id}>
-                <button
-                  type="button"
-                  className="project-list__open"
-                  onClick={() => onOpen(project.id)}
-                >
-                  <span>
-                    <strong>{project.title}</strong>
-                    <small>
-                      {t(`projectStatus_${project.status}`)} ·{' '}
-                      {new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      }).format(new Date(project.updatedAt))}
-                    </small>
-                  </span>
-                  <span>
-                    {project.recommendedPriceSek === null
-                      ? t('noNumericPrice')
-                      : `${project.recommendedPriceSek} SEK`}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="button-danger-quiet"
-                  onClick={() => {
-                    setLastRemoved(project);
-                    onRemove(project.id);
-                  }}
-                  aria-label={`${t('removeProject')}: ${project.title}`}
-                >
-                  {t('remove')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const name = window.prompt(t('renameProjectPrompt'), project.displayName);
-                    if (name?.trim()) onRename(project.id, name.trim());
-                  }}
-                >
-                  {t('rename')}
-                </button>
-                <button type="button" onClick={() => onArchive(project.id, !project.archivedAt)}>
-                  {project.archivedAt ? t('unarchive') : t('archive')}
-                </button>
-              </li>
-            ))}
+            {visible.map((project) => {
+              const currentStage = projectCardStage(project);
+              return (
+                <li key={project.id}>
+                  <button
+                    type="button"
+                    className="project-list__open"
+                    onClick={() => onOpen(project.id)}
+                  >
+                    <span>
+                      <strong>{project.title}</strong>
+                      <small className="project-list__meta">
+                        <span>
+                          {t('readinessStageLabel')}:{' '}
+                          {t(`projectSection_${currentStage.targetSection}`)}
+                          {' · '}
+                          {t(`readinessStage_${currentStage.state}`, {
+                            count: currentStage.blockerCount,
+                          })}
+                        </span>
+                        <span>
+                          {t('nextBestAction')}:{' '}
+                          {project.readiness.nextAction
+                            ? t(project.readiness.nextAction.titleKey)
+                            : t('coachAllClear')}
+                        </span>
+                        <span>
+                          {project.readiness.blockerCount > 0
+                            ? t('readinessBlockerCount', {
+                                count: project.readiness.blockerCount,
+                              })
+                            : t('projectReadyForCopy')}{' '}
+                          · {t('lastSaved')}:{' '}
+                          {new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          }).format(new Date(project.updatedAt))}
+                        </span>
+                      </small>
+                    </span>
+                    <span>
+                      {project.selectedPriceSek === null
+                        ? t('noNumericPrice')
+                        : `${project.selectedPriceSek} SEK`}
+                      {project.selectedMarketplace
+                        ? ` · ${t(`marketplace_${project.selectedMarketplace}`)}`
+                        : ''}
+                    </span>
+                  </button>
+                  <button
+                    id={`project-actions-${project.id}`}
+                    type="button"
+                    className="project-overflow-trigger"
+                    aria-haspopup="menu"
+                    aria-controls={`project-menu-${project.id}`}
+                    aria-expanded={menuProjectId === project.id}
+                    aria-label={`${t('projectActions')}: ${project.title}`}
+                    onClick={() => {
+                      const opening = menuProjectId !== project.id;
+                      setMenuProjectId(opening ? project.id : null);
+                      if (opening) {
+                        requestAnimationFrame(() => {
+                          document
+                            .querySelector<HTMLButtonElement>(
+                              `#project-menu-${project.id} [role="menuitem"]`,
+                            )
+                            ?.focus();
+                        });
+                      }
+                    }}
+                  >
+                    •••
+                  </button>
+                  {menuProjectId === project.id && (
+                    <div
+                      id={`project-menu-${project.id}`}
+                      className="project-overflow-menu"
+                      role="menu"
+                      aria-labelledby={`project-actions-${project.id}`}
+                      onKeyDown={(event) => handleMenuKeyDown(event, project.id)}
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setRenameProjectTarget(project);
+                          setRenameValue(project.displayName);
+                          setRenameError(null);
+                          setMenuProjectId(null);
+                        }}
+                      >
+                        {t('rename')}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          onArchive(project.id, !project.archivedAt);
+                          setMenuProjectId(null);
+                        }}
+                      >
+                        {project.archivedAt ? t('unarchive') : t('archive')}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="button-danger-quiet"
+                        onClick={() => {
+                          setLastRemoved(project);
+                          onRemove(project.id);
+                          setMenuProjectId(null);
+                        }}
+                      >
+                        {t('moveToTrash')}
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </SectionCard>
@@ -338,9 +531,7 @@ export function ProjectDashboard({
               <button
                 type="button"
                 className="button-danger-quiet"
-                onClick={() => {
-                  if (window.confirm(t('confirmEmptyTrash'))) onEmptyTrash();
-                }}
+                onClick={() => setShowEmptyTrashDialog(true)}
               >
                 {t('emptyTrash')}
               </button>
@@ -363,6 +554,94 @@ export function ProjectDashboard({
           )}
         </SectionCard>
       )}
+
+      <Dialog
+        open={Boolean(renameProjectTarget)}
+        title={t('renameProjectTitle')}
+        description={t('renameProjectDescription')}
+        closeLabel={t('closeDialog')}
+        onClose={() => {
+          setRenameProjectTarget(null);
+          setRenameError(null);
+        }}
+        actions={
+          <>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => setRenameProjectTarget(null)}
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const normalized = renameValue.trim();
+                if (!normalized) {
+                  setRenameError(t('projectNameRequired'));
+                  return;
+                }
+                if (normalized.length > MAX_PROJECT_NAME_LENGTH) {
+                  setRenameError(t('projectNameTooLong'));
+                  return;
+                }
+                if (renameProjectTarget) onRename(renameProjectTarget.id, normalized);
+                setRenameProjectTarget(null);
+                setRenameError(null);
+              }}
+            >
+              {t('saveName')}
+            </button>
+          </>
+        }
+      >
+        <label className="field">
+          <span>{t('projectName')}</span>
+          <input
+            value={renameValue}
+            maxLength={MAX_PROJECT_NAME_LENGTH + 1}
+            onChange={(event) => {
+              setRenameValue(event.target.value);
+              setRenameError(null);
+            }}
+          />
+        </label>
+        {renameError && (
+          <p className="field-error" role="alert">
+            {renameError}
+          </p>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={showEmptyTrashDialog}
+        title={t('emptyTrashDialogTitle')}
+        description={t('confirmEmptyTrash')}
+        closeLabel={t('closeDialog')}
+        onClose={() => setShowEmptyTrashDialog(false)}
+        destructive
+        actions={
+          <>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => setShowEmptyTrashDialog(false)}
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="button"
+              className="button-danger-quiet"
+              onClick={() => {
+                onEmptyTrash();
+                setShowEmptyTrashDialog(false);
+              }}
+            >
+              {t('emptyTrashPermanently')}
+            </button>
+          </>
+        }
+      />
     </div>
   );
 }

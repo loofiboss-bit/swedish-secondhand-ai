@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ListingTemplate } from '@core/types';
+import type { ListingTemplate, SellPlan } from '@core/types';
 import { useListingStore } from './useListingStore';
 
 const template: ListingTemplate = {
@@ -10,6 +10,16 @@ const template: ListingTemplate = {
   shippingSuggestion: 'Hämtning eller spårbar frakt',
   tags: ['Sony', 'A6400'],
   disclaimer: 'Kontrollera fakta.',
+};
+const plan: SellPlan = {
+  version: 1,
+  generatedAt: '2026-07-24T00:00:00.000Z',
+  marketplace: 'tradera',
+  saleFormat: 'fixed-price',
+  pricingStrategy: 'balanced',
+  fulfillment: 'shipping-or-pickup',
+  rationale: [],
+  basis: ['general-rule'],
 };
 
 describe('useListingStore', () => {
@@ -27,5 +37,13 @@ describe('useListingStore', () => {
     expect(useListingStore.getState().exportCopyBundle('blocket')).toContain(
       'Title: Min Sony A6400',
     );
+  });
+
+  it('restores an explicit marketplace and does not replace it during regeneration', () => {
+    useListingStore.getState().hydrateFromDraft([template], undefined, 'balanced', plan, 'blocket');
+    expect(useListingStore.getState().selectedSite).toBe('blocket');
+
+    useListingStore.getState().setSellPlan('balanced', plan);
+    expect(useListingStore.getState().selectedSite).toBe('blocket');
   });
 });

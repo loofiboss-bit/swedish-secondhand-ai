@@ -1,88 +1,69 @@
-# Swedish Secondhand AI — v3.0.0 Guided Selling roadmap
+# Swedish Secondhand AI — v4.0.0 Focused Seller Workspace roadmap
 
-Target: a local-first Windows and Linux seller coach that lets an occasional Swedish private
-seller create a copy-ready listing with their own price through a six-action functional acceptance
-path. Evidence-based valuation remains an optional, clearly stronger pricing route.
+The product and acceptance authority is
+[`docs/SWEDISH_SECONDHAND_AI_V4_PLAN.md`](../docs/SWEDISH_SECONDHAND_AI_V4_PLAN.md).
+This file records release ordering and repository checkpoint state without treating local,
+unmerged work as released.
 
-## Product boundary
+## G0 — Stable v3.0.0 prerequisite
 
-v3 retains Gemini, Ollama, deterministic offline analysis, official Tradera comparables, local
-projects, protected secrets and manual copy/export for Tradera, Blocket and Vinted. Accounts,
-cloud sync, scraping, automatic publishing, payments, mobile/web clients, new AI runtimes and
-automatic updates remain out of scope.
+Status: completed and published 2026-07-24 from merge `b8754dc`.
 
-## G0 — Safe v2.0.1 maintenance release
+- Stable v3.0.0 passed exact-source validation, Windows/Linux package and v2.0.1 upgrade checks,
+  AppImage visible-render smoke, checksum/SBOM verification, and public artifact readback.
+- GitHub security readback reported zero open Dependabot alerts at publication.
+- Repository Markdown documentation and the public wiki were normalized to English.
 
-Status: completed and published 2026-07-17 from merge `c23d053`.
+## M1 — Unified readiness and category boundaries
 
-- Published the merged relative-asset AppImage fix as v2.0.1.
-- Generalized semantic-version release and publication gates.
-- Verified Windows and Linux packaging, v2.0.0 upgrades, visible AppImage rendering, checksums,
-  SBOM and GitHub artifact readback.
+Target: one derived model for Item, Price, Listing, Follow-up, blocker count, next action, and copy
+eligibility. Seller-entered pricing keeps comparable research optional; evidence-based pricing
+retains its deterministic evidence gate. Category consumers normalize unknown values to General
+without discarding reviewed source text.
 
-## M1 — Schema 4 and simplified core contracts
+## M2 — Shared safe image intake
 
-Status: completed in merge `d201220` after local and GitHub validation.
+Target: quick start and Item use the same sequential six-image, 10 MiB, MIME/extension, decode,
+assessment, rejection, removal, and index-preservation contract. HEIC/HEIF remains explicitly
+unsupported.
 
-- Add explicit project names, `PriceDecision`, archive state and recoverable trash.
-- Migrate schema 3 deterministically and idempotently while retaining verified schema 3 rollback
-  records.
-- Export backup format 3 with live and trashed projects; import formats 2 and 3.
-- Derive `ProjectProgress` from project data instead of persisting new workflow state.
+## M3 — Focused Item workspace
 
-## M2 — Immediate offline start and clear configuration
+Target: description and photo summary first, followed by required facts, recommended facts, and
+advanced provenance. One state-aware primary action remains visible and seller locks survive
+re-analysis.
 
-Status: completed in merge `17053e3` after local, E2E and GitHub validation.
+## M4 — Preview-first Listing workspace
 
-- Make **Start offline** the primary first-run action and detect the OS language.
-- Show only the selected provider configuration with localized connection tests.
-- Add a network-free example project and a project quick start with name, description and images.
+Target: recommended marketplace preview, truthful ready-copy gate, secondary text-only copy,
+focused blocker navigation, preserved user edits, accessible replacement dialog, and recoverable
+clipboard failure.
 
-## M3 — Guided workflow and progressive detail
+## M5 — Project library and recovery polish
 
-Status: completed in merge `c4d1890` after local, E2E and GitHub validation.
+Target: readiness-driven priority and cards, accessible overflow actions and dialogs, recoverable
+trash, serialized saves, and latest-request-wins project switching.
 
-- Use Item → Price → Listing → Done with one primary next action.
-- Show only the coach's most important task; move provenance and advanced tools into details.
-- Localize enums, dates, sources and normalized errors; use contextual dismissible errors.
-- Expose localized autosave states and remove the legacy global workflow from UI state.
+## M6 — Release hardening
 
-## M4 — Flexible pricing and simpler listing studio
+Target: v2.0.1/v3 compatibility fixtures, expanded E2E and accessibility coverage, current
+marketplace-policy source dates, refreshed screenshots and guidance, dependency/release
+validation, package smoke, checksums, and SBOM.
 
-Status: completed in merge `012a7f6` after local, E2E and GitHub validation.
-
-- Support evidence-based price, clearly labelled user price or no price yet.
-- Generate listing text without valuation; require a price only for the complete copy bundle.
-- Keep numerical recommendations gated by two approved realized comparables.
-- Guide manual comparable entry and show one recommended marketplace tab at a time.
-
-## M5 — Safe project management and support
-
-Status: completed in merge `6e2f0dd` after local, E2E, documentation and GitHub validation.
-
-- Add search, status filters, rename, archive, trash/undo and explicit empty-trash confirmation.
-- Export privacy-safe diagnostics without user text, images, URLs or secrets.
-- Refresh README, user guide, support flow and all v3 screenshots.
-
-## M6 — v3 stable release
-
-Status: stable `v3.0.0` prepared for publication 2026-07-24 after current release evidence passed.
-
-- Publish `v3.0.0-rc.1` only after full local and cross-platform release validation.
-- Stable v3.0.0 requires verified package and v2.0.1 upgrade checks on Windows/Linux, no open
-  P0/P1 or high security findings, and artifact/checksum/SBOM readback.
-- Candidate age, waiting periods and elapsed time are never release gates.
-
-RC readback: Windows installer/portable and Linux AppImage passed package smoke and v2.0.1
-upgrade checks; the AppImage passed visible-render smoke under Xvfb. All public artifacts,
-SHA-256 checksums and the CycloneDX 1.6 SBOM were downloaded and verified after publication.
+Public `v4.0.0-rc.1` requires clean Windows/Linux package and upgrade evidence, green CI, and
+public artifact readback. Stable v4 can follow immediately when current evidence confirms every
+release gate, including no open P0/P1 or high-severity security finding. Candidate age, waiting
+periods, and elapsed time are never release gates.
 
 ## Progress
 
-- [x] G0 Safe v2.0.1 maintenance release
-- [x] M1 Schema 4 and simplified core contracts
-- [x] M2 Immediate offline start and clear configuration
-- [x] M3 Guided workflow and progressive detail
-- [x] M4 Flexible pricing and simpler listing studio
-- [x] M5 Safe project management and support
-- [x] M6 Stable v3 release evidence and publication preparation
+- [x] G0 Stable v3.0.0 prerequisite
+- [ ] M1 Unified readiness and category boundaries
+- [ ] M2 Shared safe image intake
+- [ ] M3 Focused Item workspace
+- [ ] M4 Preview-first Listing workspace
+- [ ] M5 Project library and recovery polish
+- [ ] M6 Release hardening and public RC
+
+Roadmap boxes are checked only after the relevant milestone is merged and its required validation
+passes. Current branch evidence belongs in the v4 RC gate record until then.

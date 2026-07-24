@@ -35,6 +35,10 @@ export type ProjectStatus = 'draft' | 'ready' | 'listed' | 'sold' | 'paused';
 
 export type ProjectSection = 'item' | 'market' | 'listing' | 'follow-up';
 
+export type ProjectReadinessStageId = 'item' | 'price' | 'listing' | 'follow-up';
+
+export type ProjectReadinessSeverity = 'blocker' | 'warning' | 'improvement' | 'optional-research';
+
 export type MarketPriceKind = 'asking' | 'realized' | 'unknown';
 
 export type MarketState = 'active' | 'sold' | 'unknown';
@@ -77,6 +81,11 @@ export interface VerifiedFact<T> {
 
 export type ProductFactKey = 'title' | 'category' | 'brand' | 'model' | 'conditionGrade';
 export type ProductListFactKey = 'defects' | 'includedAccessories' | 'missingAccessories';
+export type LockableProductFactKey =
+  | ProductFactKey
+  | ProductListFactKey
+  | 'testedStatus'
+  | 'authenticityStatus';
 
 export interface VerifiedProductFacts {
   schemaVersion: 2;
@@ -160,12 +169,45 @@ export interface CoachAction {
   id: string;
   kind: CoachActionKind;
   priority: number;
-  severity: 'blocking' | 'improvement';
+  severity: ProjectReadinessSeverity;
   titleKey: string;
   reasonKey: string;
   impactKey: string;
   targetSection: ProjectSection;
   targetId?: string;
+}
+
+export interface ProjectReadinessIssue {
+  id: string;
+  stage: ProjectReadinessStageId;
+  severity: ProjectReadinessSeverity;
+  kind: CoachActionKind;
+  priority: number;
+  titleKey: string;
+  reasonKey: string;
+  impactKey: string;
+  targetSection: ProjectSection;
+  targetId?: string;
+  fieldId?: string;
+}
+
+export interface ProjectReadinessStage {
+  id: ProjectReadinessStageId;
+  state: 'blocked' | 'ready' | 'pending' | 'optional';
+  ready: boolean;
+  blockerCount: number;
+  issueIds: string[];
+  targetSection: ProjectSection;
+}
+
+export interface ProjectReadiness {
+  stages: Record<ProjectReadinessStageId, ProjectReadinessStage>;
+  issues: ProjectReadinessIssue[];
+  blockerCount: number;
+  nextAction: CoachAction | null;
+  selectedMarketplace: MarketplaceSite | null;
+  copyEligible: boolean;
+  complete: boolean;
 }
 
 export interface MarketObservation {
@@ -429,6 +471,7 @@ export interface ListingDraft {
   listingDrafts?: MarketplaceListingDraft[];
   sellerTimePreference?: SellerTimePreference;
   sellPlan?: SellPlan;
+  selectedMarketplace?: MarketplaceSite;
   localLearningSampleSize?: number;
   traderaComps: ComparableRecord[];
   manualComps: ComparableRecord[];
@@ -505,6 +548,9 @@ export interface ProjectSummary {
   status: ProjectStatus;
   updatedAt: string;
   recommendedPriceSek: number | null;
+  selectedPriceSek: number | null;
+  selectedMarketplace: MarketplaceSite | null;
+  readiness: ProjectReadiness;
   thumbnailMediaId?: string;
   archivedAt?: string;
   trashedAt?: string;

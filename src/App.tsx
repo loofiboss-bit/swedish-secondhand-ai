@@ -8,6 +8,7 @@ import { useProjectStore } from '@core/store/useProjectStore';
 import { useSettingsStore } from '@core/store/useSettingsStore';
 import { useValuationStore } from '@core/store/useValuationStore';
 import { useWorkflowStore } from '@core/store/useWorkflowStore';
+import { useActiveProjectReadiness } from '@core/store/useActiveProjectReadiness';
 import { CommandPalette } from '@shared/components/CommandPalette';
 import { ContextualError } from '@shared/components/ContextualError';
 import type { ProjectQuickStartInput } from '@features/projects/ProjectDashboard';
@@ -70,6 +71,7 @@ export function App() {
   const valuationStore = useValuationStore();
   const listingStore = useListingStore();
   const workflowStore = useWorkflowStore();
+  const readiness = useActiveProjectReadiness();
   const {
     status: projectStatus,
     projects,
@@ -126,6 +128,7 @@ export function App() {
       hydrated.draft.listingDrafts,
       hydrated.draft.sellerTimePreference,
       hydrated.draft.sellPlan,
+      hydrated.draft.selectedMarketplace,
     );
     hydrateWorkflow(hydrated.draft.currentStep, hydrated.draft.completedSteps);
     setWorkspaceSection(hydrated.project.currentSection);
@@ -135,7 +138,7 @@ export function App() {
   };
 
   const saveActiveProject = async () => {
-    if (!activeProjectId || !activeProject) return;
+    if (!activeProjectId || !activeProject) return true;
     setSaveStatus('saving');
     const draft = buildDraft(currentStep, completedSteps);
     const saved = await saveActive(draft);
@@ -145,6 +148,7 @@ export function App() {
     } else {
       setSaveStatus('error');
     }
+    return saved;
   };
 
   useEffect(() => {
@@ -188,12 +192,23 @@ export function App() {
     listingStore.listingDrafts,
     listingStore.sellerTimePreference,
     listingStore.sellPlan,
+    listingStore.selectedSite,
   ]);
 
   const openProject = async (id: string) => {
     setIsSwitchingProject(true);
+    if (activeProjectId === id && activeProject) {
+      setAppView('workspace');
+      setIsSwitchingProject(false);
+      return;
+    }
     if (activeProjectId && activeProjectId !== id) {
-      await saveActiveProject();
+      const saved = await saveActiveProject();
+      if (!saved) {
+        setAppView('workspace');
+        setIsSwitchingProject(false);
+        return;
+      }
     }
     const hydrated = await openProjectRecord(id);
     if (hydrated) hydrateProject(hydrated);
@@ -202,13 +217,20 @@ export function App() {
 
   const createProject = async (input?: ProjectQuickStartInput) => {
     setIsSwitchingProject(true);
-    if (activeProjectId) await saveActiveProject();
+    if (activeProjectId) {
+      const saved = await saveActiveProject();
+      if (!saved) {
+        setAppView('workspace');
+        setIsSwitchingProject(false);
+        return;
+      }
+    }
     const hydrated = await createProjectRecord(input?.displayName);
     if (hydrated) {
       hydrateProject(hydrated);
       if (input) {
         setInputText(input.description);
-        input.images.forEach((image) => addImage(image));
+        input.images.forEach((image, index) => addImage(image, input.photoAssessments[index]));
       }
     }
     setIsSwitchingProject(false);
@@ -220,6 +242,7 @@ export function App() {
         displayName: t('exampleProjectName'),
         description: t('exampleProjectDescription'),
         images: [],
+        photoAssessments: [],
       });
       return;
     }
@@ -395,11 +418,17 @@ export function App() {
                     {t('backToProjects')}
                   </button>
                 </header>
-                <WorkspaceTabs active={workspaceSection} onChange={changeSection} />
+                <WorkspaceTabs
+                  active={workspaceSection}
+                  readiness={readiness}
+                  onChange={changeSection}
+                />
                 <CoachPanel projectStatus={activeProject.status} onNavigate={openCoachAction} />
                 <div className="workspace-layout">
                   <section className="workspace-main" tabIndex={-1}>
-                    {workspaceSection === 'item' && <AnalyzePanel />}
+                    {workspaceSection === 'item' && (
+                      <AnalyzePanel onContinue={() => changeSection('market')} />
+                    )}
                     {workspaceSection === 'market' && <ValuationPanel />}
                     {workspaceSection === 'listing' && <TemplatesPanel />}
                     {workspaceSection === 'follow-up' && (

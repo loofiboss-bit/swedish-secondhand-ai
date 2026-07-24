@@ -1,6 +1,7 @@
 import type {
   ConditionGrade,
   ItemFingerprint,
+  LockableProductFactKey,
   ProductFactKey,
   ProductListFactKey,
   VerifiedFact,
@@ -163,7 +164,7 @@ export function updateProductFact(
 
 export function setProductFactLock(
   facts: VerifiedProductFacts,
-  key: ProductFactKey,
+  key: LockableProductFactKey,
   locked: boolean,
 ): VerifiedProductFacts {
   return { ...facts, [key]: { ...facts[key], locked } };

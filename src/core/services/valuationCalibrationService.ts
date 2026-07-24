@@ -1,6 +1,7 @@
 import { projectRepository } from './projectRepository';
 import { clamp } from '@core/utils/json';
 import type { ItemFingerprint, PricingStrategy, VerifiedProjectOutcome } from '@core/types';
+import { normalizeSellerCategory } from './categoryProfileService';
 
 const MIN_CATEGORY_OUTCOMES = 5;
 
@@ -39,7 +40,10 @@ class ValuationCalibrationService {
     } catch {
       outcomes = [];
     }
-    const sameCategory = outcomes.filter((entry) => entry.category === context?.category);
+    const normalizedCategory = context?.category ? normalizeSellerCategory(context.category) : null;
+    const sameCategory = normalizedCategory
+      ? outcomes.filter((entry) => normalizeSellerCategory(entry.category) === normalizedCategory)
+      : [];
     const sameBrandAndCategory = sameCategory.filter((entry) => entry.brand === context?.brand);
     const selected =
       sameBrandAndCategory.length >= MIN_CATEGORY_OUTCOMES

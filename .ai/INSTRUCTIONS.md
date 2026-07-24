@@ -8,12 +8,16 @@ Build and maintain a local-first desktop app that:
 - estimates value in SEK,
 - creates copy-ready listing templates for Tradera, Blocket, and Vinted.
 
-## v3 product boundary
+## v4 product boundary
 
 - Supported: Gemini, local Ollama, deterministic offline analysis, official Tradera comparables,
   local projects, and manual copy/export for Tradera, Blocket, and Vinted.
 - Out of scope: accounts, cloud sync, scraping, browser or automatic marketplace publishing,
   payments, mobile or web clients, new AI runtimes, and automatic updates.
+- Product truth comes from the derived project-readiness service. Do not introduce a second
+  progress store or treat legacy workflow state as current UI truth.
+- Seller-entered pricing is complete without market research. Evidence-based pricing retains the
+  two-approved-realized-comparable gate.
 
 ## Workflow
 

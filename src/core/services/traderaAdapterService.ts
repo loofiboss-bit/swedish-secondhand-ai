@@ -5,6 +5,7 @@ import type {
   ListingTemplateInput,
   MarketplaceAdapter,
 } from '@core/types';
+import { normalizeSellerCategory } from './categoryProfileService';
 import { settingsService } from './settingsService';
 import { logger } from './loggerService';
 import { getDesktopBridge } from '@core/platform/desktopBridge';
@@ -112,6 +113,7 @@ class TraderaAdapterService implements MarketplaceAdapter {
 
   renderTemplate(input: ListingTemplateInput): ListingTemplate {
     const facts = input.facts;
+    const category = normalizeSellerCategory(facts.category.value);
     const price =
       input.priceDecision.kind === 'user_entered'
         ? input.priceDecision.amountSek
@@ -125,10 +127,10 @@ class TraderaAdapterService implements MarketplaceAdapter {
     return {
       site: 'tradera',
       title: facts.title.value.slice(0, 80),
-      description: `${facts.title.value}\n\nSkick: ${facts.conditionGrade.value}\nKategori: ${facts.category.value}\nDefekter: ${facts.defects.value.join(', ') || 'Inte fullständigt verifierat'}\nSaknade tillbehör: ${facts.missingAccessories.value.join(', ') || 'Inte verifierat'}\nTeststatus: ${facts.testedStatus.value}\nÄkthet: ${facts.authenticityStatus.value}${strategy}`,
+      description: `${facts.title.value}\n\nSkick: ${facts.conditionGrade.value}\nKategori: ${category}\nDefekter: ${facts.defects.value.join(', ') || 'Inte fullständigt verifierat'}\nSaknade tillbehör: ${facts.missingAccessories.value.join(', ') || 'Inte verifierat'}\nTeststatus: ${facts.testedStatus.value}\nÄkthet: ${facts.authenticityStatus.value}${strategy}`,
       priceSuggestionSek: price,
       shippingSuggestion: 'Skickas spårbart inom Sverige.',
-      tags: [facts.category.value, facts.brand.value].filter((entry) => entry !== 'Unknown'),
+      tags: [category, facts.brand.value].filter((entry) => entry !== 'Unknown'),
       disclaimer: 'Prisforslag baserat pa historiska jamforelser och manuell granskning.',
     };
   }

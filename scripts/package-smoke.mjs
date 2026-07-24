@@ -1,16 +1,18 @@
-import { open, readdir, stat } from 'node:fs/promises';
+import { open, readFile, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
 const [platform = process.platform, directory = 'release'] = process.argv.slice(2);
 const entries = await readdir(directory);
+const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+const version = packageJson.version.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const expected =
   platform === 'linux'
-    ? [/Swedish-Secondhand-AI-.+-linux-(?:x86_64|x64)\.AppImage$/]
+    ? [new RegExp(`^Swedish-Secondhand-AI-${version}-linux-(?:x86_64|x64)\\.AppImage$`)]
     : [
-        /Swedish-Secondhand-AI-.+-windows-x64-setup\.exe$/,
-        /Swedish-Secondhand-AI-.+-windows-x64-portable\.exe$/,
+        new RegExp(`^Swedish-Secondhand-AI-${version}-windows-x64-setup\\.exe$`),
+        new RegExp(`^Swedish-Secondhand-AI-${version}-windows-x64-portable\\.exe$`),
       ];
 
 for (const pattern of expected) {

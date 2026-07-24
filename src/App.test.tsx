@@ -1,5 +1,5 @@
 import { clear } from 'idb-keyval';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PROJECT_STORE } from '@core/services/projectRepository';
@@ -51,10 +51,15 @@ describe('App project shell', () => {
       screen.getByRole('button', { name: /skapa och fortsätt|create and continue/i }),
     );
 
+    const workspaceNavigation = await screen.findByRole(
+      'navigation',
+      { name: /arbetsyta för vara|item workspace/i },
+      { timeout: 10_000 },
+    );
     expect(
-      await screen.findByRole('button', { name: /^pris$|^price$/i }, { timeout: 10_000 }),
+      within(workspaceNavigation).getByRole('button', { name: /pris|price/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /analysera|analyze/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^vara$|^item$/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /inställningar|settings/i }));
     expect(

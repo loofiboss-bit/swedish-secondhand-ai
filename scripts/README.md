@@ -9,7 +9,8 @@
 - `package-smoke.mjs` checks expected Windows and Linux artifacts, file size, and executable
   headers.
 - `appimage-render-smoke.mjs` starts the packaged Linux renderer and requires visible app content.
-- `generate-checksums.mjs` writes deterministic SHA-256 sums for release assets and the SBOM.
+- `generate-checksums.mjs` writes deterministic SHA-256 sums only for package-version-matched
+  release assets and the SBOM.
 
 Use the package scripts in `package.json` instead of calling these files directly unless you are
 debugging a focused validation step.

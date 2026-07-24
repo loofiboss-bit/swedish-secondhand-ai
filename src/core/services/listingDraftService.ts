@@ -335,6 +335,8 @@ function hasValidSmartIntake(value: Partial<ListingDraft>): boolean {
     (value.sellerTimePreference === undefined ||
       ['fast', 'balanced', 'patient'].includes(String(value.sellerTimePreference))) &&
     (value.sellPlan === undefined || isSellPlan(value.sellPlan)) &&
+    (value.selectedMarketplace === undefined ||
+      ['tradera', 'blocket', 'vinted'].includes(String(value.selectedMarketplace))) &&
     (value.localLearningSampleSize === undefined ||
       (Number.isInteger(value.localLearningSampleSize) &&
         Number(value.localLearningSampleSize) >= 0 &&
@@ -397,6 +399,8 @@ function hasConsistentImageReferences(value: ListingDraft): boolean {
         (assessment.duplicateOfIndex === undefined || assessment.duplicateOfIndex < imageCount),
     ) &&
     new Set(listingDrafts.map((draft) => draft.site)).size === listingDrafts.length &&
+    (value.selectedMarketplace === undefined ||
+      listingDrafts.some((draft) => draft.site === value.selectedMarketplace)) &&
     listingDrafts.every(
       (draft) =>
         draft.imageOrder.every((imageIndex) => imageIndex < imageCount) &&

@@ -6,7 +6,9 @@ import { DATASET_KEYS, createEnvelope } from './persistenceService';
 import { listingDraftService } from './listingDraftService';
 import { listingTemplateService } from './listingTemplateService';
 import { factsFromFingerprint } from './verifiedFactsService';
-import { PROJECT_STORE, projectRepository } from './projectRepository';
+import { PROJECT_STORE, projectRepository, type ProjectBackupDataset } from './projectRepository';
+import v201ProjectRecord from '../../test/fixtures/compatibility/v2.0.1-project-record.json';
+import v300ProjectBackup from '../../test/fixtures/compatibility/v3.0.0-project-backup.json';
 
 const draft: ListingDraft = {
   version: 1,
@@ -129,6 +131,94 @@ describe('projectRepository', () => {
       priceDecision: { kind: 'evidence_based' },
     });
     expect(await get('project:legacy-project', PROJECT_STORE)).toEqual(legacyRecord);
+  });
+
+  it('opens the v2.0.1 schema-3 compatibility fixture without changing its rollback source', async () => {
+    await set('project:v201-project', v201ProjectRecord, PROJECT_STORE);
+    await set(
+      'meta:project-index',
+      {
+        schemaVersion: 3,
+        activeProjectId: 'v201-project',
+        projectIds: ['v201-project'],
+        migrationCompletedAt: '2026-07-17T08:30:00.000Z',
+      },
+      PROJECT_STORE,
+    );
+
+    await projectRepository.initialize();
+    const migrated = await projectRepository.open('v201-project');
+
+    expect(migrated).toMatchObject({
+      project: {
+        schemaVersion: 4,
+        displayName: 'v2 IKEA chair',
+        priceDecision: { kind: 'unset' },
+      },
+      draft: { inputText: 'IKEA chair from v2.0.1' },
+    });
+    expect(await get('project:v201-project', PROJECT_STORE)).toEqual(v201ProjectRecord);
+  });
+
+  it('round-trips the v3.0.0 schema-4 compatibility fixture with media and user edits intact', async () => {
+    await projectRepository.initialize();
+    await projectRepository.importBackup(v300ProjectBackup as unknown as ProjectBackupDataset);
+
+    const reopened = await projectRepository.open('v300-project');
+
+    expect(reopened.project).toMatchObject({
+      schemaVersion: 4,
+      displayName: 'v3 Sony camera',
+      status: 'sold',
+      priceDecision: { kind: 'user_entered', amountSek: 5500 },
+      archivedAt: '2026-07-24T07:45:00.000Z',
+      outcome: {
+        saleStatus: 'sold',
+        marketplace: 'tradera',
+        askingPriceSek: 5500,
+        soldPriceSek: 5200,
+        saleDurationDays: 7,
+      },
+    });
+    expect(reopened.draft.images).toEqual(v300ProjectBackup.records[0].images);
+    expect(reopened.draft.photoAssessments).toHaveLength(1);
+    expect(reopened.draft.listingDrafts?.[0]).toMatchObject({
+      fields: {
+        title: {
+          value: 'My reviewed Sony A6400 title',
+          origin: 'user',
+          userEdited: true,
+        },
+      },
+      imageOrder: [0],
+      coverImageIndex: 0,
+    });
+    expect(reopened.draft.selectedMarketplace).toBe('tradera');
+    await expect(projectRepository.listTrash()).resolves.toEqual([
+      expect.objectContaining({
+        id: 'v300-trashed-project',
+        trashedAt: '2026-07-24T06:00:00.000Z',
+      }),
+    ]);
+  });
+
+  it('restores an exact rich project without implicitly changing the active project', async () => {
+    await projectRepository.initialize();
+    await projectRepository.importBackup(v300ProjectBackup as unknown as ProjectBackupDataset);
+    const before = await projectRepository.open('v300-project');
+    const other = await projectRepository.create('Active project');
+
+    await projectRepository.remove('v300-project');
+    const restoredState = await projectRepository.restore('v300-project');
+    const after = await projectRepository.open('v300-project');
+
+    expect(restoredState.activeProjectId).toBe(other.project.id);
+    expect(after.draft).toEqual(before.draft);
+    expect(after.project).toEqual({
+      ...before.project,
+      updatedAt: after.project.updatedAt,
+      trashedAt: undefined,
+    });
   });
 
   it('creates and independently saves multiple projects', async () => {

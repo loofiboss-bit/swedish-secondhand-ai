@@ -1,21 +1,12 @@
 import type { ItemProject, ProjectProgress, ProjectProgressStep } from '@core/types';
-
-function hasReviewedItem(project: ItemProject): boolean {
-  const facts = project.workspace.productFacts;
-  return Boolean(
-    facts &&
-    facts.title.value.trim() &&
-    facts.category.value.trim() &&
-    facts.conditionGrade.value !== 'unknown',
-  );
-}
+import { evaluateProjectRecordReadiness } from './projectReadinessService';
 
 export function calculateProjectProgress(project: ItemProject): ProjectProgress {
-  const itemReady = hasReviewedItem(project);
-  const priceReady = project.priceDecision.kind !== 'unset';
-  const listingReady =
-    (project.workspace.listingDrafts?.length ?? 0) > 0 || project.workspace.templates.length > 0;
-  const complete = itemReady && priceReady && listingReady;
+  const readiness = evaluateProjectRecordReadiness(project);
+  const itemReady = readiness.stages.item.ready;
+  const priceReady = readiness.stages.price.ready;
+  const listingReady = readiness.stages.listing.ready;
+  const complete = readiness.complete;
   const completedSteps: ProjectProgressStep[] = [];
   if (itemReady) completedSteps.push('item');
   if (priceReady) completedSteps.push('price');

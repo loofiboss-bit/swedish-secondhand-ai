@@ -104,6 +104,33 @@ describe('listingTemplateService', () => {
     expect(template.description).toContain('Äkthet: Äkthet inte verifierad');
   });
 
+  it('uses a safe General label for unknown category text without discarding the reviewed value', () => {
+    const unknownCategoryFacts = {
+      ...facts,
+      category: {
+        value: 'Vintage camera equipment',
+        source: 'user' as const,
+        locked: true,
+      },
+    };
+
+    const [template] = listingTemplateService.generateTemplates(
+      unknownCategoryFacts,
+      priceDecision,
+    );
+    const [draft] = listingTemplateService.generateListingDrafts(
+      unknownCategoryFacts,
+      priceDecision,
+      0,
+    );
+
+    expect(template.description).toContain('Kategori: Övrigt');
+    expect(template.description).not.toContain('undefined');
+    expect(template.tags).toContain('Övrigt');
+    expect(draft.fields.category.value).toBe('Övrigt');
+    expect(unknownCategoryFacts.category.value).toBe('Vintage camera equipment');
+  });
+
   it('regenerates only untouched fields unless replacement is explicit', () => {
     const generated = listingTemplateService.generateListingDrafts(
       facts,

@@ -154,6 +154,32 @@ describe('valuationService', () => {
     expect(result.priceRecommendedSek).toBe(400);
   });
 
+  it('uses the safe General category for ranking without discarding reviewed raw text', () => {
+    const facts = factsFromFingerprint({
+      ...fingerprint,
+      category: 'Vintage wonder',
+    });
+    const [ranked] = rankComparables(facts, [
+      {
+        id: 'unknown-category',
+        source: 'manual',
+        site: 'tradera',
+        title: 'Vintage wonder',
+        priceSek: 500,
+        soldAt: '2026-07-01T00:00:00.000Z',
+        priceKind: 'realized',
+        marketState: 'sold',
+        conditionHint: 'good',
+        url: '',
+        similarityScore: 0.5,
+        sourceQuality: 0.8,
+      },
+    ]);
+
+    expect(facts.category.value).toBe('Vintage wonder');
+    expect(ranked.relevance?.factors.category).toBe(0);
+  });
+
   it('shows condition and strategy adjustments without using them as an anchor', async () => {
     const facts = factsFromFingerprint({ ...fingerprint, conditionGrade: 'fair' });
     const comps = [400, 500, 600, 700].map((priceSek, index) => ({

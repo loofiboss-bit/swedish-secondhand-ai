@@ -29,4 +29,18 @@ describe('sanitized diagnostics', () => {
       metadata: { name: 'Error', code: 'network' },
     });
   });
+
+  it('removes image bytes and file paths from diagnostic metadata', () => {
+    expect(
+      sanitizeDiagnostic({
+        images: ['data:image/png;base64,AQID'],
+        filePath: '/home/seller/private/item.png',
+        message: 'decode failed for data:image/jpeg;base64,QUJDRA==',
+      }),
+    ).toEqual({
+      images: '[redacted]',
+      filePath: '[redacted]',
+      message: 'decode failed for [redacted-image]',
+    });
+  });
 });

@@ -50,6 +50,9 @@ function replaceSummary(projects: ProjectSummary[], summary: ProjectSummary): Pr
   );
 }
 
+let openRequestSequence = 0;
+let saveQueue: Promise<void> = Promise.resolve();
+
 export const useProjectStore = create<ProjectState>((set, get) => ({
   status: 'idle',
   projects: [],
@@ -64,8 +67,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ ...applyRepositoryState(state), trash, activeProject: null });
   },
   createProject: async (displayName) => {
+    const requestId = ++openRequestSequence;
     try {
       const hydrated = await projectRepository.create(displayName);
+      if (requestId !== openRequestSequence) return null;
       const projects = await projectRepository.list();
       set({
         status: 'ready',
@@ -81,8 +86,10 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
   openProject: async (id) => {
+    const requestId = ++openRequestSequence;
     try {
       const hydrated = await projectRepository.open(id);
+      if (requestId !== openRequestSequence) return null;
       set({ activeProjectId: id, activeProject: hydrated.project, error: null });
       return hydrated;
     } catch (error) {
@@ -93,8 +100,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   saveActive: async (draft) => {
     const id = get().activeProjectId;
     if (!id) return false;
+    const operation = saveQueue.then(() => projectRepository.save(id, draft));
+    saveQueue = operation.then(
+      () => undefined,
+      () => undefined,
+    );
     try {
-      const saved = await projectRepository.save(id, draft);
+      const saved = await operation;
       set((state) => ({
         projects: replaceSummary(state.projects, saved),
         activeProject:
@@ -204,6 +216,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
   removeProject: async (id) => {
+    if (get().activeProjectId === id) openRequestSequence += 1;
     try {
       const state = await projectRepository.remove(id);
       const trash = await projectRepository.listTrash();

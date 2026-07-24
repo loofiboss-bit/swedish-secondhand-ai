@@ -45,8 +45,26 @@ const realized = (id: string): ComparableRecord => ({
   decision: { included: true, reason: 'Reviewed', decidedBy: 'user' },
 });
 
+const valuation = {
+  status: 'ready' as const,
+  priceMinSek: 4_500,
+  priceRecommendedSek: 5_000,
+  priceMaxSek: 5_500,
+  confidence: 0.8,
+  rationale: 'Reviewed evidence',
+  pricingStrategy: 'balanced' as const,
+  confidenceBreakdown: {
+    similarity: 0.8,
+    sampleSize: 0.8,
+    sourceQuality: 0.8,
+    calibration: 1,
+  },
+  compsUsed: [],
+  adjustments: [],
+};
+
 describe('CoachEngine', () => {
-  it('prioritizes safety and fact gaps before photos, evidence, price and listing', () => {
+  it('prioritizes safety before price, listing, and optional improvements', () => {
     const result = evaluateCoach({
       facts: factsFromFingerprint(fingerprint),
       photos: [],
@@ -55,14 +73,10 @@ describe('CoachEngine', () => {
       listings: [],
       projectStatus: 'draft',
     });
-    expect(result.actions.map((action) => action.kind)).toEqual([
-      'safety',
-      'photos',
-      'comparables',
-      'price',
-      'listing',
-    ]);
-    expect(result.actions.map((action) => action.priority)).toEqual([10, 30, 40, 50, 60]);
+    expect(result.readiness.nextAction).toMatchObject({ kind: 'safety', priority: 10 });
+    expect(
+      result.actions.filter((action) => action.severity === 'blocker').map((action) => action.kind),
+    ).toEqual(['safety', 'price', 'listing']);
   });
 
   it('never counts asking prices or unreviewed realized prices as approved evidence', () => {
@@ -72,11 +86,14 @@ describe('CoachEngine', () => {
       facts: updateTestedStatus(factsFromFingerprint(fingerprint), 'tested'),
       photos: [goodPhoto, { ...goodPhoto, imageIndex: 1, role: 'label_model' }],
       comparables: [asking, unreviewed],
-      valuation: null,
+      valuation,
       listings: [],
+      priceDecision: { kind: 'evidence_based', valuation },
       projectStatus: 'draft',
     });
-    expect(result.actions.some((action) => action.kind === 'comparables')).toBe(true);
+    expect(result.actions).toContainEqual(
+      expect.objectContaining({ kind: 'comparables', severity: 'blocker' }),
+    );
   });
 
   it('removes the comparable action only after two user-approved realized observations', () => {
@@ -84,8 +101,9 @@ describe('CoachEngine', () => {
       facts: updateTestedStatus(factsFromFingerprint(fingerprint), 'tested'),
       photos: [goodPhoto, { ...goodPhoto, imageIndex: 1, role: 'label_model' }],
       comparables: [realized('one'), realized('two')],
-      valuation: null,
+      valuation,
       listings: [],
+      priceDecision: { kind: 'evidence_based', valuation },
       projectStatus: 'listed',
     });
     expect(result.actions.some((action) => action.kind === 'comparables')).toBe(false);

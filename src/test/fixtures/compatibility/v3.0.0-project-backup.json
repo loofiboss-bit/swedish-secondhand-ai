@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 4,
+  "activeProjectId": "v300-project",
+  "imagesIncluded": true,
+  "records": [
+    {
+      "project": {
+        "schemaVersion": 4,
+        "id": "v300-project",
+        "displayName": "v3 Sony camera",
+        "title": "Sony A6400 camera",
+        "status": "sold",
+        "currentSection": "listing",
+        "createdAt": "2026-07-24T07:00:00.000Z",
+        "updatedAt": "2026-07-24T07:30:00.000Z",
+        "priceDecision": {
+          "kind": "user_entered",
+          "amountSek": 5500
+        },
+        "archivedAt": "2026-07-24T07:45:00.000Z",
+        "outcome": {
+          "saleStatus": "sold",
+          "marketplace": "tradera",
+          "listedAt": "2026-07-17T07:00:00.000Z",
+          "askingPriceSek": 5500,
+          "soldPriceSek": 5200,
+          "soldAt": "2026-07-24T07:00:00.000Z",
+          "saleDurationDays": 7
+        },
+        "workspace": {
+          "version": 1,
+          "savedAt": "2026-07-24T07:30:00.000Z",
+          "currentStep": "templates",
+          "completedSteps": ["analyze", "price"],
+          "pricingStrategy": "balanced",
+          "inputText": "Sony A6400 camera",
+          "fingerprint": {
+            "title": "Sony A6400 camera",
+            "category": "Electronics",
+            "brand": "Sony",
+            "model": "A6400",
+            "conditionGrade": "good",
+            "attributes": {},
+            "detectedLanguage": "en",
+            "confidence": 0.8
+          },
+          "productFacts": null,
+          "traderaComps": [],
+          "manualComps": [],
+          "valuation": null,
+          "templates": [],
+          "mediaIds": ["v300-image"],
+          "photoAssessments": [
+            {
+              "version": 1,
+              "imageIndex": 0,
+              "role": "cover",
+              "width": 1,
+              "height": 1,
+              "brightness": 0.5,
+              "contrast": 0.5,
+              "sharpness": 0.5,
+              "perceptualHash": "aaaaaaaaaaaaaaaa",
+              "cropRisk": false,
+              "issues": ["low_resolution"],
+              "assessedAt": "2026-07-24T07:20:00.000Z"
+            }
+          ],
+          "listingDrafts": [
+            {
+              "version": 1,
+              "site": "tradera",
+              "updatedAt": "2026-07-24T07:25:00.000Z",
+              "fields": {
+                "title": {
+                  "value": "My reviewed Sony A6400 title",
+                  "origin": "user",
+                  "userEdited": true
+                },
+                "description": {
+                  "value": "Reviewed camera description with known condition and no invented claims.",
+                  "origin": "generated",
+                  "userEdited": false
+                },
+                "priceSek": {
+                  "value": 5500,
+                  "origin": "user",
+                  "userEdited": true
+                },
+                "category": {
+                  "value": "Elektronik",
+                  "origin": "generated",
+                  "userEdited": false
+                },
+                "attributes": {
+                  "value": ["model: A6400"],
+                  "origin": "generated",
+                  "userEdited": false
+                },
+                "shippingPickup": {
+                  "value": "Tracked shipping",
+                  "origin": "generated",
+                  "userEdited": false
+                },
+                "tags": {
+                  "value": ["Sony", "A6400"],
+                  "origin": "generated",
+                  "userEdited": false
+                },
+                "disclosure": {
+                  "value": "Seller-entered price.",
+                  "origin": "generated",
+                  "userEdited": false
+                }
+              },
+              "imageOrder": [0],
+              "coverImageIndex": 0
+            }
+          ],
+          "selectedMarketplace": "tradera"
+        }
+      },
+      "images": [
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+      ]
+    },
+    {
+      "project": {
+        "schemaVersion": 4,
+        "id": "v300-trashed-project",
+        "displayName": "v3 trashed project",
+        "title": "v3 trashed project",
+        "status": "draft",
+        "currentSection": "item",
+        "createdAt": "2026-07-23T07:00:00.000Z",
+        "updatedAt": "2026-07-24T06:00:00.000Z",
+        "priceDecision": {
+          "kind": "unset"
+        },
+        "trashedAt": "2026-07-24T06:00:00.000Z",
+        "workspace": {
+          "version": 1,
+          "savedAt": "2026-07-24T06:00:00.000Z",
+          "currentStep": "analyze",
+          "completedSteps": [],
+          "pricingStrategy": "balanced",
+          "inputText": "Retain this trashed v3 project",
+          "fingerprint": null,
+          "productFacts": null,
+          "traderaComps": [],
+          "manualComps": [],
+          "valuation": null,
+          "templates": [],
+          "mediaIds": []
+        }
+      },
+      "images": []
+    }
+  ]
+}
