@@ -8,12 +8,12 @@ Swedish Secondhand AI is a local-first desktop seller coach for Tradera, Blocket
 It helps you review item facts, choose a price, and prepare listing text without signing in or
 publishing on your behalf.
 
-The current public build is **v3.0.0-rc.1** for Windows x64 and Linux x64. It is a release
-candidate, so back up your projects before upgrading.
+The current public build is **v3.0.0** for Windows x64 and Linux x64. Back up your projects before
+upgrading.
 
-[Download v3.0.0-rc.1](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v3.0.0-rc.1)
+[Download v3.0.0](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v3.0.0)
 · [Install guide](./docs/guides/INSTALLATION.md)
-· [Svensk kom igång-guide](./docs/guides/KOM_IGANG.md)
+· [Quick start](./docs/guides/QUICK_START.md)
 · [Full user guide](./USER_GUIDE.md)
 
 ![The offline welcome screen](./docs/screenshots/01-overview.png)
@@ -60,7 +60,7 @@ adding credentials.
 
 ## Downloads and verification
 
-The v3 release candidate includes:
+The stable v3 release includes:
 
 - a Linux x64 AppImage;
 - a Windows x64 installer and portable executable;
@@ -75,7 +75,7 @@ file. The [install guide](./docs/guides/INSTALLATION.md) has commands for Linux 
 Start with the [documentation index](./docs/README.md), or open one of these guides:
 
 - [Install and update](./docs/guides/INSTALLATION.md)
-- [Kom igång på svenska](./docs/guides/KOM_IGANG.md)
+- [Quick start](./docs/guides/QUICK_START.md)
 - [Create your first listing](./docs/guides/FIRST_LISTING.md)
 - [Choose a price](./docs/guides/PRICING.md)
 - [Configure Gemini, Ollama, and Tradera](./docs/guides/PROVIDERS.md)

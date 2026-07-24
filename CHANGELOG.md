@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 3.0.0 - 2026-07-24
+
+- Promoted Guided Selling after current Linux/Windows package, v2.0.1 upgrade, migration,
+  security, checksum and SBOM gates passed.
+- Removed candidate-age, waiting-period and calendar-based release gates.
+- Made photo, price and description follow-up advice available for every pending recorded
+  publication without calendar thresholds.
+- Added an English-only documentation validation gate and renamed the offline acceptance test so
+  elapsed time is informational rather than release-blocking.
+- Removed embedded historical checkout copies and resolved the remaining `fast-uri` advisory;
+  the active repository now has no open Dependabot alerts.
 - Reorganized the GitHub documentation around the v3 user journey, with a concise README,
   versioned documentation index, Swedish quick start, and focused guides for installation, first
   listing, pricing, providers, backup, and troubleshooting.
@@ -64,8 +75,8 @@
   fulfillment with explicit market-data/general-rule/history basis labels.
 - Added local publication tracking for date, marketplace, URL, actual starting price, sold/not
   sold/paused outcome, final price, and calculated sale duration.
-- Added on-demand 3/7/14-day photo, price, and description advice without background notifications
-  or automatic listing changes.
+- Added on-demand photo, price, and description advice without background notifications,
+  calendar thresholds or automatic listing changes.
 - Restricted confidence and strategy calibration to at least five complete user-owned outcomes in
   the matching category, with own-history basis and a visible deterministic price adjustment.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public

@@ -2,7 +2,7 @@
 
 This guide covers the complete v3 workflow. If you have not installed the app, start with
 [Install and update](./docs/guides/INSTALLATION.md). Swedish readers can use the shorter
-[Kom igång guide](./docs/guides/KOM_IGANG.md).
+[Quick start](./docs/guides/QUICK_START.md).
 
 ## Start without an account
 

@@ -465,7 +465,6 @@ export interface ProjectOutcome {
 
 export interface FollowUpAction {
   id: string;
-  afterDays: 3 | 7 | 14;
   kind: 'photos' | 'price' | 'description';
   titleKey: string;
   reasonKey: string;

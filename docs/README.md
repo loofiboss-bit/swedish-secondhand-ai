@@ -6,7 +6,7 @@ versioned with the app; the GitHub wiki is a concise entry point.
 ## Start here
 
 - [Install and update](./guides/INSTALLATION.md)
-- [Kom igång på svenska](./guides/KOM_IGANG.md)
+- [Quick start](./guides/QUICK_START.md)
 - [Create your first listing](./guides/FIRST_LISTING.md)
 - [Full user guide](../USER_GUIDE.md)
 
@@ -25,8 +25,8 @@ versioned with the app; the GitHub wiki is a concise entry point.
 
 ## Release information
 
-- [v3.0.0-rc.1 release notes](./releases/v3.0.0-rc.1.md)
-- [Five-minute offline acceptance test](./FIVE_MINUTE_TEST.md)
+- [v3.0.0 release notes](./releases/v3.0.0.md)
+- [Offline acceptance test](./OFFLINE_ACCEPTANCE_TEST.md)
 - [Changelog](../CHANGELOG.md)
 
 Older release notes remain in [`docs/releases`](./releases/).
