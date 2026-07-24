@@ -56,7 +56,7 @@ trash, serialized saves, and latest-request-wins project switching.
 
 ## M6 — Release hardening
 
-Status: completed through public `v4.0.0-rc.1` from `a0d895c`.
+Status: completed through stable public `v4.0.0` from `b529636`.
 
 Target: v2.0.1/v3 compatibility fixtures, expanded E2E and accessibility coverage, current
 marketplace-policy source dates, refreshed screenshots and guidance, dependency/release
@@ -77,6 +77,6 @@ periods, and elapsed time are never release gates.
 - [x] M5 Project library and recovery polish
 - [x] M6 Release hardening and public RC
 
-The public RC passed exact-source validation, Windows/Linux build and upgrade jobs, checksum and
-SBOM readback, and current security gates. Stable v4 uses the same evidence gates without a
-candidate-age or waiting-period requirement.
+Stable v4 passed exact-source validation, Windows/Linux build, visible-launch and stable-v3
+upgrade jobs, checksum and SBOM readback, and current security gates. No candidate-age or
+waiting-period requirement was used.
