@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 3,
+  "project": {
+    "schemaVersion": 3,
+    "id": "v201-project",
+    "title": "v2 IKEA chair",
+    "status": "draft",
+    "currentSection": "item",
+    "createdAt": "2026-07-17T08:00:00.000Z",
+    "updatedAt": "2026-07-17T08:30:00.000Z",
+    "workspace": {
+      "version": 1,
+      "savedAt": "2026-07-17T08:30:00.000Z",
+      "currentStep": "analyze",
+      "completedSteps": [],
+      "pricingStrategy": "balanced",
+      "inputText": "IKEA chair from v2.0.1",
+      "fingerprint": null,
+      "productFacts": null,
+      "traderaComps": [],
+      "manualComps": [],
+      "valuation": null,
+      "templates": [],
+      "mediaIds": []
+    }
+  },
+  "media": []
+}

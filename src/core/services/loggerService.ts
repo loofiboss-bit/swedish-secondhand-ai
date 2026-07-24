@@ -7,8 +7,10 @@ export interface DiagnosticEntry {
   metadata?: unknown;
 }
 
-const SECRET_KEY = /secret|api.?key|authorization|credential|token/i;
+const SENSITIVE_KEY =
+  /secret|api.?key|authorization|credential|token|images?|file.?path|data.?url/i;
 const SECRET_VALUE = /(AIza[\w-]{8,}|Bearer\s+\S+|sk-[\w-]{8,})/gi;
+const IMAGE_DATA_VALUE = /data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+/gi;
 
 export function sanitizeDiagnostic(value: unknown, depth = 0): unknown {
   if (depth > 4) return '[truncated]';
@@ -17,7 +19,10 @@ export function sanitizeDiagnostic(value: unknown, depth = 0): unknown {
     return { name: value.name, code };
   }
   if (typeof value === 'string') {
-    return value.slice(0, 500).replace(SECRET_VALUE, '[redacted]');
+    return value
+      .slice(0, 500)
+      .replace(SECRET_VALUE, '[redacted]')
+      .replace(IMAGE_DATA_VALUE, '[redacted-image]');
   }
   if (Array.isArray(value)) {
     return value.slice(0, 20).map((entry) => sanitizeDiagnostic(entry, depth + 1));
@@ -28,7 +33,7 @@ export function sanitizeDiagnostic(value: unknown, depth = 0): unknown {
         .slice(0, 30)
         .map(([key, nested]) => [
           key,
-          SECRET_KEY.test(key) ? '[redacted]' : sanitizeDiagnostic(nested, depth + 1),
+          SENSITIVE_KEY.test(key) ? '[redacted]' : sanitizeDiagnostic(nested, depth + 1),
         ]),
     );
   }

@@ -12,6 +12,10 @@ The current public build is **v3.0.0** for Windows x64 and Linux x64. Back up yo
 upgrading.
 
 [Download v3.0.0](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v3.0.0)
+
+The v4 Focused Seller Workspace is implemented only in the current development checkout. It is
+not yet a public release. Release decisions use current functional, security, package, migration,
+and artifact evidence; candidate age, waiting periods, and elapsed time are never gates.
 · [Install guide](./docs/guides/INSTALLATION.md)
 · [Quick start](./docs/guides/QUICK_START.md)
 · [Full user guide](./USER_GUIDE.md)
@@ -22,6 +26,7 @@ upgrading.
 
 - Start offline with no account, API key, or network connection.
 - Keep separate projects for items you are preparing, listing, or following up.
+- See one truthful next action and the same blocker state on project cards and workspace tabs.
 - Review and correct every fact used in a listing. Your edits remain authoritative.
 - Set your own price, wait until later, or use approved realized comparables for an
   evidence-based recommendation.
@@ -40,9 +45,9 @@ automatic updates.
 3. Select **Identify item** and correct the detected facts.
 4. Open **Price**, enter **Your price**, and select **Use my price**.
 5. Open **Listing** and select **Update untouched fields**.
-6. Review a marketplace tab and copy the structured package.
+6. Review the recommended marketplace preview and select **Copy ready listing**.
 
-Listing text can be drafted before you choose a price. The complete copy package needs a price.
+Listing text can be drafted before you choose a price. The ready-listing copy needs a price.
 For an evidence-based recommendation, approve at least two verified realized prices. Asking
 prices remain context only.
 

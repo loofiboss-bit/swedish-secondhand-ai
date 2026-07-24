@@ -15,6 +15,7 @@ import { historyService } from './historyService';
 import { isListingDraft, listingDraftService } from './listingDraftService';
 import { DATASET_KEYS } from './persistenceService';
 import { factsFromFingerprint } from './verifiedFactsService';
+import { evaluateProjectRecordReadiness } from './projectReadinessService';
 
 const PROJECT_DB = 'swedish-secondhand-ai-v2';
 const PROJECT_STORE = createStore(PROJECT_DB, 'project-records');
@@ -439,6 +440,11 @@ function summary(record: ProjectRecord): ProjectSummary {
     record.project.priceDecision.kind === 'evidence_based'
       ? record.project.priceDecision.valuation
       : null;
+  const readiness = evaluateProjectRecordReadiness(record.project);
+  const selectedPriceSek =
+    record.project.priceDecision.kind === 'user_entered'
+      ? record.project.priceDecision.amountSek
+      : (valuation?.priceRecommendedSek ?? null);
   return {
     id: record.project.id,
     displayName: record.project.displayName,
@@ -446,6 +452,9 @@ function summary(record: ProjectRecord): ProjectSummary {
     status: record.project.status,
     updatedAt: record.project.updatedAt,
     recommendedPriceSek: valuation?.priceRecommendedSek ?? null,
+    selectedPriceSek,
+    selectedMarketplace: readiness.selectedMarketplace,
+    readiness,
     thumbnailMediaId: record.project.workspace.mediaIds[0],
     archivedAt: record.project.archivedAt,
     trashedAt: record.project.trashedAt,
@@ -555,6 +564,9 @@ function recordFromDraft(
     migratedFrom: options.migratedFrom ?? options.current?.project.migratedFrom,
   };
   project.title = project.displayName;
+  if (!['listed', 'sold', 'paused'].includes(project.status)) {
+    project.status = evaluateProjectRecordReadiness(project).complete ? 'ready' : 'draft';
+  }
   return { schemaVersion: 4, project, media };
 }
 
@@ -815,6 +827,11 @@ class ProjectRepository {
       ...record,
       project: { ...record.project, priceDecision, updatedAt: new Date().toISOString() },
     };
+    if (!['listed', 'sold', 'paused'].includes(next.project.status)) {
+      next.project.status = evaluateProjectRecordReadiness(next.project).complete
+        ? 'ready'
+        : 'draft';
+    }
     if (!isProjectRecord(next)) throw new Error('Price decision is invalid.');
     await setMany([[projectKey(id), next]], PROJECT_STORE);
     return summary(next);
@@ -940,10 +957,7 @@ class ProjectRepository {
         updatedAt: new Date().toISOString(),
       },
     };
-    const nextActiveId =
-      index.activeProjectId === id
-        ? ((await this.list()).find((project) => project.id !== id)?.id ?? null)
-        : index.activeProjectId;
+    const nextActiveId = index.activeProjectId === id ? null : index.activeProjectId;
     const nextIndex: ProjectIndex = {
       ...index,
       activeProjectId: nextActiveId,
@@ -974,14 +988,8 @@ class ProjectRepository {
       ...record,
       project: { ...record.project, trashedAt: undefined, updatedAt: new Date().toISOString() },
     };
-    await setMany(
-      [
-        [projectKey(id), restored],
-        [INDEX_KEY, { ...index, activeProjectId: id }],
-      ],
-      PROJECT_STORE,
-    );
-    return this.stateFromIndex({ ...index, activeProjectId: id });
+    await setMany([[projectKey(id), restored]], PROJECT_STORE);
+    return this.stateFromIndex(index);
   }
 
   async emptyTrash(): Promise<ProjectRepositoryState> {

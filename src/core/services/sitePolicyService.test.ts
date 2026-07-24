@@ -4,7 +4,7 @@ import { sitePolicyService } from './sitePolicyService';
 describe('sitePolicyService', () => {
   it('versions every marketplace policy with an official source and check time', () => {
     for (const site of ['tradera', 'blocket', 'vinted'] as const) {
-      expect(sitePolicyService.getMetadata(site)).toMatchObject({ site, version: '2026-07-16' });
+      expect(sitePolicyService.getMetadata(site)).toMatchObject({ site, version: '2026-07-24' });
       expect(sitePolicyService.getMetadata(site).sourceUrl).toMatch(/^https:\/\//);
       expect(Date.parse(sitePolicyService.getMetadata(site).checkedAt)).not.toBeNaN();
     }

@@ -108,21 +108,21 @@ const CONSTRAINTS: SiteConstraint[] = [
 const POLICY_METADATA: Record<MarketplaceSite, MarketplacePolicyMetadata> = {
   tradera: {
     site: 'tradera',
-    version: '2026-07-16',
+    version: '2026-07-24',
     sourceUrl: 'https://www.tradera.com/support/se/posts/annonsguide/',
-    checkedAt: '2026-07-16T00:00:00.000Z',
+    checkedAt: '2026-07-24T00:00:00.000Z',
   },
   blocket: {
     site: 'blocket',
-    version: '2026-07-16',
+    version: '2026-07-24',
     sourceUrl: 'https://www.blocket.se/villkor/villkor-privat/annonseringsregler',
-    checkedAt: '2026-07-16T00:00:00.000Z',
+    checkedAt: '2026-07-24T00:00:00.000Z',
   },
   vinted: {
     site: 'vinted',
-    version: '2026-07-16',
+    version: '2026-07-24',
     sourceUrl: 'https://www.vinted.se/help/392/551-information-till-saljare',
-    checkedAt: '2026-07-16T00:00:00.000Z',
+    checkedAt: '2026-07-24T00:00:00.000Z',
   },
 };
 

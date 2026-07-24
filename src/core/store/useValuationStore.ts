@@ -7,6 +7,7 @@ import type {
   FactCandidate,
   ItemFingerprint,
   ListingDraft,
+  LockableProductFactKey,
   PricingStrategy,
   ProductFactKey,
   ProductListFactKey,
@@ -26,6 +27,8 @@ import { marketIntelligenceService } from '@core/services/marketIntelligenceServ
 import { sellPlanService } from '@core/services/sellPlanService';
 import { valuationCalibrationService } from '@core/services/valuationCalibrationService';
 import { normalizeAppError } from '@core/services/appErrorService';
+import { normalizeSellerCategory } from '@core/services/categoryProfileService';
+import { removeIntakeImage } from '@core/services/imageIntakeService';
 import {
   factsFromFingerprint,
   fingerprintFromFacts,
@@ -81,7 +84,7 @@ interface ValuationState {
   updateAttribute: (key: string, value: string) => void;
   setTestedStatus: (value: VerifiedProductFacts['testedStatus']['value']) => void;
   setAuthenticityStatus: (value: VerifiedProductFacts['authenticityStatus']['value']) => void;
-  setFactLocked: (key: ProductFactKey, locked: boolean) => void;
+  setFactLocked: (key: LockableProductFactKey, locked: boolean) => void;
   estimateValue: () => Promise<void>;
   compareScenarios: () => Promise<void>;
   runPipeline: () => Promise<void>;
@@ -125,26 +128,13 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       };
     }),
   removeImage: (index) =>
-    set((state) => ({
-      images: state.images.filter((_, currentIndex) => currentIndex !== index),
-      photoAssessments: state.photoAssessments
-        .filter((assessment) => assessment.imageIndex !== index)
-        .map((assessment) => ({
-          ...assessment,
-          imageIndex:
-            assessment.imageIndex > index ? assessment.imageIndex - 1 : assessment.imageIndex,
-          duplicateOfIndex:
-            assessment.duplicateOfIndex === undefined || assessment.duplicateOfIndex === index
-              ? undefined
-              : assessment.duplicateOfIndex > index
-                ? assessment.duplicateOfIndex - 1
-                : assessment.duplicateOfIndex,
-          issues:
-            assessment.duplicateOfIndex === index
-              ? assessment.issues.filter((issue) => issue !== 'duplicate')
-              : assessment.issues,
-        })),
-    })),
+    set((state) => {
+      const next = removeIntakeImage(
+        { images: state.images, assessments: state.photoAssessments },
+        index,
+      );
+      return { images: next.images, photoAssessments: next.assessments };
+    }),
   setPhotoRole: (index, role) =>
     set((state) => ({
       photoAssessments: state.photoAssessments.map((assessment) =>
@@ -221,7 +211,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
         variants.map((variant) =>
           traderaAdapterService.getComparables({
             title: variant.query,
-            category: productFacts.category.value,
+            category: normalizeSellerCategory(productFacts.category.value),
             brand: productFacts.brand.value,
             model: productFacts.model.value,
             limit: 20,
@@ -548,6 +538,7 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
   },
   buildDraft: (currentStep, completedSteps) => {
     const state = get();
+    const listingState = useListingStore.getState();
     return {
       version: 1,
       savedAt: new Date().toISOString(),
@@ -565,11 +556,13 @@ export const useValuationStore = create<ValuationState>((set, get) => ({
       manualComps: state.manualComps,
       valuation: state.valuation,
       comparableQueryPlan: state.comparableQueryPlan ?? undefined,
-      listingDrafts: useListingStore.getState().listingDrafts,
-      sellerTimePreference: useListingStore.getState().sellerTimePreference,
-      sellPlan: useListingStore.getState().sellPlan ?? undefined,
+      listingDrafts: listingState.listingDrafts,
+      sellerTimePreference: listingState.sellerTimePreference,
+      sellPlan: listingState.sellPlan ?? undefined,
+      selectedMarketplace:
+        listingState.selectedSite === 'all' ? undefined : listingState.selectedSite,
       localLearningSampleSize: state.localLearningSampleSize,
-      templates: useListingStore.getState().templates,
+      templates: listingState.templates,
     };
   },
 }));

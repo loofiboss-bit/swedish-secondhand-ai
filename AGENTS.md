@@ -1,26 +1,28 @@
 # Swedish Secondhand AI — repository instructions
 
-## Mission and v3 scope
+## Mission and v4 scope
 
 Build a trustworthy local-first Windows and Linux desktop seller coach for Swedish secondhand
-valuation, project management, and copy-ready listings. The v3 implementation roadmap is
+valuation, project management, and copy-ready listings. The v4 product plan is
+`docs/SWEDISH_SECONDHAND_AI_V4_PLAN.md`; release state and implementation checkpoints live in
 `.ai/CODEX_ROADMAP.md`.
 
-v3 supports Gemini, Ollama, deterministic offline analysis, Tradera comparables, and manual
+v4 supports Gemini, Ollama, deterministic offline analysis, Tradera comparables, and manual
 copy/export for Tradera, Blocket, and Vinted. Do not add OpenAI runtimes, accounts, cloud sync,
 payments, mobile/web clients, scraping, browser publishing, automatic marketplace publishing,
-or automatic updates in v3.
+or automatic updates in v4.
 
 ## Read order
 
 Before changing code, read the relevant sources in this order:
 
 1. `AGENTS.md`
-2. `.ai/CODEX_ROADMAP.md`
-3. `.ai/ROADMAP.md`
-4. `.ai/INSTRUCTIONS.md` and `.ai/WORKFLOW.md`
-5. `README.md` and `USER_GUIDE.md` for affected user behavior
-6. `package.json`, relevant implementation, tests, and workflows
+2. `docs/SWEDISH_SECONDHAND_AI_V4_PLAN.md`
+3. `.ai/CODEX_ROADMAP.md`
+4. `.ai/ROADMAP.md`
+5. `.ai/INSTRUCTIONS.md` and `.ai/WORKFLOW.md`
+6. `README.md` and `USER_GUIDE.md` for affected user behavior
+7. `package.json`, relevant implementation, tests, and workflows
 
 Trust the checkout over stale documentation. Report material mismatches before broad edits.
 
@@ -39,7 +41,7 @@ platform/provider adapters -> core services -> Zustand stores -> features/compon
 - Components render state, accept input, and call store actions. They do not access IndexedDB,
   Node APIs, provider SDKs, raw secrets, or unrestricted IPC.
 
-## Non-negotiable v3 invariants
+## Non-negotiable v4 invariants
 
 ### Security
 

@@ -55,4 +55,20 @@ describe('valuationCalibrationService', () => {
     expect(result.strategyFactor).toBeGreaterThanOrEqual(0.9);
     expect(result.strategyFactor).toBeLessThan(1);
   });
+
+  it('normalizes unknown category text into the General calibration segment', async () => {
+    listOutcomesMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) =>
+        outcome(index % 2 === 0 ? 'General' : 'Vintage wonder', 'Other', 1_000, 950),
+      ),
+    );
+
+    const result = await valuationCalibrationService.recalculateConfidence(0.8, {
+      category: 'Another unknown category',
+      brand: 'Other',
+      pricingStrategy: 'balanced',
+    });
+
+    expect(result).toMatchObject({ basis: 'own-history', sampleSize: 5 });
+  });
 });

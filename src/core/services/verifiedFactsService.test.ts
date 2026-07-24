@@ -3,7 +3,9 @@ import type { ItemFingerprint } from '@core/types';
 import {
   factsFromFingerprint,
   mergeAnalyzedFacts,
+  setProductFactLock,
   updateProductFact,
+  updateTestedStatus,
 } from './verifiedFactsService';
 
 const fingerprint: ItemFingerprint = {
@@ -39,5 +41,16 @@ describe('verifiedFactsService', () => {
     const current = factsFromFingerprint(fingerprint);
 
     expect(updateProductFact(current, 'conditionGrade', 'perfect')).toBe(current);
+  });
+
+  it('lets the seller control locking for non-text reviewed facts', () => {
+    const reviewed = updateTestedStatus(factsFromFingerprint(fingerprint), 'tested');
+    const unlocked = setProductFactLock(reviewed, 'testedStatus', false);
+
+    expect(unlocked.testedStatus).toMatchObject({
+      value: 'tested',
+      source: 'user',
+      locked: false,
+    });
   });
 });

@@ -2,6 +2,7 @@ import { clear, get, set } from 'idb-keyval';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ItemFingerprint } from '@core/types';
 import { isListingDraft, listingDraftService } from './listingDraftService';
+import { listingTemplateService } from './listingTemplateService';
 import { DATASET_KEYS } from './persistenceService';
 import { factsFromFingerprint } from './verifiedFactsService';
 
@@ -139,5 +140,26 @@ describe('listingDraftService migration', () => {
 
     expect(isListingDraft({ ...baseDraft, photoAssessments: [assessment] })).toBe(false);
     expect(isListingDraft({ ...baseDraft, listingDrafts: [listing, listing] })).toBe(false);
+  });
+
+  it('accepts only supported persisted marketplace selections', () => {
+    const vinted = listingTemplateService.draftFromLegacyTemplate({
+      site: 'vinted',
+      title: 'Camera',
+      description: 'Reviewed camera description.',
+      priceSuggestionSek: 1_000,
+      shippingSuggestion: 'Tracked shipping',
+      tags: ['Camera'],
+      disclaimer: 'Review facts.',
+    });
+    expect(
+      isListingDraft({
+        ...baseDraft,
+        listingDrafts: [vinted],
+        selectedMarketplace: 'vinted',
+      }),
+    ).toBe(true);
+    expect(isListingDraft({ ...baseDraft, selectedMarketplace: 'vinted' })).toBe(false);
+    expect(isListingDraft({ ...baseDraft, selectedMarketplace: 'unknown-site' })).toBe(false);
   });
 });

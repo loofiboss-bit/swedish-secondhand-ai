@@ -27,6 +27,13 @@ connection test.
 Authentication and configuration errors require a settings change. A provider error should not
 remove the active draft.
 
+## Autosave fails
+
+Keep the affected project open and choose **Try saving again**. The app prevents another project
+from replacing the unsaved in-memory draft while persistence is failing. After **Saved** appears,
+open the other project and confirm that each description and listing still belongs to the correct
+item.
+
 ## Tradera returns no data
 
 Confirm that both the App ID and App key are configured and that the connection test passes. Try a

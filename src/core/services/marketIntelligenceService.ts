@@ -8,6 +8,7 @@ import type {
   VerifiedProductFacts,
 } from '@core/types';
 import { valuationService } from './valuationService';
+import { normalizeSellerCategory } from './categoryProfileService';
 
 const STRATEGIES: PricingStrategy[] = ['fast_sale', 'balanced', 'max_value'];
 
@@ -33,7 +34,7 @@ export function buildComparableQueryPlan(
 ): ComparableQueryPlan {
   const brand = known(facts.brand.value);
   const model = known(facts.model.value);
-  const category = known(facts.category.value);
+  const category = normalizeSellerCategory(facts.category.value);
   const title = known(facts.title.value);
   const attributes = Object.values(facts.attributes)
     .filter((fact) => fact.locked || fact.source === 'user')

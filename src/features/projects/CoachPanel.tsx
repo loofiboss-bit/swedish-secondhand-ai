@@ -1,9 +1,6 @@
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProjectSection, ProjectStatus } from '@core/types';
-import { evaluateCoach } from '@core/services/coachEngine';
-import { useListingStore } from '@core/store/useListingStore';
-import { useValuationStore } from '@core/store/useValuationStore';
+import { useActiveProjectReadiness } from '@core/store/useActiveProjectReadiness';
 
 interface CoachPanelProps {
   projectStatus: ProjectStatus;
@@ -12,24 +9,9 @@ interface CoachPanelProps {
 
 export function CoachPanel({ projectStatus, onNavigate }: CoachPanelProps) {
   const { t } = useTranslation('common');
-  const facts = useValuationStore((state) => state.productFacts);
-  const photos = useValuationStore((state) => state.photoAssessments);
-  const traderaComps = useValuationStore((state) => state.traderaComps);
-  const manualComps = useValuationStore((state) => state.manualComps);
-  const valuation = useValuationStore((state) => state.valuation);
-  const listings = useListingStore((state) => state.templates);
-  const result = useMemo(
-    () =>
-      evaluateCoach({
-        facts,
-        photos,
-        comparables: [...traderaComps, ...manualComps],
-        valuation,
-        listings,
-        projectStatus,
-      }),
-    [facts, photos, traderaComps, manualComps, valuation, listings, projectStatus],
-  );
+  const readiness = useActiveProjectReadiness(projectStatus);
+  const nextAction = readiness.nextAction;
+  const remainingIssues = readiness.issues.filter((item) => item.id !== nextAction?.id);
 
   return (
     <section className="coach-panel" aria-labelledby="coach-title">
@@ -38,45 +20,40 @@ export function CoachPanel({ projectStatus, onNavigate }: CoachPanelProps) {
           <p className="eyebrow">{t('sellerCoach')}</p>
           <h3 id="coach-title">{t('nextBestAction')}</h3>
         </div>
-        <span>{t('coachActionCount', { count: result.actions.length })}</span>
+        <span>{t('readinessBlockerCount', { count: readiness.blockerCount })}</span>
       </header>
-      {result.actions.length === 0 ? (
+      {!nextAction ? (
         <p>{t('coachAllClear')}</p>
       ) : (
         <ol className="coach-actions">
-          {result.actions.slice(0, 1).map((coachAction) => (
-            <li
-              key={coachAction.id}
-              className={`coach-action coach-action--${coachAction.severity}`}
+          <li key={nextAction.id} className={`coach-action coach-action--${nextAction.severity}`}>
+            <div>
+              <strong>{t(nextAction.titleKey)}</strong>
+              <p>{t(nextAction.reasonKey)}</p>
+              <small>
+                {t('expectedImpact')}: {t(nextAction.impactKey)}
+              </small>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate(nextAction.targetSection, nextAction.targetId)}
             >
-              <div>
-                <strong>{t(coachAction.titleKey)}</strong>
-                <p>{t(coachAction.reasonKey)}</p>
-                <small>
-                  {t('expectedImpact')}: {t(coachAction.impactKey)}
-                </small>
-              </div>
-              <button
-                type="button"
-                onClick={() => onNavigate(coachAction.targetSection, coachAction.targetId)}
-              >
-                {t('openCoachAction')}
-              </button>
-            </li>
-          ))}
+              {t('openCoachAction')}
+            </button>
+          </li>
         </ol>
       )}
-      {result.actions.length > 1 && (
+      {remainingIssues.length > 0 && (
         <details className="coach-all-actions">
-          <summary>{t('showAllCoachActions', { count: result.actions.length })}</summary>
+          <summary>{t('showAllCoachActions', { count: readiness.issues.length })}</summary>
           <ol>
-            {result.actions.slice(1).map((coachAction) => (
-              <li key={coachAction.id}>
+            {remainingIssues.map((readinessIssue) => (
+              <li key={readinessIssue.id}>
                 <button
                   type="button"
-                  onClick={() => onNavigate(coachAction.targetSection, coachAction.targetId)}
+                  onClick={() => onNavigate(readinessIssue.targetSection, readinessIssue.targetId)}
                 >
-                  {t(coachAction.titleKey)}
+                  {t(readinessIssue.titleKey)}
                 </button>
               </li>
             ))}

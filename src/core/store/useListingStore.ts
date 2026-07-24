@@ -43,6 +43,7 @@ interface ListingState {
     drafts?: MarketplaceListingDraft[],
     preference?: SellerTimePreference,
     sellPlan?: SellPlan,
+    selectedMarketplace?: MarketplaceSite,
   ) => void;
 }
 
@@ -121,16 +122,26 @@ export const useListingStore = create<ListingState>((set, get) => ({
     return draft ? listingReadinessService.assess(draft) : [];
   },
   setSellPlan: (sellerTimePreference, sellPlan) =>
-    set({ sellerTimePreference, sellPlan, selectedSite: sellPlan.marketplace }),
+    set((state) => ({
+      sellerTimePreference,
+      sellPlan,
+      selectedSite: state.selectedSite === 'all' ? sellPlan.marketplace : state.selectedSite,
+    })),
   setSelectedSite: (selectedSite) => set({ selectedSite }),
   exportCopyBundle: (site) => {
     const draft = get().listingDrafts.find((item) => item.site === site);
     return draft ? listingTemplateService.exportStructuredCopyPackage(draft) : '';
   },
   hasBlockingIssues: () =>
-    get().listingDrafts.some((draft) =>
-      listingReadinessService.assess(draft).some((issue) => issue.severity === 'blocker'),
-    ),
+    get()
+      .listingDrafts.filter(
+        (draft) =>
+          draft.site ===
+          (get().selectedSite === 'all' ? get().listingDrafts[0]?.site : get().selectedSite),
+      )
+      .some((draft) =>
+        listingReadinessService.assess(draft).some((issue) => issue.severity === 'blocker'),
+      ),
   clear: () =>
     set({
       templates: [],
@@ -141,7 +152,13 @@ export const useListingStore = create<ListingState>((set, get) => ({
       qualityReport: {},
       siteValidation: {},
     }),
-  hydrateFromDraft: (templates, drafts, sellerTimePreference = 'balanced', sellPlan) => {
+  hydrateFromDraft: (
+    templates,
+    drafts,
+    sellerTimePreference = 'balanced',
+    sellPlan,
+    selectedMarketplace,
+  ) => {
     const listingDrafts =
       drafts ??
       templates.map((template) => listingTemplateService.draftFromLegacyTemplate(template));
@@ -154,6 +171,7 @@ export const useListingStore = create<ListingState>((set, get) => ({
       listingDrafts,
       sellerTimePreference,
       sellPlan: sellPlan ?? null,
+      selectedSite: selectedMarketplace ?? sellPlan?.marketplace ?? listingDrafts[0]?.site ?? 'all',
       ...assessment,
     });
   },

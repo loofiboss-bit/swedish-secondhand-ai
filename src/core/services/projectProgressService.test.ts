@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ItemProject } from '@core/types';
 import { calculateProjectProgress } from './projectProgressService';
+import { listingTemplateService } from './listingTemplateService';
 
 function project(overrides: Partial<ItemProject> = {}): ItemProject {
   return {
@@ -55,7 +56,9 @@ describe('calculateProjectProgress', () => {
           missingAccessories: { value: [], source: 'user', locked: true },
           testedStatus: { value: 'unknown', source: 'user', locked: true },
           authenticityStatus: { value: 'unknown', source: 'user', locked: true },
-          attributes: {},
+          attributes: {
+            dimensions: { value: '80 × 70 × 90 cm', source: 'user', locked: true },
+          },
         },
         templates: [
           {
@@ -70,6 +73,11 @@ describe('calculateProjectProgress', () => {
         ],
       },
     });
+    ready.workspace.listingDrafts = listingTemplateService.generateListingDrafts(
+      ready.workspace.productFacts!,
+      ready.priceDecision,
+      0,
+    );
 
     expect(calculateProjectProgress(ready)).toEqual({
       currentStep: 'complete',

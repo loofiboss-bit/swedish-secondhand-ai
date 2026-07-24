@@ -7,6 +7,7 @@ import type {
   VerifiedProductFacts,
 } from '@core/types';
 import { clamp } from '@core/utils/json';
+import { normalizeSellerCategory } from './categoryProfileService';
 import { itemAnalysisService } from './itemAnalysisService';
 
 const MIN_RELEVANCE = 0.45;
@@ -49,7 +50,7 @@ export function rankComparables(
     .map((comparable) => {
       const factors = {
         title: overlap(facts.title.value, comparable.title),
-        category: overlap(facts.category.value, comparable.title),
+        category: overlap(normalizeSellerCategory(facts.category.value), comparable.title),
         brand: includesFact(comparable.title, facts.brand.value),
         model: includesFact(comparable.title, facts.model.value),
         recency: recencyScore(comparable.soldAt),

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 4.0.0-rc.1 - 2026-07-24
+
+- Removed candidate-age, waiting-period, and calendar-based release gates; follow-up advice is now
+  available from publication state instead of calendar thresholds.
+- Added one derived project-readiness contract for Item, Price, Listing, Follow-up, next action,
+  blocker count, project cards, workspace tabs, and ready-copy eligibility.
+- Kept comparable research optional for seller-entered prices while retaining the
+  two-user-approved-realized-comparable gate for evidence-based prices.
+- Added a shared safe image-intake pipeline for quick start and Item with per-file rejection,
+  local assessment, stable removal/index handling, and explicit HEIC/HEIF guidance.
+- Focused Item around required facts and Listing around the marketplace preview, ready-copy
+  action, recoverable clipboard fallback, and accessible user-edit replacement dialog.
+- Replaced project prompts with validated in-app dialogs and overflow actions; hardened rapid
+  project switching, serialized autosave, visible save failure, trash, and recovery.
+- Added v2.0.1/v3.0.0 compatibility fixtures and expanded service, store, component, E2E,
+  accessibility, and marketplace-policy checks for the v4 candidate.
+- Bound package smoke tests and checksum generation to the exact package version so stale
+  artifacts in a release directory cannot satisfy the current release gate.
+
 ## 3.0.0 - 2026-07-24
 
 - Promoted Guided Selling after current Linux/Windows package, v2.0.1 upgrade, migration,
@@ -14,7 +33,7 @@
 - Removed embedded historical checkout copies and resolved the remaining `fast-uri` advisory;
   the active repository now has no open Dependabot alerts.
 - Reorganized the GitHub documentation around the v3 user journey, with a concise README,
-  versioned documentation index, Swedish quick start, and focused guides for installation, first
+  versioned documentation index, English quick start, and focused guides for installation, first
   listing, pricing, providers, backup, and troubleshooting.
 - Updated privacy, security, support, contribution, and release-script documentation to match
   schema 4, backup format 3, the v3 provider boundary, and the current release candidate.
@@ -76,7 +95,7 @@
 - Added local publication tracking for date, marketplace, URL, actual starting price, sold/not
   sold/paused outcome, final price, and calculated sale duration.
 - Added on-demand photo, price, and description advice without background notifications,
-  calendar thresholds or automatic listing changes.
+  calendar thresholds, or automatic listing changes.
 - Restricted confidence and strategy calibration to at least five complete user-owned outcomes in
   the matching category, with own-history basis and a visible deterministic price adjustment.
 - Corrected Tradera access to the official fixed REST v4 search endpoint with separate public

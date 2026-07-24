@@ -1,6 +1,7 @@
 # User guide
 
-This guide covers the complete v3 workflow. If you have not installed the app, start with
+This guide covers the focused v4 development workflow while the current public download remains
+v3.0.0-rc.1. If you have not installed the app, start with
 [Install and update](./docs/guides/INSTALLATION.md). Swedish readers can use the shorter
 [Quick start](./docs/guides/QUICK_START.md).
 
@@ -10,26 +11,30 @@ Select **Start offline** on the welcome page. Offline mode needs no account, key
 connection. **Try with example** creates a marked demo project without using a provider.
 
 Create a project with a clear name and a description of the item. You can also add up to six JPEG,
-PNG, or WebP images. Images are optional.
+PNG, or WebP images. Quick start checks format, size, decoding, and local image quality before the
+project is created. Unsupported and HEIC/HEIF files are rejected individually; valid files remain.
+Images are optional.
 
 ![Offline welcome screen](./docs/screenshots/01-overview.png)
 
 ## Work through Item, Price, Listing, and Done
 
-Each project has four steps. The seller coach shows the next useful action and explains why it
-matters. Open the full task list when you want to work out of order.
+Each project has four steps. One derived readiness model powers the seller coach, project cards,
+workspace tabs, and ready-copy action, so optional research cannot appear as a blocker on one
+screen and complete on another. Open the full task list when you want to work out of order.
 
-Autosave displays **Saving...**, **Saved**, or **Could not save**. If saving fails, keep the project
-open and use the retry action before closing the app.
+Autosave displays **Saving...**, **Saved**, or **Could not save**. If saving fails, the app keeps
+the unsaved project open and prevents a project switch from replacing its in-memory draft. Use the
+retry action before switching projects or closing the app.
 
 ### 1. Item
 
-Select **Identify item**, then check the title, category, brand, model, condition, defects,
-accessories, test status, and authenticity. Correct anything that is wrong or uncertain. The app
-does not override facts you lock.
+Select **Identify item**. Review required category-specific facts first; recommended facts and
+advanced evidence stay in expandable sections. Correct anything that is wrong or uncertain. The
+app does not override facts you lock.
 
-Open **Why this suggestion?** to see the source, uncertainty, and evidence behind a suggested
-fact. A suggestion is not a verified claim until you review it.
+Open **Review analysis evidence** to see candidates, uncertainty, references, and knowledge gaps.
+A suggestion is not a verified claim until you review it.
 
 ![Reviewed item facts](./docs/screenshots/02-analyze-detected-item.png)
 
@@ -42,7 +47,7 @@ Choose one route:
 - **Use evidence-based price** calculates scenarios from realized comparables that you approve.
   A numeric recommendation needs at least two approved realized prices.
 - **Decide later** lets you prepare listing text now. You must add a price before copying the
-  complete structured package.
+  ready listing package.
 
 Asking prices show what sellers request, not what buyers paid. They never anchor the numeric
 recommendation. Read [Choose a price](./docs/guides/PRICING.md) for the evidence rules and manual
@@ -53,12 +58,19 @@ comparable workflow.
 ### 3. Listing
 
 Select **Update untouched fields** to draft marketplace copy. The recommended marketplace opens
-first. Use the tabs to review Tradera, Blocket, and Vinted separately.
+first as a compact preview with title, final text, price, fulfillment, cover, blockers, and the
+copy action. Use the tabs to review Tradera, Blocket, and Vinted separately. Your explicit
+marketplace selection is saved with the project.
+
+The interface can be Swedish or English, but marketplace listing output remains Swedish for the
+supported Swedish marketplaces.
 
 Check the title, description, price, category, attributes, delivery or pickup details, tags, and
 disclosures. Regeneration preserves fields you edited unless you explicitly approve replacement.
-Blockers link to the field that needs attention. Warnings and improvements do not prevent copying
-when all required facts and the price are complete.
+Blockers link to the field that needs attention. **Copy ready listing** is enabled only when the
+selected marketplace and project have no true blocker. **Copy text only** remains available and
+is labelled incomplete while blockers remain. If clipboard access fails, select the read-only
+fallback text and copy it manually.
 
 The app prepares copy only. Sign in to the marketplace yourself, verify its current terms and
 fees, and paste the fields manually.
@@ -77,9 +89,9 @@ in the same category, and any adjustment remains visible.
 
 ## Manage projects safely
 
-Open **Projects** to search or filter projects, rename them, archive inactive work, or move a
-project to trash. Deleting a project offers an immediate **Undo** action. Trash is not cleared
-automatically.
+Open **Projects** to search or filter projects. Each card shows readiness, next action, selected
+price, marketplace, and save time. Use its overflow menu to rename, archive, or move it to trash.
+Deleting a project offers an immediate **Undo** action. Trash is not cleared automatically.
 
 **Empty trash** permanently removes every project in trash and always asks for confirmation.
 Export a backup first if you might need those projects later.

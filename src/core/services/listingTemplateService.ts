@@ -4,8 +4,10 @@ import type {
   MarketplaceListingDraft,
   MarketplaceSite,
   PriceDecision,
+  SellerCategory,
   VerifiedProductFacts,
 } from '@core/types';
+import { normalizeSellerCategory } from './categoryProfileService';
 
 const siteLabel: Record<MarketplaceSite, string> = {
   tradera: 'Tradera',
@@ -19,13 +21,17 @@ const titleLimits: Record<MarketplaceSite, number> = {
   vinted: 60,
 };
 
-const categoryLabel: Record<VerifiedProductFacts['category']['value'], string> = {
+const categoryLabel: Record<SellerCategory, string> = {
   Electronics: 'Elektronik',
   Fashion: 'Mode',
   Furniture: 'Möbler',
   Collectibles: 'Samlarobjekt',
   General: 'Övrigt',
 };
+
+function reviewedCategoryLabel(facts: VerifiedProductFacts): string {
+  return categoryLabel[normalizeSellerCategory(facts.category.value)];
+}
 
 const conditionLabel: Record<VerifiedProductFacts['conditionGrade']['value'], string> = {
   new: 'Ny',
@@ -180,7 +186,7 @@ class ListingTemplateService {
         title: generated(template.title),
         description: generated(template.description),
         priceSek: generated(template.priceSuggestionSek),
-        category: generated(facts ? categoryLabel[facts.category.value] : ''),
+        category: generated(facts ? reviewedCategoryLabel(facts) : ''),
         attributes: generated(
           facts
             ? Object.entries(facts.attributes).map(
@@ -203,6 +209,7 @@ class ListingTemplateService {
     priceDecision: PriceDecision,
   ): ListingTemplate {
     const brand = present(facts.brand.value);
+    const normalizedCategoryLabel = reviewedCategoryLabel(facts);
     const rawTitle = present(facts.title.value);
     const title = (
       rawTitle.toLocaleLowerCase().includes(brand.toLocaleLowerCase())
@@ -224,7 +231,7 @@ class ListingTemplateService {
           ? 'Inte verifierad'
           : 'Äkthet inte verifierad';
     const bullets = [
-      `Kategori: ${categoryLabel[facts.category.value]}`,
+      `Kategori: ${normalizedCategoryLabel}`,
       `Skick: ${conditionLabel[facts.conditionGrade.value]}`,
       `Varumärke: ${brand}`,
       `Modell: ${present(facts.model.value)}`,
@@ -258,7 +265,7 @@ class ListingTemplateService {
         site === 'blocket'
           ? 'Hämtning eller spårbar frakt inom Sverige.'
           : 'Spårbar frakt inom Sverige.',
-      tags: [categoryLabel[facts.category.value], brand, siteLabel[site]].filter(
+      tags: [normalizedCategoryLabel, brand, siteLabel[site]].filter(
         (entry) => entry && entry !== 'Inte verifierat',
       ),
       disclaimer:
