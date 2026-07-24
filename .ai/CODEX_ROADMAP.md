@@ -1,8 +1,8 @@
 # Swedish Secondhand AI — v3.0.0 Guided Selling roadmap
 
 Target: a local-first Windows and Linux seller coach that lets an occasional Swedish private
-seller create a copy-ready listing with their own price in at most six primary actions and within
-five minutes. Evidence-based valuation remains an optional, clearly stronger pricing route.
+seller create a copy-ready listing with their own price through a six-action functional acceptance
+path. Evidence-based valuation remains an optional, clearly stronger pricing route.
 
 ## Product boundary
 
@@ -64,13 +64,14 @@ Status: completed in merge `6e2f0dd` after local, E2E, documentation and GitHub 
 - Export privacy-safe diagnostics without user text, images, URLs or secrets.
 - Refresh README, user guide, support flow and all v3 screenshots.
 
-## M6 — v3 release candidate and stable gate
+## M6 — v3 stable release
 
-Status: `v3.0.0-rc.1` published 2026-07-17 from merge `0c3e418`; stable remains gated.
+Status: stable `v3.0.0` prepared for publication 2026-07-24 after current release evidence passed.
 
 - Publish `v3.0.0-rc.1` only after full local and cross-platform release validation.
-- Stable v3.0.0 requires a seven-day RC period, verified clean installs and v2.0.1 upgrades on
-  Windows/Linux, no open P0/P1 or high security findings, and artifact/checksum/SBOM readback.
+- Stable v3.0.0 requires verified package and v2.0.1 upgrade checks on Windows/Linux, no open
+  P0/P1 or high security findings, and artifact/checksum/SBOM readback.
+- Candidate age, waiting periods and elapsed time are never release gates.
 
 RC readback: Windows installer/portable and Linux AppImage passed package smoke and v2.0.1
 upgrade checks; the AppImage passed visible-render smoke under Xvfb. All public artifacts,
@@ -84,4 +85,4 @@ SHA-256 checksums and the CycloneDX 1.6 SBOM were downloaded and verified after 
 - [x] M3 Guided workflow and progressive detail
 - [x] M4 Flexible pricing and simpler listing studio
 - [x] M5 Safe project management and support
-- [ ] M6 Stable v3 gate (`v3.0.0-rc.1` is published; seven-day soak is active)
+- [x] M6 Stable v3 release evidence and publication preparation

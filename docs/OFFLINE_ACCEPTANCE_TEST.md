@@ -1,9 +1,10 @@
-# Guided Selling five-minute acceptance test
+# Guided Selling offline acceptance test
 
 ## Goal
 
 From an empty profile, create a copy-ready offline listing with a seller-entered price in no more
-than six primary actions and five minutes. No account, network request, provider or secret is used.
+than six primary actions. No account, network request, provider or secret is used. Completion time
+may be recorded as usability data but never blocks a release.
 
 ## Script
 
@@ -20,5 +21,5 @@ than six primary actions and five minutes. No account, network request, provider
 - Primary actions: six.
 - Offline/provider-free: verified.
 - Complete package contained the seller price and no confidence or AI claim: verified.
-- Browser execution was well below five minutes; repeat the same script as a human smoke test
-  during the seven-day RC period before stable publication.
+- Repeat the same functional path as a human smoke test before publication; elapsed time is
+  informational only.

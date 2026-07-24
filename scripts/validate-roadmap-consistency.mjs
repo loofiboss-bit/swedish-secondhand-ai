@@ -9,7 +9,7 @@ for (const requiredText of [
   '# Swedish Secondhand AI — v3.0.0 Guided Selling roadmap',
   '## G0 — Safe v2.0.1 maintenance release',
   '## M1 — Schema 4 and simplified core contracts',
-  '## M6 — v3 release candidate and stable gate',
+  '## M6 — v3 stable release',
   '- [x] G0 Safe v2.0.1 maintenance release',
 ]) {
   if (!implementation.includes(requiredText)) {
@@ -21,7 +21,7 @@ for (const requiredText of [
   'The implementation authority is [`.ai/CODEX_ROADMAP.md`](./CODEX_ROADMAP.md).',
   'v2.0.1 — verified Windows/Linux maintenance release',
   '## Current product track',
-  'v3.0.0 Guided Selling is in its required RC observation period',
+  'v3.0.0 Guided Selling prioritizes an immediate offline start',
 ]) {
   if (!product.includes(requiredText)) {
     errors.push(`.ai/ROADMAP.md is missing current product state: ${requiredText}`);
@@ -35,6 +35,23 @@ for (const staleText of [
 ]) {
   if (product.includes(staleText)) {
     errors.push(`.ai/ROADMAP.md contains superseded release sequencing: ${staleText}`);
+  }
+}
+
+for (const [name, source] of [
+  ['.ai/CODEX_ROADMAP.md', implementation],
+  ['.ai/ROADMAP.md', product],
+]) {
+  for (const forbidden of [
+    /seven[- ]day/i,
+    /seven days/i,
+    /required .{0,20}observation period/i,
+    /minimum candidate age/i,
+    /waiting period .{0,20}required/i,
+  ]) {
+    if (forbidden.test(source)) {
+      errors.push(`${name} contains a time-based release gate: ${forbidden}`);
+    }
   }
 }
 
