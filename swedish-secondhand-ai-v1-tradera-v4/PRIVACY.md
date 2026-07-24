@@ -1,0 +1,29 @@
+# Privacy
+
+Swedish Secondhand AI is a local-first desktop application. Preferences, drafts, history,
+manual comparables, reviewed facts, valuations, and listing templates are stored on the local
+device. These datasets use versioned records so upgrades can validate and migrate them before
+use.
+
+## Provider data
+
+- **Gemini:** when selected, item text and at most two prepared images are sent to Google. The key
+  remains in operating-system protected storage and is used only by the Electron main process.
+- **Ollama:** requests are restricted to HTTP loopback on port `11434`.
+- **Offline:** deterministic analysis does not send item content to an AI provider.
+- **Tradera:** a bounded query plus the non-secret App ID is sent to the fixed official REST v4 API
+  only when requested. The App key stays in the Electron main process. Results are cached locally
+  for 24 hours to reduce external requests.
+- **Blocket and Vinted:** v1 creates copy-ready text only. It does not scrape or publish.
+
+## Backups and diagnostics
+
+Backup format 1 contains selected non-secret datasets, app version, and export time. It never
+contains API keys, protected values, or secret status. Imports are fully validated before an
+atomic replacement is committed.
+
+Diagnostics retain at most 100 local entries and sanitize credential-shaped values, sensitive
+keys, errors, large strings, and deep data. Diagnostics are not uploaded automatically.
+
+Resetting local data does not delete protected provider keys unless the user removes those keys
+separately in Settings.

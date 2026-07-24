@@ -1,0 +1,42 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="56" x2="448" y2="456" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E8A53"/>
+      <stop offset="1" stop-color="#0C3D2A"/>
+    </linearGradient>
+    <linearGradient id="tag" x1="132" y1="120" x2="392" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FFF9"/>
+      <stop offset="1" stop-color="#CDEEDD"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="338" y1="118" x2="405" y2="189" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD775"/>
+      <stop offset="1" stop-color="#F0A238"/>
+    </linearGradient>
+    <filter id="shadow" x="76" y="88" width="360" height="348" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="10"/>
+      <feGaussianBlur stdDeviation="12"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.021 0 0 0 0 0.125 0 0 0 0 0.079 0 0 0 0.3 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_2" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
+  <circle cx="117" cy="96" r="68" fill="#64D79A" fill-opacity="0.2"/>
+  <circle cx="424" cy="404" r="86" fill="#A6F2C8" fill-opacity="0.12"/>
+
+  <g filter="url(#shadow)">
+    <path d="M150 122H312L392 202V334C392 360.51 370.51 382 344 382H168C141.49 382 120 360.51 120 334V152C120 135.431 133.431 122 150 122Z" fill="url(#tag)"/>
+    <path d="M312 122V178C312 191.255 322.745 202 336 202H392" fill="#E0F6E9"/>
+    <path d="M312 122V178C312 191.255 322.745 202 336 202H392" stroke="#C7EBD7" stroke-width="10"/>
+    <circle cx="182" cy="184" r="18" fill="#129355"/>
+    <path d="M222 243C238.14 227.554 256.812 220 278.016 220C299.22 220 317.893 227.554 334.032 243V267C334.032 275.837 326.869 283 318.032 283H238C229.163 283 222 275.837 222 267V243Z" fill="#0E6B41"/>
+    <path d="M239 284H317V310C317 326.569 303.569 340 287 340H269C252.431 340 239 326.569 239 310V284Z" fill="#1A8F56"/>
+    <path d="M269 264H287" stroke="#E8FFF2" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <path d="M370 118L377.6 139.4L399 147L377.6 154.6L370 176L362.4 154.6L341 147L362.4 139.4L370 118Z" fill="url(#spark)"/>
+</svg>

@@ -1,0 +1,109 @@
+name: Release desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run validate:release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+
+  linux:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx electron-builder --linux AppImage --publish never
+      - run: npm run package:smoke -- linux release
+      - name: Start AppImage under Xvfb
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 xvfb
+          artifact=$(find release -maxdepth 1 -name '*.AppImage' -print -quit)
+          chmod +x "$artifact"
+          set +e
+          timeout 20s xvfb-run -a "$artifact" --no-sandbox --disable-gpu
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ]; then
+            echo "AppImage startup failed with exit code $code"
+            exit "$code"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: release/*.AppImage
+          if-no-files-found: error
+
+  windows:
+    needs: validate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx electron-builder --win nsis portable --x64 --publish never
+      - run: npm run package:smoke -- windows release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: release/*.exe
+          if-no-files-found: error
+
+  draft-release:
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release
+          merge-multiple: true
+      - run: npm ci --ignore-scripts
+      - run: npm run sbom
+      - run: npm run checksums
+      - name: Create draft prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: >-
+          gh release create "$TAG"
+          release/*.AppImage release/*.exe release/*.json release/SHA256SUMS.txt
+          --verify-tag --draft --prerelease
+          --title "Swedish Secondhand AI ${TAG}"
+          --notes-file docs/releases/v1.0.0-beta.1.md
