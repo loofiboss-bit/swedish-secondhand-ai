@@ -34,7 +34,7 @@ for (const requiredText of [
   'v3.0.0 — stable Guided Selling release',
   '## Current product track',
   'v4.0.0 Focused Seller Workspace',
-  'The v4 RC is public and all implementation milestones are complete.',
+  'Stable v4 is public and all implementation milestones are complete.',
 ]) {
   if (!product.includes(requiredText)) {
     errors.push(`.ai/ROADMAP.md is missing current product state: ${requiredText}`);

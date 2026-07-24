@@ -1,10 +1,10 @@
 # Swedish Secondhand AI v4.0.0 — Focused Seller Workspace
 
-Status: implementation and public release candidate complete; stable release preparation
+Status: completed and published
 
 Reviewed baseline: stable `v3.0.0` at `b8754dc` on 2026-07-24
 
-Current public version: `v4.0.0-rc.1`
+Current public version: `v4.0.0`
 
 ## Outcome
 
@@ -42,6 +42,8 @@ Blocket, and Vinted on Windows or Linux.
 - Repository Markdown documentation is English-only and enforced by validation.
 - Public `v4.0.0-rc.1` passed exact-source Windows and Linux package, visible launch, stable-v3
   upgrade, checksum, SBOM, and artifact readback gates from `a0d895c`.
+- Stable `v4.0.0` passed the same exact-source gates from `b529636` and was independently read
+  back from the public release before this plan was closed.
 
 ### Stable v3 prerequisite result
 
