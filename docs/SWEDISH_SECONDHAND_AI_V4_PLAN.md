@@ -1,8 +1,10 @@
 # Swedish Secondhand AI v4.0.0 — Focused Seller Workspace
 
-Status: proposed  
-Reviewed baseline: `main` at `b990e56` on 2026-07-24  
-Current public version: `v3.0.0-rc.1`
+Status: implementation complete; release-candidate validation in progress
+
+Reviewed baseline: stable `v3.0.0` at `b8754dc` on 2026-07-24
+
+Current public version: `v3.0.0`
 
 ## Outcome
 
@@ -32,28 +34,25 @@ Blocket, and Vinted on Windows or Linux.
 - Schema 4 projects support archive, recoverable trash, outcomes, diagnostics, and backup/import.
 - Windows and Linux release automation produces installers, portable packages, AppImage,
   checksums, and an SBOM.
-- `npm run validate` passes locally:
-  - 46 test files;
-  - 213 tests;
+- `npm run validate:release` passes locally:
+  - 51 test files;
+  - 245 tests;
+  - nine Chromium E2E scenarios;
   - lint, typecheck, build, roadmap consistency, and formatting all pass.
-- GitHub has no open issues or pull requests at the time of review.
+- Repository Markdown documentation is English-only and enforced by validation.
 
-### Release blocker before v4
+### Stable v3 prerequisite result
 
-`v3.0.0-rc.1` was published on 2026-07-17, but stable `v3.0.0` has not been published. The
-stable release gate is evidence-based and is not currently green:
-
-- `npm run validate:security-deps` reports one high-severity `fast-uri` advisory;
-- the fix is available by updating `fast-uri` from `3.1.3` to `3.1.4` through the lockfile;
-- the documented human Windows/Linux offline acceptance path still needs to be recorded;
-- the full cross-platform stable release workflow must be rerun after the dependency fix.
+Stable `v3.0.0` was published on 2026-07-24 from `b8754dc` after exact-source validation,
+Windows/Linux package and upgrade checks, AppImage visible-render smoke, checksum/SBOM readback,
+and zero-open-Dependabot verification. The README and public wiki were read back in English.
 
 No release may be blocked by candidate age, elapsed calendar time, a soak period, or an
 observation period. Release decisions depend only on current test, security, migration, platform,
 artifact, and open-finding evidence.
 
-Do not begin v4 behavior changes until stable v3 is published or a documented blocker explicitly
-defers it.
+The prerequisite is complete. v4 release evidence is evaluated independently against its exact
+source and artifacts.
 
 ### Product inconsistencies to fix
 
@@ -564,7 +563,8 @@ Ship v4 without losing v2/v3 data or weakening security, accessibility, or packa
 3. Run accessibility checks on onboarding, home, Item, Price, Listing, Follow-up, Settings, and
    recovery states.
 4. Refresh screenshots only through the dedicated screenshot command.
-5. Update Swedish and English UI documentation, while documenting Swedish listing output.
+5. Update English repository documentation while preserving and testing Swedish and English UI
+   behavior and documenting Swedish listing output.
 6. Run security, package, visible-render, upgrade, checksum, SBOM, and publication gates.
 7. Publish `v4.0.0-rc.1`, resolve any current P0/P1 findings, and publish stable v4.0.0 as soon as
    every evidence-based cross-platform and publication gate passes.
