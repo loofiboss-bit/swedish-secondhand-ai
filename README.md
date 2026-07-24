@@ -8,14 +8,14 @@ Swedish Secondhand AI is a local-first desktop seller coach for Tradera, Blocket
 It helps you review item facts, choose a price, and prepare listing text without signing in or
 publishing on your behalf.
 
-The current public build is **v3.0.0** for Windows x64 and Linux x64. Back up your projects before
+The current public build is **v4.0.0** for Windows x64 and Linux x64. Back up your projects before
 upgrading.
 
-[Download v3.0.0](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v3.0.0)
+[Download v4.0.0](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v4.0.0)
 
-The v4 Focused Seller Workspace is implemented only in the current development checkout. It is
-not yet a public release. Release decisions use current functional, security, package, migration,
-and artifact evidence; candidate age, waiting periods, and elapsed time are never gates.
+The v4 Focused Seller Workspace uses current functional, security, package, migration, and
+artifact evidence for release decisions. Candidate age, waiting periods, and elapsed time are
+never gates.
 · [Install guide](./docs/guides/INSTALLATION.md)
 · [Quick start](./docs/guides/QUICK_START.md)
 · [Full user guide](./USER_GUIDE.md)
@@ -65,7 +65,7 @@ adding credentials.
 
 ## Downloads and verification
 
-The stable v3 release includes:
+The stable v4 release includes:
 
 - a Linux x64 AppImage;
 - a Windows x64 installer and portable executable;

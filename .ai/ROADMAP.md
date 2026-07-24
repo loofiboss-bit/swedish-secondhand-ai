@@ -13,6 +13,8 @@ ordering and implementation checkpoints are tracked in
   v2.0.1 upgrades, checksums, and SBOM, published 2026-07-17.
 - v3.0.0 — stable Guided Selling release with exact-source Windows/Linux packages, v2.0.1
   upgrades, checksums, SBOM, and public readback, published 2026-07-24.
+- v4.0.0-rc.1 — Focused Seller Workspace release candidate with exact-source Windows/Linux
+  packages, stable-v3 upgrades, checksums, SBOM, and public readback, published 2026-07-24.
 
 ## Current product track
 
@@ -24,6 +26,6 @@ The local-first/manual-publishing boundary remains unchanged. Gemini, Ollama, of
 and official Tradera data are the supported intelligence sources. Numerical evidence-based
 valuation still requires user-approved realized comparables.
 
-No v4 release is public. RC and stable status require the evidence gates documented in the
-implementation roadmap and v4 plan. Candidate age, waiting periods, and elapsed time are not
-release gates.
+The v4 RC is public and all implementation milestones are complete. Stable v4 promotion requires
+the current evidence gates documented in the implementation roadmap and v4 plan. Candidate age,
+waiting periods, and elapsed time are not release gates.

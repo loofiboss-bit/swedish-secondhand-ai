@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 4.0.0 - 2026-07-24
+
+- Promoted the Focused Seller Workspace after exact-source Windows and Linux package, visible
+  launch, stable-v3 upgrade, migration, security, checksum, SBOM, and public RC readback gates.
+- Unified project readiness across the seller coach, project library, workspace tabs, and
+  ready-copy action without making optional comparable research block seller-entered prices.
+- Added consistent safe image intake, required-first item review, preview-first listing review,
+  accessible project dialogs, recoverable clipboard handling, serialized saves, and safe project
+  switching.
+- Preserved v2.0.1 and v3 project data, user-authored facts, seller locks, images, price choices,
+  edited listing fields, archive/trash state, and outcomes through compatibility coverage.
+- Standardized repository documentation and the public wiki on English while preserving Swedish
+  and English app localization and Swedish marketplace listing output.
+- Kept all product and release decisions evidence-based: candidate age, waiting periods, calendar
+  thresholds, and elapsed time are not gates.
+
 ## 4.0.0-rc.1 - 2026-07-24
 
 - Removed candidate-age, waiting-period, and calendar-based release gates; follow-up advice is now
