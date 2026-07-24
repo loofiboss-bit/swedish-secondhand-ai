@@ -6,7 +6,9 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'release/**', 'node_modules/**'] },
+  {
+    ignores: ['dist/**', 'release/**', 'node_modules/**', 'swedish-secondhand-ai-*/**'],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

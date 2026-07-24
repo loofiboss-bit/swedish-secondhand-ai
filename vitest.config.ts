@@ -15,6 +15,6 @@ export default defineConfig({
     setupFiles: './src/test-setup.ts',
     testTimeout: 10_000,
     css: true,
-    exclude: ['e2e/**', 'node_modules/**', 'dist/**', 'release/**'],
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**', 'release/**', 'swedish-secondhand-ai-*/**'],
   },
 });
