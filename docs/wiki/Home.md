@@ -4,9 +4,9 @@ Swedish Secondhand AI helps private sellers prepare Tradera, Blocket, and Vinted
 Windows or Linux desktop. You can start offline without an account or API key. The app never
 publishes on your behalf.
 
-The current public build is **v3.0.0**. Back up existing projects before upgrading.
+The current public build is **v4.0.0**. Back up existing projects before upgrading.
 
-[Download the release](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v3.0.0)
+[Download the release](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases/tag/v4.0.0)
 · [Install guide](https://github.com/loofiboss-bit/swedish-secondhand-ai/blob/main/docs/guides/INSTALLATION.md)
 · [Quick start](https://github.com/loofiboss-bit/swedish-secondhand-ai/blob/main/docs/guides/QUICK_START.md)
 

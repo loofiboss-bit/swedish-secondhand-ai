@@ -27,7 +27,8 @@ versioned with the app; the GitHub wiki is a concise entry point.
 
 - [v3.0.0 release notes](./releases/v3.0.0.md)
 - [Stable v3.0.0 gate record](./releases/v3.0.0-gate.md)
-- [v4.0.0-rc.1 development gate](./releases/v4.0.0-rc.1.md)
+- [v4.0.0 release notes](./releases/v4.0.0.md)
+- [v4.0.0-rc.1 public gate record](./releases/v4.0.0-rc.1.md)
 - [v4 Focused Seller Workspace plan](./SWEDISH_SECONDHAND_AI_V4_PLAN.md)
 - [Offline acceptance test](./OFFLINE_ACCEPTANCE_TEST.md)
 - [Changelog](../CHANGELOG.md)

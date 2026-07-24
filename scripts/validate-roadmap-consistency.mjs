@@ -20,6 +20,8 @@ for (const requiredText of [
   '## M1 — Unified readiness and category boundaries',
   '## M6 — Release hardening',
   '- [x] G0 Stable v3.0.0 prerequisite',
+  '- [x] M1 Unified readiness and category boundaries',
+  '- [x] M6 Release hardening and public RC',
 ]) {
   if (!implementation.includes(requiredText)) {
     errors.push(`.ai/CODEX_ROADMAP.md is missing current release state: ${requiredText}`);
@@ -32,7 +34,7 @@ for (const requiredText of [
   'v3.0.0 — stable Guided Selling release',
   '## Current product track',
   'v4.0.0 Focused Seller Workspace',
-  'No v4 release is public.',
+  'The v4 RC is public and all implementation milestones are complete.',
 ]) {
   if (!product.includes(requiredText)) {
     errors.push(`.ai/ROADMAP.md is missing current product state: ${requiredText}`);

@@ -1,8 +1,7 @@
 # User guide
 
-This guide covers the focused v4 development workflow while the current public download remains
-v3.0.0-rc.1. If you have not installed the app, start with
-[Install and update](./docs/guides/INSTALLATION.md). Swedish readers can use the shorter
+This guide covers the focused v4 workflow. If you have not installed the app, start with
+[Install and update](./docs/guides/INSTALLATION.md), then use the shorter
 [Quick start](./docs/guides/QUICK_START.md).
 
 ## Start without an account

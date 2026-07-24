@@ -3,7 +3,7 @@
 The public release provides Windows x64 and Linux x64 packages. Download only from the
 [GitHub Releases page](https://github.com/loofiboss-bit/swedish-secondhand-ai/releases).
 
-The current build is `v3.0.0`. Back up your projects before installing it over an older version.
+The current build is `v4.0.0`. Back up your projects before installing it over an older version.
 
 ## Verify the download
 
@@ -18,7 +18,7 @@ The selected AppImage should report `OK`.
 On Windows, open PowerShell in the download directory:
 
 ```powershell
-Get-FileHash .\Swedish-Secondhand-AI-3.0.0-windows-x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Swedish-Secondhand-AI-4.0.0-windows-x64-setup.exe -Algorithm SHA256
 ```
 
 Compare the result with the matching line in `SHA256SUMS.txt`. Do not open the file if the values
@@ -39,8 +39,8 @@ first and continue only if the file came from this repository's release page and
 Make the AppImage executable, then run it:
 
 ```bash
-chmod +x ./Swedish-Secondhand-AI-3.0.0-linux-x86_64.AppImage
-./Swedish-Secondhand-AI-3.0.0-linux-x86_64.AppImage
+chmod +x ./Swedish-Secondhand-AI-4.0.0-linux-x86_64.AppImage
+./Swedish-Secondhand-AI-4.0.0-linux-x86_64.AppImage
 ```
 
 Move the AppImage to a stable folder before creating your own launcher. The app does not install
@@ -54,8 +54,9 @@ or update itself.
 4. Confirm that the Projects view contains the expected items and images.
 5. Keep the backup until you have verified the upgrade.
 
-The first v3 start migrates v2 schema-3 projects to schema 4. The app keeps verified rollback data
-and opens recovery instead of activating an invalid partial migration.
+The first v3 or v4 start from v2 migrates schema-3 projects to schema 4. The app keeps verified
+rollback data and opens recovery instead of activating an invalid partial migration. Updating
+from v3 to v4 preserves the existing schema-4 profile.
 
 ## Uninstall
 
